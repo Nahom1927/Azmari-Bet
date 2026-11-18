@@ -1,0 +1,375 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex"><meta name="theme-color" content="#060B1A">
+<title>Azmari portal</title>
+<style>
+:root{--bg:#060B1A;--sf:#111a33;--sf2:#0b1226;--ln:#22305a;--ink:#eef2ff;--mu:#9aa8cc;--gr:#5ee38a;--gd:#f2c14e;--rd:#ff8a8a}
+*{box-sizing:border-box}
+body{margin:0;background:radial-gradient(1200px 600px at 50% -10%,#14204a 0,var(--bg) 60%) fixed;color:var(--ink);font:15px/1.5 "Public Sans","Noto Sans Ethiopic",system-ui,sans-serif;padding:env(safe-area-inset-top) 0 40px}
+#app{max-width:960px;margin:0 auto;padding:14px}
+h1,h2,h3{margin:0 0 8px}h1{font-size:22px}h2{font-size:19px}h3{font-size:16px}
+h1 small{display:block;font-size:13px;color:var(--gd);font-weight:400}
+.top{display:flex;align-items:center;gap:10px;margin-bottom:12px}.top .sp{flex:1}
+.badge{display:inline-block;padding:2px 10px;border-radius:99px;background:var(--gd);color:#241a00;font-weight:700;font-size:12px;text-transform:capitalize}
+.card{background:color-mix(in srgb,var(--sf) 88%,transparent);border:1px solid var(--ln);border-radius:16px;padding:14px;margin:0 0 12px}
+.auth{max-width:420px;margin:8vh auto 0}
+label{display:block;margin-top:8px;color:var(--mu);font-size:13px}
+input,select,textarea{display:block;width:100%;margin:4px 0;padding:11px;border-radius:10px;border:1px solid var(--ln);background:var(--sf2);color:var(--ink);font:inherit}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--gr);outline-offset:1px}
+button{font:inherit;cursor:pointer;border:0;border-radius:10px;padding:10px 14px;font-weight:700;background:var(--gr);color:#04210f;margin:4px 0}
+button.ln{background:transparent;color:var(--ink);border:1px solid var(--ln)}
+button.gd{background:var(--gd);color:#241a00}
+button.sm{padding:6px 10px;font-size:13px;margin:2px}
+button.full{width:100%}
+.tabs{display:flex;gap:6px;overflow-x:auto;margin-bottom:12px;padding-bottom:4px}
+.tabs button{background:var(--sf);color:var(--mu);border:1px solid var(--ln);white-space:nowrap}
+.tabs button.on{background:var(--gr);color:#04210f;border-color:var(--gr)}
+.msg{min-height:20px;color:var(--gd)}.msg.err{color:var(--rd)}
+table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:7px 5px;border-bottom:1px solid var(--ln);text-align:left}th{color:var(--mu)}
+tr.click{cursor:pointer}tr.click:hover{background:#16224a}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.sec{border:1px solid var(--ln);border-radius:14px;padding:12px;background:var(--sf2);text-align:left}
+.sec.open{border-color:var(--gr)}.sec .st{font-size:12px;color:var(--mu)}.sec.open .st{color:var(--gr)}
+.big{font-size:40px;letter-spacing:10px;font-weight:800;color:var(--gd);text-align:center;margin:8px 0}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.mu{color:var(--mu)}a{color:var(--gr)}
+.pill{display:inline-block;padding:1px 8px;border-radius:99px;font-size:12px;border:1px solid var(--ln)}
+.pill.p{color:var(--gr);border-color:var(--gr)}.pill.l{color:var(--gd);border-color:var(--gd)}.pill.a{color:var(--rd);border-color:var(--rd)}
+.scroll{overflow-x:auto}
+@media(max-width:520px){.row2{grid-template-columns:1fr}}
+</style></head>
+<body><div id="app"></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script>
+(function () {
+  var sb = supabase.createClient("https://rnqizccrzbolsynfsxbu.supabase.co", "sb_publishable_1pbzO1FOGTjIjjE-yF7d1A__OFPESB2");
+  var app = document.getElementById("app");
+  var SUBJ = [["ear","Ear training"],["theory","Music theory"],["scales","Scales"],["ensemble","Ensemble"],["history","Music history"]];
+  var LESSON_SECT = [["videos","Uploaded videos"],["live","Live section"]].concat(SUBJ);
+  var SECT = [["attendance","Attendance"]].concat(LESSON_SECT);
+  var ME = null;
+
+  function el(tag, text, props) {
+    var e = document.createElement(tag);
+    if (text != null) e.textContent = text;
+    if (props) for (var k in props) e[k] = props[k];
+    return e;
+  }
+  function add(p) { for (var i = 1; i < arguments.length; i++) if (arguments[i]) p.appendChild(arguments[i]); return p; }
+  function card() { var d = el("div"); d.className = "card"; return d; }
+  function inp(ph, type, val) { var i = el("input", null, { placeholder: ph || "", type: type || "text", value: val || "" }); i.autocomplete = "off"; return i; }
+  function lab(t, input) { var w = el("div"); add(w, el("label", t), input); return w; }
+  function sel(opts) { var s = el("select"); opts.forEach(function (o) { s.appendChild(el("option", o[1], { value: o[0] })); }); return s; }
+  function btn(t, fn, cls) { var b = el("button", t); b.type = "button"; if (cls) b.className = cls; b.onclick = fn; return b; }
+  function msg() { return el("p", "", { className: "msg" }); }
+  function say(m, text, err) { m.textContent = text || ""; m.className = "msg" + (err ? " err" : ""); }
+  function safeUrl(u) { return /^https:\/\//i.test(u || "") ? u : "#"; }
+  function clear(n) { while (n.firstChild) n.removeChild(n.firstChild); }
+
+  function brand() {
+    var h = el("h1", "Azmari Bet");
+    h.appendChild(el("small", "አዝማሪ ቤት · Portal"));
+    return h;
+  }
+
+  /* ---------- login / sign up ---------- */
+  function authView(note) {
+    clear(app);
+    var box = card(); box.className = "card auth";
+    var m = msg(); if (note) say(m, note);
+    var mode = "in";
+    var email = inp("you@example.com", "email"), pass = inp("Password (6+ characters)", "password");
+    var go = btn("Log in", run, "full");
+    var tabs = el("div"); tabs.className = "tabs";
+    var tIn = btn("Log in", function () { setMode("in"); }), tUp = btn("Create account", function () { setMode("up"); });
+    add(tabs, tIn, tUp);
+    function setMode(x) {
+      mode = x; tIn.className = x === "in" ? "on" : ""; tUp.className = x === "up" ? "on" : "";
+      go.textContent = x === "in" ? "Log in" : "Create account"; say(m, "");
+    }
+    async function run() {
+      say(m, "");
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value.trim())) { say(m, "Enter a valid email.", true); return; }
+      if (pass.value.length < 6) { say(m, "Password needs 6+ characters.", true); return; }
+      go.disabled = true;
+      var r = mode === "in"
+        ? await sb.auth.signInWithPassword({ email: email.value.trim(), password: pass.value })
+        : await sb.auth.signUp({ email: email.value.trim(), password: pass.value });
+      go.disabled = false;
+      if (r.error) { say(m, r.error.message, true); return; }
+      if (!r.data.session) { say(m, "Account created. Check your email to confirm, then log in."); setMode("in"); return; }
+      boot();
+    }
+    var forgot = btn("Forgot password?", async function () {
+      if (!email.value.trim()) { say(m, "Type your email first.", true); return; }
+      var r = await sb.auth.resetPasswordForEmail(email.value.trim(), { redirectTo: location.href.split("#")[0] });
+      say(m, r.error ? r.error.message : "Reset link sent. Check your email.", !!r.error);
+    }, "ln sm");
+    pass.addEventListener("keydown", function (e) { if (e.key === "Enter") run(); });
+    add(box, brand(), el("p", "Students, teachers and admins log in here.", { className: "mu" }), tabs, lab("Email", email), lab("Password", pass), go, forgot, m);
+    app.appendChild(box); setMode("in");
+  }
+
+  /* ---------- link Student ID ---------- */
+  function claimView() {
+    clear(app); shell("none");
+    var c = card(), m = msg(), id = inp("AZ-26-0001"), ph = inp("Phone you registered with", "tel");
+    add(c, el("h2", "Link your Student ID"),
+      el("p", "Enter the Student ID the school gave you and the phone number it was registered with. You do this once.", { className: "mu" }),
+      lab("Student ID", id), lab("Phone", ph),
+      btn("Link my account", async function () {
+        var r = await sb.rpc("claim_student", { p_student_no: id.value, p_phone: ph.value });
+        if (r.error) { say(m, r.error.message, true); return; }
+        if (!r.data) { say(m, "ID and phone do not match, or the ID is already linked.", true); return; }
+        boot();
+      }, "full"), m,
+      el("p", "Not registered yet? Ask the school to create your Student ID. Teachers: ask an admin to give your email the teacher role, then log in again.", { className: "mu" }));
+    app.appendChild(c);
+  }
+
+  /* ---------- shared shell ---------- */
+  function shell(role) {
+    var top = el("div"); top.className = "top";
+    add(top, brand(), el("div", null, { className: "sp" }), role && role !== "none" ? el("span", role, { className: "badge" }) : null,
+      btn("Log out", async function () { await sb.auth.signOut(); ME = null; authView(); }, "ln sm"));
+    app.appendChild(top);
+  }
+  function tabbed(items) {
+    var bar = el("div"); bar.className = "tabs";
+    var body = el("div"), buttons = [];
+    items.forEach(function (it, i) {
+      var b = btn(it[0], function () {
+        buttons.forEach(function (x) { x.className = ""; }); b.className = "on";
+        clear(body); it[1](body);
+      });
+      buttons.push(b); bar.appendChild(b);
+    });
+    add(app, bar, body);
+    buttons[0].click();
+  }
+
+  /* ---------- student ---------- */
+  function studentView() {
+    clear(app); shell("student");
+    tabbed([["My progress", progressTab], ["Sections", sectionsTab]]);
+  }
+  async function progressTab(body) {
+    var r = await sb.rpc("my_progress");
+    if (r.error || !r.data) { add(body, el("p", r.error ? r.error.message : "No data.")); return; }
+    var d = r.data, c = card();
+    add(c, el("h2", d.name), el("p", "Student ID: " + d.student_no + " · " + (d.instrument || "") + " · " + (d.session || ""), { className: "mu" }));
+    var g = card(), t = el("table"); g.appendChild(el("h3", "Grades"));
+    d.grades.forEach(function (x) { var tr = el("tr"); add(tr, el("td", x.subject), el("td", x.score == null ? "Not graded" : String(x.score)), el("td", x.note || "", { className: "mu" })); t.appendChild(tr); });
+    g.appendChild(el("div", null, { className: "scroll" })).appendChild(t);
+    var a = d.attendance, ac = card();
+    add(ac, el("h3", "Attendance"), el("p", "Present " + a.present + " · Late " + a.late + " · Absent " + a.absent + " · Total " + a.total));
+    add(body, c, g, ac);
+  }
+  async function sectionsTab(body) {
+    var r = await sb.rpc("my_progress");
+    var open = (r.data && r.data.access) || [];
+    var grid = el("div"); grid.className = "grid";
+    var detail = el("div");
+    SECT.forEach(function (s) {
+      var isOpen = open.indexOf(s[0]) >= 0;
+      var b = el("button"); b.type = "button"; b.className = "sec" + (isOpen ? " open" : "");
+      add(b, el("div", s[1], { style: "font-weight:700" }), el("div", isOpen ? "Unlocked" : "Locked · enter code", { className: "st" }));
+      b.onclick = function () { clear(detail); sectionDetail(detail, s, isOpen, function () { sectionsTab(clearReturn(body)); }); };
+      grid.appendChild(b);
+    });
+    add(body, el("p", "Ask your teacher for a one-time 4-digit code, tap a section and enter it.", { className: "mu" }), grid, detail);
+  }
+  function clearReturn(b) { clear(b); return b; }
+  async function sectionDetail(box, s, isOpen, refresh) {
+    var c = card(); box.appendChild(c); c.appendChild(el("h3", s[1]));
+    if (!isOpen) {
+      var code = inp("4-digit code", "tel"); code.maxLength = 4; code.inputMode = "numeric"; var m = msg();
+      add(c, code, btn("Unlock", async function () {
+        if (!/^\d{4}$/.test(code.value)) { say(m, "Enter 4 digits.", true); return; }
+        var q = await sb.rpc("my_redeem", { p_section: s[0], p_code: code.value });
+        if (q.error) { say(m, q.error.message, true); return; }
+        if (!q.data) { say(m, "Wrong or expired code.", true); return; }
+        refresh();
+      }, "full"), m);
+      return;
+    }
+    if (s[0] === "attendance") { c.appendChild(el("p", "Your attendance for today is recorded.")); return; }
+    var r = await sb.rpc("my_lessons", { p_section: s[0] });
+    var list = r.data || [];
+    if (!list.length) { c.appendChild(el("p", "Unlocked. Your teacher has not added lessons here yet.", { className: "mu" })); return; }
+    list.forEach(function (l) {
+      var row = el("div"); row.style.cssText = "padding:8px 0;border-bottom:1px solid var(--ln)";
+      var a = el("a", l.title, { href: safeUrl(l.url), target: "_blank", rel: "noopener noreferrer" });
+      add(row, a, l.description ? el("div", l.description, { className: "mu" }) : null); c.appendChild(row);
+    });
+  }
+
+  /* ---------- staff ---------- */
+  function staffView(role) {
+    clear(app); shell(role);
+    var items = [["Students", studentsTab], ["Attendance", attendanceTab], ["Grades", gradesTab], ["Codes", codesTab], ["Lessons", lessonsTab]];
+    if (role === "admin") items.push(["Register", registerTab], ["Team", teamTab]);
+    tabbed(items);
+  }
+  async function overview() { var r = await sb.rpc("admin_overview"); return r.error ? { err: r.error.message } : { data: r.data }; }
+  function studentSelect(list) { return sel(list.map(function (s) { return [s.student_no, s.student_no + " · " + s.name]; })); }
+
+  async function studentsTab(body) {
+    var o = await overview(); if (o.err) { add(body, el("p", o.err, { className: "msg err" })); return; }
+    var c = card(), det = el("div"), t = el("table");
+    var h = el("tr"); ["ID", "Name", "Phone", "Graded", "Avg", "Attend.", "Linked"].forEach(function (x) { h.appendChild(el("th", x)); }); t.appendChild(h);
+    o.data.forEach(function (s) {
+      var tr = el("tr"); tr.className = "click";
+      [s.student_no, s.name, s.phone, s.graded + "/5", s.graded ? String(s.avg_score) : "Not graded", s.attended + "/" + s.classes, s.linked ? "Yes" : "No"].forEach(function (x) { tr.appendChild(el("td", x)); });
+      tr.onclick = function () { showDetail(det, s.student_no); }; t.appendChild(tr);
+    });
+    add(c, el("h3", o.data.length + " students"), el("p", "Tap a row for full records.", { className: "mu" }), add(el("div", null, { className: "scroll" }), t));
+    add(body, c, det);
+  }
+  async function showDetail(box, no) {
+    clear(box); var r = await sb.rpc("staff_student_detail", { p_student_no: no });
+    if (r.error || !r.data) { box.appendChild(el("p", r.error ? r.error.message : "Not found", { className: "msg err" })); return; }
+    var d = r.data, c = card();
+    add(c, el("h3", d.name + " · " + d.student_no), el("p", d.phone + " · " + (d.instrument || "") + " · " + (d.session || "") + " · " + d.status, { className: "mu" }));
+    var t = el("table"); d.grades.forEach(function (g) { var tr = el("tr"); add(tr, el("td", g.subject), el("td", g.score == null ? "Not graded" : String(g.score)), el("td", g.note || "", { className: "mu" })); t.appendChild(tr); });
+    c.appendChild(t); c.appendChild(el("h3", "Recent attendance", { style: "margin-top:12px" }));
+    if (!d.attendance.length) c.appendChild(el("p", "No attendance recorded yet.", { className: "mu" }));
+    d.attendance.forEach(function (a) {
+      var row = el("div"); add(row, el("span", a.status, { className: "pill " + a.status[0] }), el("span", " " + a.class_date + " · " + (a.subject || "General class"), { className: "mu" })); c.appendChild(row);
+    });
+    if (ME.role === "admin") {
+      var m = msg(), next = d.status === "active" ? "paused" : "active";
+      add(c, btn(next === "paused" ? "Pause student" : "Reactivate student", async function () {
+        var q = await sb.rpc("admin_set_student_status", { p_student_no: d.student_no, p_status: next });
+        if (q.error) say(m, q.error.message, true); else showDetail(box, no);
+      }, "ln sm"), m);
+    }
+    box.appendChild(c);
+  }
+
+  async function attendanceTab(body) {
+    var o = await overview(); if (o.err) { add(body, el("p", o.err, { className: "msg err" })); return; }
+    var dt = inp("", "date", new Date().toISOString().slice(0, 10)), sub = sel([["", "General class"]].concat(SUBJ)), list = el("div"), m = msg();
+    var c = card();
+    var two = el("div"); two.className = "row2"; add(two, lab("Date", dt), lab("Class", sub));
+    add(c, el("h3", "Mark attendance"), two);
+    async function draw() {
+      clear(list);
+      var q = await sb.rpc("staff_day_attendance", { p_date: dt.value, p_subject: sub.value });
+      var marked = {}; (q.data || []).forEach(function (x) { marked[x.student_no] = x.status; });
+      o.data.filter(function (s) { return s.status === "active"; }).forEach(function (s) {
+        var row = el("div"); row.style.cssText = "display:flex;align-items:center;gap:6px;padding:6px 0;border-bottom:1px solid var(--ln);flex-wrap:wrap";
+        var cur = el("span", marked[s.student_no] || "not marked", { className: "pill " + (marked[s.student_no] ? marked[s.student_no][0] : "") });
+        add(row, el("div", s.student_no + " · " + s.name, { style: "flex:1;min-width:150px" }), cur);
+        [["present", "Present"], ["late", "Late"], ["absent", "Absent"]].forEach(function (x) {
+          row.appendChild(btn(x[1], async function () {
+            var z = await sb.rpc("admin_mark_attendance", { p_student_no: s.student_no, p_subject: sub.value, p_date: dt.value, p_status: x[0] });
+            if (z.error) say(m, z.error.message, true); else { say(m, ""); cur.textContent = x[0]; cur.className = "pill " + x[0][0]; }
+          }, "sm" + (x[0] === "late" ? " gd" : x[0] === "absent" ? " ln" : "")));
+        });
+        list.appendChild(row);
+      });
+      if (!list.children.length) list.appendChild(el("p", "No active students yet.", { className: "mu" }));
+    }
+    dt.onchange = draw; sub.onchange = draw;
+    add(body, c, m, list); draw();
+  }
+
+  async function gradesTab(body) {
+    var o = await overview(); if (o.err) { add(body, el("p", o.err, { className: "msg err" })); return; }
+    var c = card(), who = studentSelect(o.data), sub = sel(SUBJ), score = inp("0-100", "number"), note = inp("Note (optional)"), m = msg();
+    add(c, el("h3", "Record grade"), lab("Student", who), lab("Subject", sub), lab("Score (0-100)", score), lab("Note", note),
+      btn("Save grade", async function () {
+        var v = parseFloat(score.value);
+        if (isNaN(v) || v < 0 || v > 100) { say(m, "Score must be 0 to 100.", true); return; }
+        var r = await sb.rpc("admin_set_grade", { p_student_no: who.value, p_subject: sub.value, p_score: v, p_note: note.value || null });
+        say(m, r.error ? r.error.message : "Grade saved.", !!r.error);
+      }, "full"), m);
+    if (!o.data.length) c.insertBefore(el("p", "No students yet.", { className: "mu" }), c.children[1]);
+    body.appendChild(c);
+  }
+
+  async function codesTab(body) {
+    var o = await overview(); if (o.err) { add(body, el("p", o.err, { className: "msg err" })); return; }
+    var c = card(), who = studentSelect(o.data), s = sel(SECT), mins = inp("", "number", "30"), res = el("div"), m = msg();
+    res.className = "big";
+    add(c, el("h3", "One-time 4-digit code"), lab("Student", who), lab("Section", s), lab("Valid for (minutes)", mins),
+      btn("Generate code", async function () {
+        res.textContent = "";
+        var r = await sb.rpc("admin_issue_code", { p_student_no: who.value, p_section: s.value, p_valid_minutes: parseInt(mins.value, 10) || 30 });
+        if (r.error) { say(m, r.error.message, true); return; }
+        say(m, "Tell the student this code. It works once."); res.textContent = r.data;
+      }, "full"), res, m);
+    body.appendChild(c);
+  }
+
+  async function lessonsTab(body) {
+    var c = card(), s = sel(LESSON_SECT), title = inp("Lesson title"), url = inp("https://... (YouTube, Vimeo, Drive link)", "url"),
+      desc = inp("Short description (optional)"), m = msg(), list = el("div");
+    add(c, el("h3", "Add lesson or live link"), lab("Section", s), lab("Title", title), lab("Link (https only)", url), lab("Description", desc),
+      btn("Add", async function () {
+        if (!title.value.trim() || !/^https:\/\//i.test(url.value.trim())) { say(m, "Add a title and an https:// link.", true); return; }
+        var r = await sb.rpc("staff_add_lesson", { p_section: s.value, p_title: title.value, p_url: url.value, p_description: desc.value });
+        if (r.error) { say(m, r.error.message, true); return; }
+        title.value = ""; url.value = ""; desc.value = ""; say(m, "Added."); draw();
+      }, "full"), m);
+    async function draw() {
+      clear(list); var r = await sb.rpc("my_lessons", { p_section: s.value });
+      (r.data || []).forEach(function (l) {
+        var row = el("div"); row.style.cssText = "display:flex;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid var(--ln)";
+        add(row, el("a", l.title, { href: safeUrl(l.url), target: "_blank", rel: "noopener noreferrer", style: "flex:1" }),
+          btn("Delete", async function () { if (confirm("Delete this lesson?")) { await sb.rpc("staff_delete_lesson", { p_id: l.id }); draw(); } }, "ln sm"));
+        list.appendChild(row);
+      });
+      if (!list.children.length) list.appendChild(el("p", "Nothing in this section yet.", { className: "mu" }));
+    }
+    s.onchange = draw;
+    var lc = card(); add(lc, el("h3", "In this section"), list);
+    add(body, c, lc); draw();
+  }
+
+  /* ---------- admin ---------- */
+  function registerTab(body) {
+    var c = card(), n = inp("Full name"), p = inp("Phone (09...)", "tel"), i = inp("Instrument"), ses = sel([["Evening", "Evening"], ["Morning", "Morning"], ["Weekend", "Weekend"]]), m = msg(), out = el("div");
+    out.className = "big";
+    add(c, el("h3", "Register student"), lab("Full name", n), lab("Phone", p), lab("Instrument", i), lab("Session", ses),
+      btn("Create Student ID", async function () {
+        if (n.value.trim().length < 2 || p.value.replace(/\D/g, "").length < 9) { say(m, "Enter a name and a valid phone.", true); return; }
+        var r = await sb.rpc("admin_enroll", { p_name: n.value, p_phone: p.value, p_instrument: i.value, p_session: ses.value });
+        if (r.error) { say(m, r.error.message, true); return; }
+        say(m, "Give this ID to the student. They log in, then link it."); out.textContent = r.data; out.style.letterSpacing = "2px";
+      }, "full"), out, m);
+    body.appendChild(c);
+  }
+  async function teamTab(body) {
+    var c = card(), email = inp("teacher@example.com", "email"), role = sel([["teacher", "Teacher"], ["admin", "Admin"], ["none", "Remove access"]]), m = msg(), list = el("div");
+    add(c, el("h3", "Give a role"), el("p", "The person must create an account first (Create account on the login page).", { className: "mu" }),
+      lab("Email", email), lab("Role", role),
+      btn("Save role", async function () {
+        var r = await sb.rpc("admin_set_role", { p_email: email.value, p_role: role.value });
+        if (r.error) { say(m, r.error.message, true); return; }
+        say(m, "Saved."); email.value = ""; draw();
+      }, "full"), m);
+    async function draw() {
+      clear(list); var r = await sb.rpc("admin_list_staff");
+      (r.data || []).forEach(function (x) { var row = el("div"); add(row, el("span", x.role, { className: "badge" }), el("span", " " + x.email)); row.style.padding = "5px 0"; list.appendChild(row); });
+    }
+    var lc = card(); add(lc, el("h3", "Staff"), list);
+    add(body, c, lc); draw();
+  }
+
+  /* ---------- start ---------- */
+  async function boot() {
+    var s = await sb.auth.getSession();
+    if (!s.data.session) { authView(); return; }
+    var r = await sb.rpc("my_role");
+    if (r.error) { authView("Could not load your role. Make sure the v2 SQL was run. " + r.error.message); return; }
+    ME = r.data;
+    if (ME.role === "student") studentView();
+    else if (ME.role === "admin" || ME.role === "teacher") staffView(ME.role);
+    else claimView();
+  }
+  boot();
+})();
+</script></body></html>
