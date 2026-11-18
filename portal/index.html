@@ -209,7 +209,7 @@ tr.click{cursor:pointer}tr.click:hover{background:#16224a}
   function staffView(role) {
     clear(app); shell(role);
     var items = [["Students", studentsTab], ["Attendance", attendanceTab], ["Grades", gradesTab], ["Codes", codesTab], ["Lessons", lessonsTab]];
-    if (role === "admin") items.push(["Register", registerTab], ["Team", teamTab]);
+    if (role === "admin") { items.unshift(["Applications", applicationsTab]); items.push(["Register", registerTab], ["Team", teamTab]); }
     tabbed(items);
   }
   async function overview() { var r = await sb.rpc("admin_overview"); return r.error ? { err: r.error.message } : { data: r.data }; }
@@ -327,6 +327,39 @@ tr.click{cursor:pointer}tr.click:hover{background:#16224a}
     s.onchange = draw;
     var lc = card(); add(lc, el("h3", "In this section"), list);
     add(body, c, lc); draw();
+  }
+
+  async function applicationsTab(body) {
+    var st = sel([["pending", "Pending"], ["approved", "Approved"], ["rejected", "Rejected"]]), list = el("div"), m = msg(), c = card();
+    add(c, el("h3", "Student applications from the app"), el("p", "Check the payment, then Approve to create the Student ID.", { className: "mu" }), lab("Show", st), m);
+    async function draw() {
+      clear(list);
+      var r = await sb.rpc("admin_list_registrations", { p_status: st.value });
+      if (r.error) { say(m, r.error.message, true); return; }
+      var rows = r.data || [];
+      if (!rows.length) list.appendChild(el("p", "Nothing here.", { className: "mu" }));
+      rows.forEach(function (x) {
+        var k = card();
+        add(k, el("h3", x.name + " · " + x.phone), el("p", [x.instrument, x.session, x.region, x.grade].filter(Boolean).join(" · "), { className: "mu" }));
+        if (x.description) k.appendChild(el("p", x.description));
+        if (x.location) k.appendChild(el("p", "Location: " + x.location, { className: "mu" }));
+        k.appendChild(el("p", "Payment reference: " + (x.payment_ref || "not entered yet") + " · " + new Date(x.created_at).toLocaleString(), { className: "mu" }));
+        if (x.status === "approved") k.appendChild(el("span", "Student ID: " + x.student_no, { className: "badge" }));
+        if (x.status === "pending") {
+          add(k, btn("Approve", async function () {
+            var q = await sb.rpc("admin_approve_registration", { p_id: x.id });
+            await draw();
+            if (q.error) say(m, q.error.message, true); else say(m, "Approved. Student ID: " + q.data + " (tell the student, they log in and link it)");
+          }, "sm"), btn("Reject", async function () {
+            if (!confirm("Reject this application?")) return;
+            var q = await sb.rpc("admin_reject_registration", { p_id: x.id });
+            await draw(); if (q.error) say(m, q.error.message, true);
+          }, "ln sm"));
+        }
+        list.appendChild(k);
+      });
+    }
+    st.onchange = draw; add(body, c, list); draw();
   }
 
   /* ---------- admin ---------- */
