@@ -5,25 +5,93 @@
     if (amount === 100) return isStore ? "post" : "seeker_profile";
     return CODES[amount] || null;
   };
+  var TOKEN_KEY = "az_order_tokens";
+
+  function getTokens() {
+    try { return JSON.parse(localStorage.getItem(TOKEN_KEY) || "[]"); }
+    catch (e) { return []; }
+  }
+
+  function saveToken(token, code) {
+    var tokens = getTokens();
+    tokens.push({ token: token, code: code, created: Date.now() });
+    localStorage.setItem(TOKEN_KEY, JSON.stringify(tokens.slice(-50)));
+  }
+
+  function makeToken() {
+    if (!window.crypto || !window.crypto.getRandomValues || !window.crypto.subtle) {
+      throw new Error("Secure token generation is unavailable");
+    }
+    var bytes = new Uint8Array(32);
+    window.crypto.getRandomValues(bytes);
+    return Array.from(bytes).map(function (b) {
+      return b.toString(16).padStart(2, "0");
+    }).join("");
+  }
+
+  async function hashToken(token) {
+    var bytes = new TextEncoder().encode(token);
+    var digest = await window.crypto.subtle.digest("SHA-256", bytes);
+    return Array.from(new Uint8Array(digest)).map(function (b) {
+      return b.toString(16).padStart(2, "0");
+    }).join("");
+  }
+
   window.azOrder = async function (code, label, ref, acct, method, ptime) {
+    var token = null;
+    var rpcStarted = false;
     try {
-      if (!acct || !acct.name || !acct.phone) return { ok: false, msg: "Add your name and phone in your account first" };
+      if (!acct || !acct.name || !acct.phone)
+        return { ok: false, msg: "Add your name and phone in your account first" };
+
+      token = makeToken();
+      var trackingHash = await hashToken(token);
+
+      // Save the tracking token before sending the order.
+      saveToken(token, code);
+
+      rpcStarted = true;
       var r = await sb.rpc("submit_order", {
-        p_code: code, p_ref: ref, p_name: acct.name, p_phone: acct.phone,
-        p_item: String(label).slice(0, 120), p_method: method || "", p_time: ptime || null
+        p_code: code,
+        p_ref: ref,
+        p_name: acct.name,
+        p_phone: acct.phone,
+        p_item: String(label).slice(0, 120),
+        p_method: method || "",
+        p_time: ptime || null,
+        p_tracking_hash: trackingHash
       });
+
       if (r.error) {
+        // The database rejected the order, so remove its unused token.
+        var tokens = getTokens().filter(function (x) {
+          return x && x.token !== token;
+        });
+        localStorage.setItem(TOKEN_KEY, JSON.stringify(tokens));
+
         var m = r.error.message || "";
-        if (r.error.code === "23505") return { ok: false, msg: "That transaction ID was already submitted." };
-        if (m.indexOf("too many") >= 0) return { ok: false, msg: "Too many orders from this phone. Try again later." };
-        if (m.indexOf("bad phone") >= 0) return { ok: false, msg: "Your phone number looks invalid. Edit your profile." };
-        if (m.indexOf("bad name") >= 0) return { ok: false, msg: "Your name looks invalid. Edit your profile." };
-        if (m.indexOf("bad time") >= 0) return { ok: false, msg: "The receipt time looks invalid." };
+        if (r.error.code === "23505")
+          return { ok: false, msg: "That transaction ID was already submitted." };
+        if (m.indexOf("too many") >= 0)
+          return { ok: false, msg: "Too many orders from this phone. Try again later." };
+        if (m.indexOf("bad phone") >= 0)
+          return { ok: false, msg: "Your phone number looks invalid. Edit your profile." };
+        if (m.indexOf("bad name") >= 0)
+          return { ok: false, msg: "Your name looks invalid. Edit your profile." };
+        if (m.indexOf("bad time") >= 0)
+          return { ok: false, msg: "The receipt time looks invalid." };
         return { ok: false, msg: "Could not send. Try again." };
       }
+
       return { ok: true };
     } catch (e) {
-      return { ok: false, msg: "Network problem. Try again." };
+      // Keep the token after an uncertain network failure.
+      return {
+        ok: false,
+        msg: rpcStarted
+          ? "Could not confirm the order. Check your order status before trying again."
+          : "Could not prepare your order securely. Please try again."
+      };
     }
   };
 
@@ -53,17 +121,40 @@
     qset(rest);
   }
 
-  async function status(phone, code) {
-    var r = await sb.rpc("order_status", { p_phone: phone, p_code: code });
-    if (r.error) throw r.error;
-    return (r.data && r.data[0]) ? r.data[0].status : "none";
+  async function status(code) {
+    var tokens = getTokens()
+      .filter(function (x) { return x && x.code === code && /^[0-9a-f]{64}$/i.test(x.token || ""); })
+      .sort(function (a, b) { return b.created - a.created; });
+
+    var newestStatus = null;
+
+    for (var i = 0; i < tokens.length; i++) {
+      var r = await sb.rpc("order_status_by_token", {
+        p_token: tokens[i].token,
+        p_code: code
+      });
+      if (r.error) throw r.error;
+
+      if (r.data && r.data[0]) {
+        var order = r.data[0];
+
+        if (newestStatus === null) newestStatus = order.status;
+
+        if (order.status === "approved" &&
+            (!order.expires_at || Date.parse(order.expires_at) > Date.now())) {
+          return "approved";
+        }
+      }
+    }
+
+    return newestStatus || "none";
   }
   var synced = false;
   window.azSync = async function (r, acct, render) {
     if (synced || !acct || !acct.phone) return;
     synced = true;
     try {
-      var s = await status(acct.phone, "course_3mo");
+      var s = await status("course_3mo");
       var next = s === "approved" ? "paid" : s === "pending" ? "waiting" : "none";
       if (r.status !== next) { r.status = next; render(); }
     } catch (e) { synced = false; }
@@ -71,7 +162,7 @@
   window.azCheckAcademy = async function (r, acct, render, toast, t) {
     if (!acct || !acct.phone) { toast("Add your account first"); return; }
     try {
-      var s = await status(acct.phone, "course_3mo");
+      var s = await status("course_3mo");
       if (s === "approved") { r.status = "paid"; toast(t("paid")); render(); }
       else if (s === "pending") { toast(t("waiting")); }
       else if (s === "rejected") { r.status = "none"; render(); toast("Payment was not accepted. Please contact us."); }
@@ -90,8 +181,13 @@
   async function reminders() {
     var a = null;
     try { a = JSON.parse(localStorage.getItem("acct") || "null"); } catch (e) {}
-    if (!a || !a.phone) return;
-    var r = await sb.rpc("my_expiring", { p_phone: a.phone });
+    if (!a) return;
+    var tokens = getTokens()
+      .filter(function (x) { return x && /^[0-9a-f]{64}$/i.test(x.token || ""); })
+      .map(function (x) { return x.token; })
+      .slice(-50);
+    if (!tokens.length) return;
+    var r = await sb.rpc("my_expiring_by_tokens", { p_tokens: tokens });
     if (r.error || !r.data || !r.data.length) return;
     var urgent = r.data.some(function (x) { return x.days_left <= 2; });
     var seen = "";
