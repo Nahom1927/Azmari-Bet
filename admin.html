@@ -73,10 +73,10 @@ async function load() {
   r.data.forEach(function (o) {
     var card = el("div", "", "border:1px solid #445;border-radius:10px;padding:12px;margin:10px 0;background:#141b33");
     card.appendChild(el("div", o.product_name + " · " + o.price + " ETB", "font-weight:bold;font-size:17px"));
-    card.appendChild(el("div", o.email));
+    card.appendChild(el("div", (o.customer_name || "(no name)") + " · " + (o.customer_phone || "no phone"), "font-weight:bold"));if (o.email) card.appendChild(el("div", o.email));
     card.appendChild(el("div", "Transaction ID: " + o.reference, "font-family:monospace;margin:4px 0"));
     if (o.item_ref) card.appendChild(el("div", "Item: " + o.item_ref));
-    card.appendChild(el("div", new Date(o.created_at).toLocaleString(), "opacity:.7;font-size:13px"));
+    card.appendChild(el("div", "Submitted: " + new Date(o.created_at).toLocaleString("en-GB", {timeZone:"Africa/Addis_Ababa",day:"2-digit",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit",second:"2-digit",hour12:false}) + (o.paid_time ? " · Receipt time: " + o.paid_time : "") + (o.pay_method ? " · " + o.pay_method : ""), "opacity:.85;font-size:13px"));
     if (tab === "pending") {
       card.appendChild(btn("Approve", function () { decide(o, true); }, "#5ee38a"));
       card.appendChild(btn("Reject", function () { decide(o, false); }, "#ff8a8a"));
