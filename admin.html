@@ -59,10 +59,10 @@ async function decide(o, approve) {
 async function load() {
   var s = (await sb.auth.getSession()).data.session;
   if (!s) { login(); return; }
-  var r = await sb.rpc("admin_list_orders", { p_status: tab });
+  var r = tab === "expiring" ? await sb.rpc("admin_expiring", { p_days: 7 }) : await sb.rpc("admin_list_orders", { p_status: tab });
   app.textContent = "";
   var top = el("div", "", "margin-bottom:12px");
-  ["pending", "approved", "rejected"].forEach(function (t) {
+  ["pending", "approved", "rejected", "expiring"].forEach(function (t) {
     top.appendChild(btn(t, function () { tab = t; load(); }, t === tab ? "#29c5ff" : "#8899aa"));
   });
   top.appendChild(btn("Refresh", load, "#cfd8e3"));
@@ -72,11 +72,11 @@ async function load() {
   if (!r.data.length) { app.appendChild(el("p", "No " + tab + " orders.")); return; }
   r.data.forEach(function (o) {
     var card = el("div", "", "border:1px solid #445;border-radius:10px;padding:12px;margin:10px 0;background:#141b33");
-    card.appendChild(el("div", o.product_name + " · " + o.price + " ETB", "font-weight:bold;font-size:17px"));
+    card.appendChild(el("div", o.product_name + (o.price != null ? " · " + o.price + " ETB" : ""), "font-weight:bold;font-size:17px"));
     card.appendChild(el("div", (o.customer_name || "(no name)") + " · " + (o.customer_phone || "no phone"), "font-weight:bold"));if (o.email) card.appendChild(el("div", o.email));
-    card.appendChild(el("div", "Transaction ID: " + o.reference, "font-family:monospace;margin:4px 0"));
+    if (o.reference) card.appendChild(el("div", "Transaction ID: " + o.reference, "font-family:monospace;margin:4px 0"));
     if (o.item_ref) card.appendChild(el("div", "Item: " + o.item_ref));
-    card.appendChild(el("div", "Submitted: " + new Date(o.created_at).toLocaleString("en-GB", {timeZone:"Africa/Addis_Ababa",day:"2-digit",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit",second:"2-digit",hour12:false}) + (o.paid_time ? " · Receipt time: " + o.paid_time : "") + (o.pay_method ? " · " + o.pay_method : ""), "opacity:.85;font-size:13px"));
+    if (o.expires_at) card.appendChild(el("div", "Expires: " + new Date(o.expires_at).toLocaleDateString("en-GB", {timeZone:"Africa/Addis_Ababa"}) + " (" + o.days_left + " days left)", "color:#ffd27a;font-weight:bold")); if (o.created_at) card.appendChild(el("div", "Submitted: " + new Date(o.created_at).toLocaleString("en-GB", {timeZone:"Africa/Addis_Ababa",day:"2-digit",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit",second:"2-digit",hour12:false}) + (o.paid_time ? " · Receipt time: " + o.paid_time : "") + (o.pay_method ? " · " + o.pay_method : ""), "opacity:.85;font-size:13px"));
     if (tab === "pending") {
       card.appendChild(btn("Approve", function () { decide(o, true); }, "#5ee38a"));
       card.appendChild(btn("Reject", function () { decide(o, false); }, "#ff8a8a"));
