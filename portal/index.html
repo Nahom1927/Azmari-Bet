@@ -209,7 +209,7 @@ tr.click{cursor:pointer}tr.click:hover{background:#16224a}
   function staffView(role) {
     clear(app); shell(role);
     var items = [["Students", studentsTab], ["Attendance", attendanceTab], ["Grades", gradesTab], ["Codes", codesTab], ["Lessons", lessonsTab]];
-    if (role === "admin") { items.unshift(["Applications", applicationsTab]); items.push(["Register", registerTab], ["Team", teamTab]); }
+    if (role === "admin") { items.unshift(["Applications", applicationsTab]); items.push(["Payments", paymentsTab], ["Register", registerTab], ["Team", teamTab]); }
     tabbed(items);
   }
   async function overview() { var r = await sb.rpc("admin_overview"); return r.error ? { err: r.error.message } : { data: r.data }; }
@@ -360,6 +360,70 @@ tr.click{cursor:pointer}tr.click:hover{background:#16224a}
       });
     }
     st.onchange = draw; add(body, c, list); draw();
+  }
+
+  async function paymentsTab(body) {
+    var prod = sel([["", "All types"]]), stat = sel([["", "All statuses"], ["pending", "Pending"], ["approved", "Approved"], ["rejected", "Rejected"]]),
+      list = el("div"), sum = el("div"), m = msg(), c = card(), ALL = [];
+    add(c, el("h3", "Payments"), el("p", "Academy, band profiles, events, job seekers, store posts and rentals from the app.", { className: "mu" }), lab("Type", prod), lab("Status", stat), sum, m);
+    function pick(o, names) { for (var i = 0; i < names.length; i++) { var v = o[names[i]]; if (v != null && v !== "") return String(v); } return ""; }
+    function nice(code) {
+      var s = String(code || "").toLowerCase();
+      if (/acad|^reg/.test(s)) return "Academy";
+      if (/band/.test(s)) return "Band profile";
+      if (/event|^ev/.test(s)) return "Events";
+      if (/job|seek/.test(s)) return "Job seeker";
+      if (/store|item|rent|sale|post/.test(s)) return "Store post";
+      return code ? String(code) : "Other";
+    }
+    function status(o) { var s = pick(o, ["status", "state"]).toLowerCase(); return s || "pending"; }
+    var SHOWN = ["id", "product_code", "status", "state", "reference", "item_ref", "created_at", "name", "phone", "amount", "price", "total", "paid_at", "payment_time", "method"];
+    async function load() {
+      var r = await sb.rpc("admin_list_orders", { p_limit: 300 });
+      if (r.error) { say(m, r.error.message, true); return; }
+      ALL = r.data || [];
+      var keep = prod.value, seen = {};
+      clear(prod); prod.appendChild(el("option", "All types", { value: "" }));
+      ALL.forEach(function (o) { var k = pick(o, ["product_code"]); if (k && !seen[k]) { seen[k] = 1; prod.appendChild(el("option", nice(k) + " (" + k + ")", { value: k })); } });
+      prod.value = keep; draw();
+    }
+    function draw() {
+      clear(list); clear(sum);
+      var rows = ALL.filter(function (o) {
+        return (!prod.value || pick(o, ["product_code"]) === prod.value) && (!stat.value || status(o) === stat.value);
+      });
+      var by = {};
+      rows.forEach(function (o) { var k = nice(pick(o, ["product_code"])), s = status(o); by[k] = by[k] || {}; by[k][s] = (by[k][s] || 0) + 1; });
+      Object.keys(by).forEach(function (k) {
+        sum.appendChild(el("p", k + ": " + Object.keys(by[k]).map(function (s) { return by[k][s] + " " + s; }).join(" · "), { className: "mu" }));
+      });
+      if (!rows.length) list.appendChild(el("p", "No payments match.", { className: "mu" }));
+      rows.forEach(function (o) {
+        var k = card(), st = status(o), code = pick(o, ["product_code"]);
+        add(k, el("h3", nice(code) + (pick(o, ["item_ref"]) ? " · " + pick(o, ["item_ref"]) : "")));
+        var who = [pick(o, ["name"]), pick(o, ["phone"])].filter(Boolean).join(" · ");
+        if (who) k.appendChild(el("p", who));
+        var amt = pick(o, ["amount", "price", "total"]);
+        k.appendChild(el("p", "Reference: " + (pick(o, ["reference"]) || "none") + (amt ? " · " + amt + " birr" : ""), { className: "mu" }));
+        var when = pick(o, ["paid_at", "payment_time", "created_at"]);
+        if (when) k.appendChild(el("p", new Date(when).toString() === "Invalid Date" ? when : new Date(when).toLocaleString(), { className: "mu" }));
+        var extra = Object.keys(o).filter(function (key) { return SHOWN.indexOf(key) < 0 && o[key] != null && o[key] !== "" && String(o[key]).length < 90; })
+          .map(function (key) { return key + ": " + o[key]; }).join(" · ");
+        if (extra) k.appendChild(el("p", extra, { className: "mu", style: "font-size:12px" }));
+        k.appendChild(el("span", st, { className: "badge" }));
+        if (st === "pending" && o.id != null) {
+          add(k, btn("Approve", async function () { await decide(o, true); }, "sm"), btn("Reject", async function () { if (confirm("Reject this payment?")) await decide(o, false); }, "ln sm"));
+        }
+        list.appendChild(k);
+      });
+    }
+    async function decide(o, ok) {
+      var q = await sb.rpc("admin_decide_order", { p_key: String(o.id), p_approve: ok });
+      if (q.error) { say(m, q.error.message, true); return; }
+      say(m, ok ? "Approved." : "Rejected."); await load();
+    }
+    prod.onchange = draw; stat.onchange = draw;
+    add(body, c, list); load();
   }
 
   /* ---------- admin ---------- */
