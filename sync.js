@@ -17,13 +17,8 @@
     orig.apply(this, arguments);
     try {
       var o = JSON.parse(v);
-      if (k === "acct" && o) {
-        var a = Object.assign({}, o); delete a.pic;
-        send("account", a.phone, a.name, a);
-      } else if (k === "ab_jobs" && o && o[0]) {
-        var acct = JSON.parse(localStorage.getItem("acct") || "null") || {};
-        send("job", acct.phone, acct.name, o[0]);
-      }
+      if (k === "acct" && o) { var a = Object.assign({}, o); delete a.pic; send("account", a.phone, a.name, a); }
+      else if (k === "ab_jobs" && o && o[0]) { var ac = JSON.parse(localStorage.getItem("acct") || "null") || {}; send("job", ac.phone, ac.name, o[0]); }
     } catch (e) {}
   };
 })();
