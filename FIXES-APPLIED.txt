@@ -1,0 +1,16 @@
+AZMARI BET - PHONE LAYOUT PATCH
+
+Changes:
+1. Added compact, responsive styling for the #lang language selector.
+2. Made account/dialog sheets respect the visible phone height and scroll internally.
+3. Added Android ACCESS_COARSE_LOCATION and ACCESS_FINE_LOCATION manifest permissions.
+4. Synchronized root index.html, www/index.html, and Android's packaged public/index.html.
+
+Important:
+- The existing account flow still calls navigator.geolocation.getCurrentPosition().
+- Manifest permissions are necessary but do not prove that Android runtime permission
+  prompting and WebView geolocation callbacks work on every device. Please test the
+  location button on the Huawei phone. If Android does not show a permission prompt or
+  return coordinates, the next step is integrating @capacitor/geolocation and syncing
+  the Android project.
+- Build the APK after applying the patch. Do not copy the old APK over the new build.

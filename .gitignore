@@ -1,0 +1,14 @@
+.DS_Store
+node_modules/
+.env
+.env.*
+*.jks
+*.keystore
+*.pem
+*.key
+android/.gradle/
+android/**/build/
+*.before-*
+index.backup.html
+android/local.properties
+**/build/
