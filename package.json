@@ -1,6 +1,6 @@
 {
   "name": "azmari-bet",
-  "version": "1.0.0",
+  "version": "2.2.0",
   "description": "Mobile-friendly web app that installs on Android, iOS and desktop (PWA).",
   "main": "payments.js",
   "scripts": {
