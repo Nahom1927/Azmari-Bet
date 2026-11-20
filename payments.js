@@ -108,7 +108,7 @@
           return { ok: false, msg: "Your name looks invalid. Edit your profile." };
         if (m.indexOf("bad time") >= 0)
           return { ok: false, msg: "The receipt time looks invalid." };
-        return { ok: false, msg: "Could not send. Try again." };
+        return { ok: false, msg: "Could not send. " + (r.error.code||"") + " " + m };
       }
 
       return { ok: true };
