@@ -16,7 +16,7 @@ header input{width:100%;padding:11px;border-radius:10px;border:0;box-sizing:bord
 .row{display:flex;justify-content:space-between;align-items:center;background:var(--sf);border:1px solid var(--ln);border-radius:10px;padding:10px;margin:8px 0}
 input.f{width:100%;padding:11px;border:1px solid var(--ln);border-radius:8px;box-sizing:border-box;margin:6px 0}@media(prefers-color-scheme:dark){:root{--bg:#060b1a;--sf:#0d1530;--ink:#e6efff;--mu:#8fa3d1;--ln:#1c2b57;--gr:#3cc8ff}button{color:#021226}}</style></head>
 <body>
-<header><div class="top"><a href="index.html" style="color:#fff;text-decoration:none">← Azmari Bet</a><span><span id="ordbtn" style="margin-right:14px">📦 Orders</span><span id="cartbtn">🛒 <span id="cn">0</span></span></span></div>
+<header><div class="top"><a href="index.html" style="color:#fff;text-decoration:none">← Azmari Bet</a><span><span id="ordbtn" style="margin-right:14px">📦 Orders</span><span><span id="ordbtn" style="margin-right:14px">📦 Orders</span><span><span id="ordbtn" style="margin-right:14px">📦 Orders</span><span id="cartbtn">🛒 <span id="cn">0</span></span></span></div>
 <input id="q" placeholder="Search instruments, accessories…"></header>
 <div class="chips" id="chips"></div><div class="grid" id="grid"></div>
 <div class="sheet" id="detail"></div><div class="sheet" id="cart"></div>
@@ -59,6 +59,14 @@ var o=JSON.parse(localStorage.getItem("az_shop_orders")||"[]");o.unshift({t:Date
 cart={};save();s.textContent="";s.append(el("h2","Order sent ✔"),el("p","Status: pending admin approval."),el("button","Close",{onclick:function(){s.style.display="none"}}))}}),m)}
 var sb=supabase.createClient("https://rnqizccrzbolsynfsxbu.supabase.co","sb_publishable_1pbzO1FOGTjIjjE-yF7d1A__OFPESB2");
 $("q").oninput=drawGrid;$("cartbtn").onclick=showCart;drawChips();drawGrid();save();
+$("ordbtn").onclick=function(){var s=$("detail");s.textContent="";s.style.display="block";
+s.append(el("button","← Back",{onclick:function(){s.style.display="none"}}),el("h2","My orders"));
+var o=JSON.parse(localStorage.getItem("az_shop_orders")||"[]");if(!o.length)s.append(el("p","No orders yet"));
+o.forEach(function(x){s.append(el("div",new Date(x.t).toLocaleString()+" · "+x.total.toLocaleString()+" birr · "+x.status+" — "+x.items,{className:"row"}))})};
+$("ordbtn").onclick=function(){var s=$("detail");s.textContent="";s.style.display="block";
+s.append(el("button","← Back",{onclick:function(){s.style.display="none"}}),el("h2","My orders"));
+var o=JSON.parse(localStorage.getItem("az_shop_orders")||"[]");if(!o.length)s.append(el("p","No orders yet"));
+o.forEach(function(x){s.append(el("div",new Date(x.t).toLocaleString()+" · "+x.total.toLocaleString()+" birr · "+x.status+" — "+x.items,{className:"row"}))})};
 $("ordbtn").onclick=function(){var s=$("detail");s.textContent="";s.style.display="block";
 s.append(el("button","← Back",{onclick:function(){s.style.display="none"}}),el("h2","My orders"));
 var o=JSON.parse(localStorage.getItem("az_shop_orders")||"[]");if(!o.length)s.append(el("p","No orders yet"));

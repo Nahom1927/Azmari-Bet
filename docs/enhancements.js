@@ -159,3 +159,58 @@ try{view="store";render()}catch(e){location.href="shop.html"}};
 function put(){if(document.body&&!document.getElementById("azstore"))document.body.appendChild(b)}
 document.addEventListener("DOMContentLoaded",put);put();
 })();
+
+
+(function(){
+var R="https://rnqizccrzbolsynfsxbu.supabase.co/rest/v1/rpc/app_list_posts",K="sb_publishable_1pbzO1FOGTjIjjE-yF7d1A__OFPESB2";
+["removeItem","clear"].forEach(function(m){var o=Storage.prototype[m];Storage.prototype[m]=function(k){
+ if(m==="clear"||k==="ab_jobs")console.log("[posts] "+m+" called",(new Error().stack||"").split("\n")[2]);return o.apply(this,arguments)}});
+function merge(){try{if(typeof JOBS==="undefined")return;
+ fetch(R,{method:"POST",headers:{apikey:K,Authorization:"Bearer "+K,"Content-Type":"application/json"},body:"{}"})
+ .then(function(r){return r.json()}).then(function(rows){var add=0;
+  rows.forEach(function(r){var d=Object.assign({},r.data||{});d._r=1;d.id="r"+r.id;d.by=d.by||r.author_name;
+   if(!JOBS.some(function(x){return x.id===d.id||(x.title===d.title&&x.by===d.by)})){JOBS.push(d);add++}});
+  if(add){try{render()}catch(e){}}
+  console.log("[posts] approved",rows.length,"added",add,"total",JOBS.length)})
+ .catch(function(e){console.log("[posts] fetch error",e)})}catch(e){console.log("[posts] error",e)}}
+window.addEventListener("load",function(){setTimeout(merge,1000);setInterval(merge,20000)});
+})();
+
+(function(){
+var st=document.createElement("style");
+st.textContent="#azstore{position:fixed;right:14px;bottom:80px;z-index:9999;width:auto!important;padding:12px 18px;border-radius:24px;font-weight:800;border:1px solid var(--rb);color:var(--on,#021226);background:linear-gradient(135deg,var(--nb),var(--rb));box-shadow:0 0 10px var(--rb),0 0 22px var(--nb);animation:azneon 2s infinite}@keyframes azneon{0%,100%{box-shadow:0 0 8px var(--rb),0 0 16px var(--nb)}50%{box-shadow:0 0 16px var(--rb),0 0 32px var(--nb)}}";
+document.head.appendChild(st);
+var b=document.createElement("button");b.id="azstore";b.className="btn";b.textContent="🛒 Store";
+b.onclick=function(){var n=document.querySelector('[data-go="store"]');if(n){n.click();return}
+try{view="store";render()}catch(e){location.href="shop.html"}};
+function put(){if(document.body&&!document.getElementById("azstore"))document.body.appendChild(b)}
+document.addEventListener("DOMContentLoaded",put);put();
+})();
+(function(){var a=document.createElement("a");a.href="shop.html";a.textContent="🛒 Store";
+a.style.cssText="position:fixed;right:14px;bottom:80px;z-index:9999;background:#0a66ff;color:#fff;padding:12px 16px;border-radius:24px;font-weight:700;text-decoration:none;box-shadow:0 4px 14px rgba(0,0,0,.3)";
+document.addEventListener("DOMContentLoaded",function(){document.body.appendChild(a)});if(document.body)document.body.appendChild(a)})();
+(function(){
+var R="https://rnqizccrzbolsynfsxbu.supabase.co/rest/v1/rpc/app_submit_post",K="sb_publishable_1pbzO1FOGTjIjjE-yF7d1A__OFPESB2";
+var orig=window.jobSave;
+window.jobSave=function(){
+ try{
+  var j=typeof JOBS!=="undefined"&&JOBS[0];
+  if(j&&j.mine&&!j._r){
+   JOBS.shift();
+   var ref=(prompt("Pay the posting fee by Telebirr/bank, then enter the transaction ID:")||"").trim();
+   if(ref.length<4){toast("Post cancelled: payment ID needed");return}
+   var a=JSON.parse(localStorage.getItem("acct")||"null")||{};
+   j.pay=ref;delete j.mine;
+   fetch(R,{method:"POST",headers:{apikey:K,Authorization:"Bearer "+K,"Content-Type":"application/json"},
+    body:JSON.stringify({p_kind:"job",p_name:a.name||j.by||"",p_phone:a.phone||"",p_data:j})})
+   .then(function(r){if(!r.ok)throw 0;toast("Post sent ✓ Live after admin verifies payment")})
+   .catch(function(){toast("Could not send. Try again.")});
+   return;
+  }
+ }catch(e){}
+ return orig&&orig.apply(this,arguments);
+};
+})();
+(function(){var a=document.createElement("a");a.href="shop.html";a.textContent="🛒 Store";
+a.style.cssText="position:fixed;right:14px;bottom:80px;z-index:9999;background:#0a66ff;color:#fff;padding:12px 16px;border-radius:24px;font-weight:700;text-decoration:none;box-shadow:0 4px 14px rgba(0,0,0,.3)";
+document.addEventListener("DOMContentLoaded",function(){document.body.appendChild(a)});if(document.body)document.body.appendChild(a)})();
