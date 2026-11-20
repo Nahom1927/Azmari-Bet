@@ -108,6 +108,54 @@
 
   window.addEventListener("load", function () { setTimeout(function () { loadPosts(); syncEdits(); }, 800); });
 })();
-(function(){var a=document.createElement("a");a.href="shop.html";a.textContent="🛒 Store";
-a.style.cssText="position:fixed;right:14px;bottom:80px;z-index:9999;background:#0a66ff;color:#fff;padding:12px 16px;border-radius:24px;font-weight:700;text-decoration:none;box-shadow:0 4px 14px rgba(0,0,0,.3)";
-document.addEventListener("DOMContentLoaded",function(){document.body.appendChild(a)});if(document.body)document.body.appendChild(a)})();
+
+(function(){
+var s=document.createElement("style");
+s.textContent=".azgrid{display:grid!important;grid-template-columns:repeat(2,1fr);gap:10px}"+
+"@media(min-width:700px){.azgrid{grid-template-columns:repeat(4,1fr)}}"+
+".azgrid>*{grid-column:1/-1}.azgrid>.azp{grid-column:auto}"+
+".azp{display:flex!important;flex-direction:column;gap:6px;padding:10px!important;margin:0!important;background:var(--sf);border:1px solid var(--ln);border-radius:14px;box-shadow:0 2px 10px rgba(10,102,255,.10)}"+
+".azp .pic{width:100%!important;height:96px!important;font-size:48px!important;margin:0!important;border-radius:10px;background:linear-gradient(135deg,var(--bg),var(--nb))}"+
+".azp .chip[data-act=call]{background:var(--gr);color:#fff;border:0;font-weight:700}"+
+".azp .chip{margin:3px 3px 0 0}"+
+"#azsearch{width:100%;box-sizing:border-box;padding:12px 14px;border-radius:12px;border:2px solid var(--gr);background:var(--sf);color:var(--ink);position:sticky;top:0;z-index:5}";
+document.head.appendChild(s);
+var busy=0;
+function enhance(){
+ if(busy)return;busy=1;
+ var cards=[].filter.call(document.querySelectorAll(".card.row"),function(c){return c.querySelector('[data-act="call"]')&&c.querySelector('[data-act="rep"]')&&c.querySelector(".pic")});
+ if(cards.length){
+  var p=cards[0].parentNode;p.classList.add("azgrid");
+  cards.forEach(function(c){c.classList.add("azp")});
+  if(!document.getElementById("azsearch")){
+   var i=document.createElement("input");i.id="azsearch";i.placeholder="🔍 Search instruments…";
+   i.oninput=function(){var q=i.value.toLowerCase();cards.forEach(function(c){c.style.display=c.textContent.toLowerCase().indexOf(q)>=0?"":"none"})};
+   p.insertBefore(i,cards[0]);
+  }
+ }
+ busy=0;
+}
+new MutationObserver(function(){setTimeout(enhance,50)}).observe(document.documentElement,{childList:true,subtree:true});
+})();
+
+(function(){
+var st=document.createElement("style");
+st.textContent="#azstore{position:fixed;right:14px;bottom:80px;z-index:9999;width:auto!important;padding:12px 18px;border-radius:24px;font-weight:800;border:1px solid var(--rb);color:var(--on,#021226);background:linear-gradient(135deg,var(--nb),var(--rb));box-shadow:0 0 10px var(--rb),0 0 22px var(--nb);animation:azneon 2s infinite}@keyframes azneon{0%,100%{box-shadow:0 0 8px var(--rb),0 0 16px var(--nb)}50%{box-shadow:0 0 16px var(--rb),0 0 32px var(--nb)}}";
+document.head.appendChild(st);
+var b=document.createElement("button");b.id="azstore";b.className="btn";b.textContent="🛒 Store";
+b.onclick=function(){var n=document.querySelector('[data-go="store"]');if(n){n.click();return}
+try{view="store";render()}catch(e){location.href="shop.html"}};
+function put(){if(document.body&&!document.getElementById("azstore"))document.body.appendChild(b)}
+document.addEventListener("DOMContentLoaded",put);put();
+})();
+
+(function(){
+var st=document.createElement("style");
+st.textContent="#azstore{position:fixed;right:14px;bottom:80px;z-index:9999;width:auto!important;padding:12px 18px;border-radius:24px;font-weight:800;border:1px solid var(--rb);color:var(--on,#021226);background:linear-gradient(135deg,var(--nb),var(--rb));box-shadow:0 0 10px var(--rb),0 0 22px var(--nb);animation:azneon 2s infinite}@keyframes azneon{0%,100%{box-shadow:0 0 8px var(--rb),0 0 16px var(--nb)}50%{box-shadow:0 0 16px var(--rb),0 0 32px var(--nb)}}";
+document.head.appendChild(st);
+var b=document.createElement("button");b.id="azstore";b.className="btn";b.textContent="🛒 Store";
+b.onclick=function(){var n=document.querySelector('[data-go="store"]');if(n){n.click();return}
+try{view="store";render()}catch(e){location.href="shop.html"}};
+function put(){if(document.body&&!document.getElementById("azstore"))document.body.appendChild(b)}
+document.addEventListener("DOMContentLoaded",put);put();
+})();
