@@ -1,6 +1,6 @@
 -- AZMARI MUSIC ACADEMY: instructor-managed curriculum progress
 -- Run once in Supabase Dashboard > SQL Editor using the project's owner account.
--- Students can read their own progress only through academy_my_course_progress().
+-- Students can read their own progress only through academy_v2_my_course_progress().
 -- Teachers/admins can read and update records through the staff RPCs.
 
 create table if not exists public.academy_course_progress (
@@ -33,7 +33,7 @@ alter table public.academy_course_progress add column if not exists final_exam_s
 alter table public.academy_course_progress enable row level security;
 revoke all on public.academy_course_progress from anon, authenticated;
 
-create or replace function public.academy_staff_get_course_progress(p_student_no text)
+create or replace function public.academy_v2_staff_get_course_progress(p_student_no text)
 returns jsonb language plpgsql security definer set search_path = public as $$
 declare v_role text; v_row public.academy_course_progress%rowtype;
 begin
@@ -47,7 +47,7 @@ begin
   return jsonb_build_object('student_no',v_row.student_no,'major',v_row.major,'completed_weeks',to_jsonb(v_row.completed_weeks),'instructor_note',v_row.instructor_note,'level1_exam_score',v_row.level1_exam_score,'level2_exam_score',v_row.level2_exam_score,'final_exam_score',v_row.final_exam_score,'updated_at',v_row.updated_at);
 end; $$;
 
-create or replace function public.academy_staff_set_course_progress(
+create or replace function public.academy_v2_staff_set_course_progress(
   p_student_no text, p_major text, p_completed_weeks smallint[], p_note text default null,
   p_level1_exam_score numeric default null, p_level2_exam_score numeric default null, p_final_exam_score numeric default null
 ) returns jsonb language plpgsql security definer set search_path = public as $$
@@ -62,10 +62,10 @@ begin
   insert into public.academy_course_progress(student_no,major,completed_weeks,instructor_note,level1_exam_score,level2_exam_score,final_exam_score,updated_by,updated_at)
   values (p_student_no,coalesce(nullif(trim(p_major),''),''),array(select distinct u.week_no from unnest(v_weeks) as u(week_no) order by u.week_no),p_note,p_level1_exam_score,p_level2_exam_score,p_final_exam_score,auth.uid(),now())
   on conflict (student_no) do update set major=excluded.major,completed_weeks=excluded.completed_weeks,instructor_note=excluded.instructor_note,level1_exam_score=coalesce(excluded.level1_exam_score,public.academy_course_progress.level1_exam_score),level2_exam_score=coalesce(excluded.level2_exam_score,public.academy_course_progress.level2_exam_score),final_exam_score=coalesce(excluded.final_exam_score,public.academy_course_progress.final_exam_score),updated_by=excluded.updated_by,updated_at=now();
-  return public.academy_staff_get_course_progress(p_student_no);
+  return public.academy_v2_staff_get_course_progress(p_student_no);
 end; $$;
 
-create or replace function public.academy_my_course_progress()
+create or replace function public.academy_v2_my_course_progress()
 returns jsonb language plpgsql security definer set search_path = public as $$
 declare v_student jsonb; v_no text; v_row public.academy_course_progress%rowtype;
 begin
@@ -80,9 +80,9 @@ begin
   return jsonb_build_object('student_no',v_no,'major',coalesce(nullif(v_row.major,''),v_student->>'instrument',''),'completed_weeks',to_jsonb(v_row.completed_weeks),'instructor_note',v_row.instructor_note,'level1_exam_score',v_row.level1_exam_score,'level2_exam_score',v_row.level2_exam_score,'final_exam_score',v_row.final_exam_score,'updated_at',v_row.updated_at);
 end; $$;
 
-revoke all on function public.academy_staff_get_course_progress(text) from public;
-revoke all on function public.academy_staff_set_course_progress(text,text,smallint[],text,numeric,numeric,numeric) from public;
-revoke all on function public.academy_my_course_progress() from public;
-grant execute on function public.academy_staff_get_course_progress(text) to authenticated;
-grant execute on function public.academy_staff_set_course_progress(text,text,smallint[],text,numeric,numeric,numeric) to authenticated;
-grant execute on function public.academy_my_course_progress() to authenticated;
+revoke all on function public.academy_v2_staff_get_course_progress(text) from public;
+revoke all on function public.academy_v2_staff_set_course_progress(text,text,smallint[],text,numeric,numeric,numeric) from public;
+revoke all on function public.academy_v2_my_course_progress() from public;
+grant execute on function public.academy_v2_staff_get_course_progress(text) to authenticated;
+grant execute on function public.academy_v2_staff_set_course_progress(text,text,smallint[],text,numeric,numeric,numeric) to authenticated;
+grant execute on function public.academy_v2_my_course_progress() to authenticated;

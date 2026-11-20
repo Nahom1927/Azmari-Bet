@@ -238,7 +238,7 @@ input, select, textarea {
     c.appendChild(details); parent.appendChild(c);
   }
   async function academyStudentTab(body) {
-    var r = await sb.rpc("academy_my_course_progress");
+    var r = await sb.rpc("academy_v2_my_course_progress");
     if (r.error || !r.data) { add(body, el("p", r.error ? r.error.message : "Academy progress is not available yet. Ask the academy administrator to apply the academy-progress.sql setup file.", { className: "msg err" })); return; }
     var d = r.data || {}, base = await sb.rpc("my_progress"), weeks = (d.completed_weeks || []).map(Number), att = base.data && base.data.attendance || {}, attended = Number(att.present || 0) + Number(att.late || 0), attendancePct = Number(att.total || 0) ? attended / Number(att.total) * 100 : 0;
     academyProgressCard(body, weeks, d.major || "", true);
@@ -257,7 +257,7 @@ input, select, textarea {
     var top = card(); add(top, el("h3", "Instructor progress entry"), el("p", "Select a student, review the 48-week academy plan, and mark only the weeks the instructor has verified. Students see this record read-only with red progress bars.", { className: "mu" }), lab("Student", who), m);
     async function loadStudent() {
       clear(editor); selected = o.data.find(function (s) { return s.student_no === who.value; });
-      var q = await sb.rpc("academy_staff_get_course_progress", { p_student_no: who.value });
+      var q = await sb.rpc("academy_v2_staff_get_course_progress", { p_student_no: who.value });
       if (q.error) { say(m, q.error.message + " · If this is the first setup, run supabase/academy-progress.sql in Supabase SQL Editor.", true); return; }
       completed = (q.data && q.data.completed_weeks || []).map(Number);
       var major = (selected && selected.instrument) || (q.data && q.data.major) || "";
@@ -279,7 +279,7 @@ input, select, textarea {
       add(c, btn("Save instructor progress", async function () {
         function examValue(input) { if (input.value.trim() === "") return null; var n = Number(input.value); return Number.isFinite(n) && n >= 0 && n <= 100 ? n : NaN; }
         var v1=examValue(e1),v2=examValue(e2),vf=examValue(ef); if ([v1,v2,vf].some(function(x){return Number.isNaN(x);})) { say(m,"Exam scores must be between 0 and 100.",true); return; }
-        var save = await sb.rpc("academy_staff_set_course_progress", { p_student_no: who.value, p_major: major, p_completed_weeks: completed.sort(function (a,b) { return a-b; }), p_note: "Instructor-updated curriculum progress", p_level1_exam_score:v1, p_level2_exam_score:v2, p_final_exam_score:vf });
+        var save = await sb.rpc("academy_v2_staff_set_course_progress", { p_student_no: who.value, p_major: major, p_completed_weeks: completed.sort(function (a,b) { return a-b; }), p_note: "Instructor-updated curriculum progress", p_level1_exam_score:v1, p_level2_exam_score:v2, p_final_exam_score:vf });
         if (save.error) say(m, save.error.message, true); else say(m, "Progress saved. The student can now view the updated red progress bars.");
       }, "full"));
       editor.appendChild(c);
