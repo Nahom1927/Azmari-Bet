@@ -1,0 +1,66 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Azmari Store</title>
+<style>:root{--bg:#eef4ff;--sf:#fff;--ink:#0d1b3a;--mu:#566488;--ln:#d3dcf2;--gr:#0a66ff;--nb:#3cc8ff}
+body{margin:0;font-family:system-ui;background:var(--bg);color:var(--ink)}
+header{background:linear-gradient(90deg,var(--gr),var(--nb));padding:12px;position:sticky;top:0;color:#fff}
+header input{width:100%;padding:11px;border-radius:10px;border:0;box-sizing:border-box;margin-top:8px}
+.top{display:flex;justify-content:space-between;align-items:center;font-weight:700}
+.chips{display:flex;gap:8px;overflow-x:auto;padding:10px 12px}.chip{background:var(--sf);border:1px solid var(--ln);border-radius:20px;padding:7px 14px;white-space:nowrap;color:var(--ink)}
+.chip.on{background:var(--gr);color:#fff}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;padding:12px}
+@media(min-width:700px){.grid{grid-template-columns:repeat(4,1fr)}}
+.p{background:var(--sf);border:1px solid var(--ln);border-radius:12px;padding:10px}
+.pic{height:90px;display:flex;align-items:center;justify-content:center;font-size:48px;background:var(--bg);border-radius:8px}
+.pr{color:var(--gr);font-weight:800}button{background:var(--gr);color:#fff;border:0;border-radius:10px;padding:9px 12px;font-weight:700}
+.mu{color:var(--mu);font-size:13px}.sheet{position:fixed;inset:0;background:var(--bg);overflow:auto;padding:14px;display:none}
+.row{display:flex;justify-content:space-between;align-items:center;background:var(--sf);border:1px solid var(--ln);border-radius:10px;padding:10px;margin:8px 0}
+input.f{width:100%;padding:11px;border:1px solid var(--ln);border-radius:8px;box-sizing:border-box;margin:6px 0}@media(prefers-color-scheme:dark){:root{--bg:#060b1a;--sf:#0d1530;--ink:#e6efff;--mu:#8fa3d1;--ln:#1c2b57;--gr:#3cc8ff}button{color:#021226}}</style></head>
+<body>
+<header><div class="top"><a href="index.html" style="color:#fff;text-decoration:none">← Azmari Bet</a><span><span id="ordbtn" style="margin-right:14px">📦 Orders</span><span id="cartbtn">🛒 <span id="cn">0</span></span></span></div>
+<input id="q" placeholder="Search instruments, accessories…"></header>
+<div class="chips" id="chips"></div><div class="grid" id="grid"></div>
+<div class="sheet" id="detail"></div><div class="sheet" id="cart"></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script>
+/* Demo catalogue: replace with real products (prices in birr) */
+var P=[{id:1,n:"Yamaha Keyboard 61 keys",p:18500,c:"Keyboards",r:4.6,e:"🎹"},{id:2,n:"Acoustic Guitar",p:7500,c:"Strings",r:4.4,e:"🎸"},
+{id:3,n:"Krar (traditional lyre)",p:3200,c:"Traditional",r:4.8,e:"🪕"},{id:4,n:"Kebero drum",p:2800,c:"Traditional",r:4.7,e:"🥁"},
+{id:5,n:"Djembe",p:4200,c:"Percussion",r:4.5,e:"🥁"},{id:6,n:"Flute",p:2100,c:"Wind",r:4.2,e:"🎶"},
+{id:7,n:"Studio Headphones",p:3900,c:"Audio",r:4.3,e:"🎧"},{id:8,n:"Microphone + stand",p:2600,c:"Audio",r:4.5,e:"🎤"}];
+var CATS=["All"].concat(P.map(function(x){return x.c}).filter(function(v,i,a){return a.indexOf(v)===i}));
+var cat="All",cart=JSON.parse(localStorage.getItem("az_cart")||"{}");
+var $=function(i){return document.getElementById(i)};
+function save(){localStorage.setItem("az_cart",JSON.stringify(cart));$("cn").textContent=Object.values(cart).reduce(function(a,b){return a+b},0)}
+function el(t,x,a){var e=document.createElement(t);if(x!=null)e.textContent=x;Object.assign(e,a||{});return e}
+function drawChips(){$("chips").textContent="";CATS.forEach(function(c){$("chips").appendChild(el("button",c,{className:"chip"+(c===cat?" on":""),onclick:function(){cat=c;drawChips();drawGrid()}}))})}
+function drawGrid(){var q=$("q").value.toLowerCase();$("grid").textContent="";
+P.filter(function(x){return(cat==="All"||x.c===cat)&&x.n.toLowerCase().indexOf(q)>=0}).forEach(function(x){
+var d=el("div",null,{className:"p"});d.append(el("div",x.e,{className:"pic",onclick:function(){showDetail(x)}}),el("div",x.n),el("div","★ "+x.r,{className:"mu"}),el("div",x.p.toLocaleString()+" birr",{className:"pr"}),el("button","Add to cart",{onclick:function(){add(x.id,1)}}));$("grid").appendChild(d)})}
+function add(id,n){cart[id]=Math.max(0,(cart[id]||0)+n);if(!cart[id])delete cart[id];save()}
+function showDetail(x){var s=$("detail");s.textContent="";s.style.display="block";
+s.append(el("button","← Back",{onclick:function(){s.style.display="none"}}),el("div",x.e,{className:"pic",style:"height:160px;font-size:90px;margin:10px 0"}),el("h2",x.n),el("div","★ "+x.r+" · "+x.c,{className:"mu"}),el("h3",x.p.toLocaleString()+" birr",{className:"pr"}),el("button","Add to cart",{onclick:function(){add(x.id,1);s.style.display="none"}}))}
+function total(){return Object.keys(cart).reduce(function(a,id){var x=P.find(function(p){return p.id==id});return a+x.p*cart[id]},0)}
+function showCart(){var s=$("cart");s.textContent="";s.style.display="block";s.appendChild(el("button","← Back",{onclick:function(){s.style.display="none"}}));s.appendChild(el("h2","Your cart"));
+Object.keys(cart).forEach(function(id){var x=P.find(function(p){return p.id==id}),r=el("div",null,{className:"row"}),q=el("span",String(cart[id]));
+r.append(el("span",x.e+" "+x.n),el("span",null));
+var b=r.lastChild;b.append(el("button","−",{onclick:function(){add(+id,-1);showCart()}}),q,el("button","+",{onclick:function(){add(+id,1);showCart()}}),el("button","✕",{onclick:function(){delete cart[id];save();showCart()}}));s.appendChild(r)});
+if(!Object.keys(cart).length){s.appendChild(el("p","Cart is empty"));return}
+var a=JSON.parse(localStorage.getItem("acct")||"null")||{};
+var ref=el("input",null,{className:"f",placeholder:"Payment transaction ID"}),m=el("p");
+s.append(el("h3","Total: "+total().toLocaleString()+" birr"),el("p","Pay by Telebirr/bank, then enter the transaction ID. The admin approves your order.",{className:"mu"}),ref,
+el("button","Place order",{onclick:async function(){if(!a.phone||!a.name){m.textContent="Create your account in the app first.";return}
+if(!ref.value.trim()){m.textContent="Enter the transaction ID";return}
+var tok=crypto.getRandomValues(new Uint8Array(16)),t=Array.from(tok).map(function(b){return b.toString(16).padStart(2,"0")}).join("");
+var h=Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256",new TextEncoder().encode(t)))).map(function(b){return b.toString(16).padStart(2,"0")}).join("");
+var items=Object.keys(cart).map(function(id){return cart[id]+"x "+P.find(function(p){return p.id==id}).n}).join(", ");
+var r=await sb.rpc("submit_order",{p_code:"SHOP-"+total(),p_ref:ref.value.trim(),p_name:a.name,p_phone:a.phone,p_item:("Store: "+items).slice(0,120),p_method:"",p_time:null,p_tracking_hash:h});
+if(r.error){m.textContent="Could not send. "+(r.error.code||"")+" "+r.error.message;return}
+var o=JSON.parse(localStorage.getItem("az_shop_orders")||"[]");o.unshift({t:Date.now(),items:items,total:total(),status:"pending"});localStorage.setItem("az_shop_orders",JSON.stringify(o));
+cart={};save();s.textContent="";s.append(el("h2","Order sent ✔"),el("p","Status: pending admin approval."),el("button","Close",{onclick:function(){s.style.display="none"}}))}}),m)}
+var sb=supabase.createClient("https://rnqizccrzbolsynfsxbu.supabase.co","sb_publishable_1pbzO1FOGTjIjjE-yF7d1A__OFPESB2");
+$("q").oninput=drawGrid;$("cartbtn").onclick=showCart;drawChips();drawGrid();save();
+$("ordbtn").onclick=function(){var s=$("detail");s.textContent="";s.style.display="block";
+s.append(el("button","← Back",{onclick:function(){s.style.display="none"}}),el("h2","My orders"));
+var o=JSON.parse(localStorage.getItem("az_shop_orders")||"[]");if(!o.length)s.append(el("p","No orders yet"));
+o.forEach(function(x){s.append(el("div",new Date(x.t).toLocaleString()+" · "+x.total.toLocaleString()+" birr · "+x.status+" — "+x.items,{className:"row"}))})};
+</script></body></html>
