@@ -159,3 +159,24 @@ try{view="store";render()}catch(e){location.href="shop.html"}};
 function put(){if(document.body&&!document.getElementById("azstore"))document.body.appendChild(b)}
 document.addEventListener("DOMContentLoaded",put);put();
 })();
+(function(){
+var BK="az_post_backup",U="https://rnqizccrzbolsynfsxbu.supabase.co/rest/v1/rpc/app_list_posts",
+K="sb_publishable_1pbzO1FOGTjIjjE-yF7d1A__OFPESB2",os=Storage.prototype.setItem;
+function jg(k,d){try{return JSON.parse(localStorage.getItem(k)||d)}catch(e){return JSON.parse(d)}}
+function has(d){return JOBS.some(function(x){return x.id===d.id||(x.title===d.title&&x.by===d.by)})}
+function keep(){var b=jg(BK,"[]");JOBS.forEach(function(j){if(!j._r&&j.t&&!b.some(function(x){return x.id===j.id&&x.title===j.title}))b.push(j)});os.call(localStorage,BK,JSON.stringify(b.slice(-100)))}
+function sync(){
+ try{if(typeof JOBS==="undefined"||!Array.isArray(JOBS)){console.log("[posts] JOBS not reachable");return}
+ keep();
+ jg(BK,"[]").forEach(function(j){if(!has(j))JOBS.unshift(j)});
+ fetch(U,{method:"POST",headers:{apikey:K,Authorization:"Bearer "+K,"Content-Type":"application/json"},body:"{}"})
+ .then(function(r){return r.json()}).then(function(rows){
+  console.log("[posts] approved from DB:",rows.length);
+  rows.forEach(function(r){var d=r.data||{};d._r=1;d.id="r"+r.id;d.by=d.by||r.author_name;if(!has(d))JOBS.push(d)});
+  try{render()}catch(e){}
+ }).catch(function(e){console.log("[posts] fetch error",e)});
+ }catch(e){console.log("[posts] error",e)}
+}
+window.addEventListener("load",function(){setTimeout(sync,1000);setInterval(sync,10000)});
+document.addEventListener("visibilitychange",sync);
+})();
