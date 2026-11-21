@@ -214,3 +214,12 @@ window.jobSave=function(){
 (function(){var a=document.createElement("a");a.href="shop.html";a.textContent="🛒 Store";
 a.style.cssText="position:fixed;right:14px;bottom:80px;z-index:9999;background:#0a66ff;color:#fff;padding:12px 16px;border-radius:24px;font-weight:700;text-decoration:none;box-shadow:0 4px 14px rgba(0,0,0,.3)";
 document.addEventListener("DOMContentLoaded",function(){document.body.appendChild(a)});if(document.body)document.body.appendChild(a)})();
+(function(){var a=document.createElement("a");a.href="shop.html";a.textContent="🛒 Store";
+a.style.cssText="position:fixed;right:14px;bottom:80px;z-index:9999;background:#0a66ff;color:#fff;padding:12px 16px;border-radius:24px;font-weight:700;text-decoration:none;box-shadow:0 4px 14px rgba(0,0,0,.3)";
+document.addEventListener("DOMContentLoaded",function(){document.body.appendChild(a)});if(document.body)document.body.appendChild(a)})();
+(function(){var a=document.createElement("a");a.href="shop.html";a.textContent="🛒 Store";
+a.style.cssText="position:fixed;right:14px;bottom:80px;z-index:9999;background:#0a66ff;color:#fff;padding:12px 16px;border-radius:24px;font-weight:700;text-decoration:none;box-shadow:0 4px 14px rgba(0,0,0,.3)";
+document.addEventListener("DOMContentLoaded",function(){document.body.appendChild(a)});if(document.body)document.body.appendChild(a)})();
+(function(){var a=document.createElement("a");a.href="shop.html";a.textContent="🛒 Store";
+a.style.cssText="position:fixed;right:14px;bottom:80px;z-index:9999;background:#0a66ff;color:#fff;padding:12px 16px;border-radius:24px;font-weight:700;text-decoration:none;box-shadow:0 4px 14px rgba(0,0,0,.3)";
+document.addEventListener("DOMContentLoaded",function(){document.body.appendChild(a)});if(document.body)document.body.appendChild(a)})();
