@@ -1,9 +1,4 @@
 .DS_Store
-<<<<<<< HEAD
-index.backup.html
-index.backup.html
-index.backup.html
-=======
 node_modules/
 .env
 .env.*
@@ -17,4 +12,3 @@ android/**/build/
 index.backup.html
 android/local.properties
 **/build/
->>>>>>> 8941f26
