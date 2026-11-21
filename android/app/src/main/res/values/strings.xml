@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Azmari Bet</string>
+    <string name="title_activity_main">Azmari Bet</string>
+    <string name="package_name">com.nahom1927.azmaribet</string>
+    <string name="custom_url_scheme">com.nahom1927.azmaribet</string>
+</resources>

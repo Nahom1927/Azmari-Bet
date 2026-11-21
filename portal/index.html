@@ -1,6 +1,10 @@
 <!doctype html>
 <html lang="en"><head>
+<<<<<<< HEAD
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+=======
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, viewport-fit=cover">
+>>>>>>> 8941f26
 <meta name="robots" content="noindex"><meta name="theme-color" content="#060B1A">
 <title>Azmari portal</title>
 <style>
@@ -37,8 +41,48 @@ tr.click{cursor:pointer}tr.click:hover{background:#16224a}
 .pill{display:inline-block;padding:1px 8px;border-radius:99px;font-size:12px;border:1px solid var(--ln)}
 .pill.p{color:var(--gr);border-color:var(--gr)}.pill.l{color:var(--gd);border-color:var(--gd)}.pill.a{color:var(--rd);border-color:var(--rd)}
 .scroll{overflow-x:auto}
+<<<<<<< HEAD
 @media(max-width:520px){.row2{grid-template-columns:1fr}}
 </style></head>
+=======
+.ac-progress{height:10px;background:#30171e;border:1px solid #66303a;border-radius:99px;overflow:hidden;margin:7px 0 4px}.ac-progress i{display:block;height:100%;background:#ef3340;border-radius:99px}.ac-week{display:flex;gap:8px;align-items:flex-start;padding:8px 0;border-bottom:1px solid var(--ln)}.ac-week input{width:20px;min-width:20px;margin:3px 0;accent-color:#ef3340}.ac-done{color:#ff6874}.ac-level{margin:12px 0 5px;color:#ff8a8a;font-weight:800}.ac-locked{opacity:.8}
+@media(max-width:520px){.row2{grid-template-columns:1fr}}
+</style>
+<style id="azmari-responsive-mobile">
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html {
+  width: 100%;
+  min-height: 100%;
+  overflow-x: hidden;
+  -webkit-text-size-adjust: 100%;
+  touch-action: pan-y;
+}
+
+body {
+  width: 100%;
+  min-width: 0;
+  min-height: 100vh;
+  min-height: 100dvh;
+  margin: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  touch-action: pan-y;
+}
+
+img, video, canvas, iframe {
+  max-width: 100%;
+}
+
+input, select, textarea {
+  font-size: 16px;
+}
+</style>
+
+</head>
+>>>>>>> 8941f26
 <body><div id="app"></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script>
@@ -49,6 +93,11 @@ tr.click{cursor:pointer}tr.click:hover{background:#16224a}
   var LESSON_SECT = [["videos","Uploaded videos"],["live","Live section"]].concat(SUBJ);
   var SECT = [["attendance","Attendance"]].concat(LESSON_SECT);
   var ME = null;
+<<<<<<< HEAD
+=======
+  var ACADEMY_WEEKS = [{"week":1,"month":1,"level":"foundation","title":"What is music? Pitch, beat and staff","summary":"Do–Re–Mi echo singing; steady beat; quarter/half notes; treble staff and note names; hearing melody vs chords.","pillars":["Melody","Harmony","Rhythm","Solfège"]},{"week":2,"month":1,"level":"foundation","title":"Keyboard and five-finger position","summary":"Do–Re–Mi–Fa–Sol; 4/4; black-key groups; C five-finger position; C major triad and arpeggio.","pillars":["Melody","Harmony","Rhythm","Solfège"]},{"week":3,"month":1,"level":"foundation","title":"Octave and C major scale","summary":"Full movable-do major scale; note values and ties; C major fingering; intervals and I–V harmony.","pillars":["Melody","Harmony","Rhythm","Solfège"]},{"week":4,"month":1,"level":"foundation","title":"3/4, accidentals and first performance","summary":"3/4 pulse; sharps, flats and naturals; short C-major melody; perform an 8-bar melody and sing solfège.","pillars":["Melody","Harmony","Rhythm","Solfège"]},{"week":5,"month":2,"level":"foundation","title":"G major, F major and key signatures","summary":"Transpose movable-do; G and F major; one sharp/one flat; I–IV–V accompaniment; introductory syncopation.","pillars":["Melody","Harmony","Rhythm","Solfège"]},{"week":6,"month":2,"level":"foundation","title":"D major and intervals","summary":"D major scale; major/minor/perfect intervals; sixteenth-note patterns; sing and identify intervals.","pillars":["Melody","Harmony","Rhythm","Solfège"]},{"week":7,"month":2,"level":"foundation","title":"Qenet and Tizita major","summary":"Pentatonic qenet concept; Tizita major in C/G/D; Do Re Mi Sol La; qenet listening and drone accompaniment.","pillars":["Melody","Harmony","Rhythm","Solfège"]},{"week":8,"month":2,"level":"foundation","title":"Bati and Ambassel major","summary":"Bati and Ambassel note sets; compare qenet by ear; syncopation review; Month 2 practical/theory test.","pillars":["Melody","Harmony","Rhythm","Solfège"]},{"week":9,"month":3,"level":"foundation","title":"Natural minor scale","summary":"La-based minor solfège; A and E natural minor; 6/8 introduction; minor triads and relative major/minor.","pillars":["Melody","Harmony","Rhythm","Solfège"]},{"week":10,"month":3,"level":"foundation","title":"Triads and inversions","summary":"Major, minor, diminished and augmented triads; first/second inversions; smooth voice leading; 6/8 practice.","pillars":["Melody","Harmony","Rhythm","Solfège"]},{"week":11,"month":3,"level":"foundation","title":"Minor qenet family","summary":"Tizita minor, Bati minor and Ambassel minor; chromatic solfège; slow 12/8; qenet-based chord colours.","pillars":["Melody","Harmony","Rhythm","Solfège"]},{"week":12,"month":3,"level":"foundation","title":"Songs, consolidation and Level 1 exam","summary":"Sight-singing, rhythm reading in 4/4, 3/4 and 6/8; perform C-major and qenet pieces; Level 1 examination.","pillars":["Melody","Harmony","Rhythm","Solfège"]},{"week":13,"month":4,"level":"intermediate","title":"Seventh chords","summary":"Maj7, dominant 7, minor 7 and half-diminished; arpeggios; chord-tone melodies; syncopation level 2.","pillars":["Melody","Harmony","Rhythm","Solfège"]},{"week":14,"month":4,"level":"intermediate","title":"Sus, add chords and chord symbols","summary":"Sus2, sus4, add9 and 6 chords; chord symbols and inversions; suspension/resolution; accompaniment patterns.","pillars":["Melody","Harmony","Rhythm","Solfège"]},{"week":15,"month":4,"level":"intermediate","title":"Anchihoye qenet","summary":"Anchihoye note set and solfège; contrast with Ambassel; 12/8 and 4/4 swing; diminished/augmented colour chords.","pillars":["Melody","Harmony","Rhythm","Solfège"]},{"week":16,"month":4,"level":"intermediate","title":"All four qenet and Month 4 exam","summary":"Play and sing Tizita, Bati, Ambassel and Anchihoye; qenet chord choices; kebero + clap in 12/8.","pillars":["Melody","Harmony","Rhythm","Solfège"]},{"week":17,"month":5,"level":"intermediate","title":"Circle of fifths and key signatures","summary":"Transpose melodies; A, E, Bb, Eb and Ab major; relative minors; key signatures up to four sharps/flats.","pillars":["Melody","Harmony","Rhythm","Solfège"]},{"week":18,"month":5,"level":"intermediate","title":"Essential chord progressions","summary":"I–IV–V–I, I–vi–IV–V, ii–V–I and minor progressions; 16-bar chord charts; bass and chord accompaniment.","pillars":["Melody","Harmony","Rhythm","Solfège"]},{"week":19,"month":5,"level":"intermediate","title":"Compound rhythms: 6/8 and 12/8","summary":"Compound pulse and subdivisions; ta-ki-da; 3-against-2; dotted rhythms; 12/8 accompaniment patterns.","pillars":["Melody","Harmony","Rhythm","Solfège"]},{"week":20,"month":5,"level":"intermediate","title":"Regional styles and Ethiopian dance rhythms","summary":"Listening and playing: Eskista, Chiqchiqa, Gurage, Oromo, Tigrigna, Azmari and modern Ethiopian jazz/pop; Month 5 test.","pillars":["Melody","Harmony","Rhythm","Solfège"]},{"week":21,"month":6,"level":"intermediate","title":"Form and song structure","summary":"Motifs, 8-bar periods, verse–chorus, AABA, strophic and call-and-response; cadences and rubato.","pillars":["Melody","Harmony","Rhythm","Solfège"]},{"week":22,"month":6,"level":"intermediate","title":"Improvisation on a qenet","summary":"Improvise on Tizita, Bati, Ambassel or Anchihoye over drone/loop; apply the 4 S: Space, Shape, Sound, Story.","pillars":["Melody","Harmony","Rhythm","Solfège"]},{"week":23,"month":6,"level":"intermediate","title":"Arranging for keyboard and small band","summary":"Counter-melody, intro/outro, bass lines, chord voicings and percussion; arrange 16 bars for voice, keys, bass and percussion.","pillars":["Melody","Harmony","Rhythm","Solfège"]},{"week":24,"month":6,"level":"intermediate","title":"Recording and Level 2 examination","summary":"Click-track performance; basic recording and file management; qenet, harmony, rhythm, solfège and arrangement exam.","pillars":["Melody","Harmony","Rhythm","Solfège"]},{"week":25,"month":7,"level":"advanced","title":"Extended harmony","summary":"Scales in 12 keys; 9th/11th/13th chords; shell/rootless voicings; ensemble tuning and unison qenet.","pillars":["Melody","Harmony","Rhythm","Solfège"]},{"week":26,"month":7,"level":"advanced","title":"Modes and modal harmony","summary":"Ionian, Dorian, Phrygian, Lydian, Mixolydian, Aeolian and Locrian; modal vamps; 12/8 grooves; harmony vocals.","pillars":["Melody","Harmony","Rhythm","Solfège"]},{"week":27,"month":7,"level":"advanced","title":"Chromatic melody and secondary dominants","summary":"Chromatic passing notes, enclosures and secondary dominants; syncopated bass/drum patterns; full-band groove.","pillars":["Melody","Harmony","Rhythm","Solfège"]},{"week":28,"month":7,"level":"advanced","title":"Modulation and motif development","summary":"Pivot-chord, direct and circle-of-fifths modulation; tempo changes and rubato; add a key-change section.","pillars":["Melody","Harmony","Rhythm","Solfège"]},{"week":29,"month":8,"level":"advanced","title":"Borrowed chords and reharmonisation","summary":"Modal interchange, iv, bVI and bVII; tritone substitution introduction; parallel/contrary motion.","pillars":["Melody","Harmony","Rhythm","Solfège"]},{"week":30,"month":8,"level":"advanced","title":"Harmonising Ethiopian qenet","summary":"Drone, diatonic-chord and colour-chord methods; harmonise Tizita, Bati, Ambassel and Anchihoye.","pillars":["Melody","Harmony","Rhythm","Solfège"]},{"week":31,"month":8,"level":"advanced","title":"Traditional ornaments and odd meters","summary":"Trills, slides and turns; pedal point/drone; 5/8, 7/8 and 9/8; ensemble odd-meter groove practice.","pillars":["Melody","Harmony","Rhythm","Solfège"]},{"week":32,"month":8,"level":"advanced","title":"Transcription project","summary":"Transcribe a short recording by ear; analyse chords; qenet dictation; present transcription to class.","pillars":["Melody","Harmony","Rhythm","Solfège"]},{"week":33,"month":9,"level":"advanced","title":"Azmari poetry and sem-ena-werq","summary":"Write a short verse with surface/hidden meaning; free-time phrasing; qenet refrain; voice + krar + kebero.","pillars":["Melody","Harmony","Rhythm","Solfège"]},{"week":34,"month":9,"level":"advanced","title":"Advanced improvisation","summary":"Develop motifs, call-and-response, quoting and variation; improvise over ii–V–I and qenet loops.","pillars":["Melody","Harmony","Rhythm","Solfège"]},{"week":35,"month":9,"level":"advanced","title":"Songwriting: lyrics, melody and chords","summary":"Write verse/chorus/bridge; choose harmony for emotional tension/release; present a song idea to ensemble.","pillars":["Melody","Harmony","Rhythm","Solfège"]},{"week":36,"month":9,"level":"advanced","title":"Mid-Level-3 consolidation and concert","summary":"Review advanced harmony, rhythm and solfège; perform and submit 32-bar original song/arrangement.","pillars":["Melody","Harmony","Rhythm","Solfège"]},{"week":37,"month":10,"level":"advanced","title":"Arranging for a band","summary":"Score layout, transposing instruments, ranges, doubling and texture; rehearse traditional melody arrangement.","pillars":["Melody","Harmony","Rhythm","Solfège"]},{"week":38,"month":10,"level":"advanced","title":"Voicing and orchestration","summary":"Keyboard, guitar, krar, brass/wind voicings; sectionals and wind/string parts.","pillars":["Melody","Harmony","Rhythm","Solfège"]},{"week":39,"month":10,"level":"advanced","title":"Conducting and bandleading","summary":"Conduct 4/4, 3/4 and 6/8; cues and tempo setting; student-led ensemble turns.","pillars":["Melody","Harmony","Rhythm","Solfège"]},{"week":40,"month":10,"level":"advanced","title":"Sound system and live audio","summary":"Microphone technique, DI, mixer, monitor mix and signal flow; ensemble sound check.","pillars":["Melody","Harmony","Rhythm","Solfège"]},{"week":41,"month":11,"level":"advanced","title":"Traditional–modern fusion","summary":"Combine qenet melody, modern groove and jazz harmony; rehearse fusion repertoire.","pillars":["Melody","Harmony","Rhythm","Solfège"]},{"week":42,"month":11,"level":"advanced","title":"Music production","summary":"DAW basics, MIDI, audio editing, tempo maps, basic EQ/reverb and stereo ensemble recording.","pillars":["Melody","Harmony","Rhythm","Solfège"]},{"week":43,"month":11,"level":"advanced","title":"Music business and rights","summary":"Copyright, royalties, song registration, contracts and performance rights; practical music-business awareness.","pillars":["Melody","Harmony","Rhythm","Solfège"]},{"week":44,"month":11,"level":"advanced","title":"Stage craft and audience","summary":"Stage presence, introductions, storytelling, eye contact and microphone technique; dress rehearsal.","pillars":["Melody","Harmony","Rhythm","Solfège"]},{"week":45,"month":12,"level":"advanced","title":"Final polish and coaching","summary":"Individual coaching on solo repertoire; final ensemble rehearsal and performance preparation.","pillars":["Melody","Harmony","Rhythm","Solfège"]},{"week":46,"month":12,"level":"advanced","title":"Programme, publicity and recording masters","summary":"Programme notes, poster/publicity, final recording masters and technical rehearsal.","pillars":["Melody","Harmony","Rhythm","Solfège"]},{"week":47,"month":12,"level":"advanced","title":"Final theory exam and concert preparation","summary":"Final theory exam, solo preparation, warm-up and full concert soundcheck.","pillars":["Melody","Harmony","Rhythm","Solfège"]},{"week":48,"month":12,"level":"advanced","title":"Portfolio, graduation and diploma","summary":"Review practice log, videos and reflections; final concert, graduation and next-step plan.","pillars":["Melody","Harmony","Rhythm","Solfège"]}];
+  var ACADEMY_LEVELS = [{id:"foundation",name:"Level 1 — Foundation",from:1,to:12,certificate:"Foundation of Music Certificate"},{id:"intermediate",name:"Level 2 — Intermediate",from:13,to:24,certificate:"Intermediate Musicianship Certificate"},{id:"advanced",name:"Level 3 — Advanced & Ensemble",from:25,to:48,certificate:"AZMARI MUSIC ACADEMY Diploma"}];
+>>>>>>> 8941f26
 
   function el(tag, text, props) {
     var e = document.createElement(tag);
@@ -152,7 +201,11 @@ tr.click{cursor:pointer}tr.click:hover{background:#16224a}
   /* ---------- student ---------- */
   function studentView() {
     clear(app); shell("student");
+<<<<<<< HEAD
     tabbed([["My progress", progressTab], ["Sections", sectionsTab]]);
+=======
+    tabbed([["My progress", progressTab], ["Academy", academyStudentTab], ["Sections", sectionsTab]]);
+>>>>>>> 8941f26
   }
   async function progressTab(body) {
     var r = await sb.rpc("my_progress");
@@ -166,6 +219,94 @@ tr.click{cursor:pointer}tr.click:hover{background:#16224a}
     add(ac, el("h3", "Attendance"), el("p", "Present " + a.present + " · Late " + a.late + " · Absent " + a.absent + " · Total " + a.total));
     add(body, c, g, ac);
   }
+<<<<<<< HEAD
+=======
+  function printAcademyCertificate(student, course, major, date) {
+    var w = window.open("", "_blank"); if (!w) { alert("Allow pop-ups to print the certificate."); return; }
+    w.document.write("<!doctype html><html><head><meta charset=\"utf-8\"><title>AZMARI MUSIC ACADEMY Certificate</title><style>body{font-family:Georgia,serif;background:#f5f1e8;color:#18243b;padding:5vw;text-align:center}.paper{border:10px double #bd8d37;background:#fffdf7;padding:55px 28px;max-width:900px;margin:auto}h1{color:#9a7025;font-size:38px}.name{font-size:34px;font-weight:bold;border-bottom:1px solid #bd8d37;display:inline-block;padding:10px 30px}h2{font-size:28px;margin:28px}.seal{border:2px solid #bd8d37;border-radius:50%;width:90px;height:90px;margin:25px auto;display:grid;place-items:center;font-size:30px}@media print{button{display:none}}</style></head><body><div class=\"paper\"><div>AZMARI MUSIC ACADEMY · አዝማሪ ሙዚቃ አካዳሚ</div><h1>Certificate of Completion</h1><p>This certificate is proudly presented to</p><div class=\"name\">"+String(student).replace(/[<>]/g,"")+"</div><p>for successfully completing</p><h2>"+String(course).replace(/[<>]/g,"")+"</h2><p>Main instrument / major: "+String(major||"Music").replace(/[<>]/g,"")+"</p><p>Issued: "+date+"</p><div class=\"seal\">★</div><p>AZMARI MUSIC ACADEMY</p><button onclick=\"window.print()\">Print / Save as PDF</button></div></body></html>"); w.document.close();
+  }
+  function academyPct(weeks, from, to) {
+    var set = new Set((weeks || []).map(Number)); var total = to - from + 1, done = 0;
+    for (var i = from; i <= to; i++) if (set.has(i)) done++;
+    return { done: done, total: total, pct: Math.round(done / total * 100) };
+  }
+  function academyProgressCard(parent, weeks, major, readOnly) {
+    var c = card();
+    add(c, el("h3", "🎓 Smart Music Academy"), el("p", "Main course / instrument: " + (major || "Not recorded"), { className: "mu" }),
+      el("p", "Instructor-managed progress · students can view only", { className: "mu" }));
+    ACADEMY_LEVELS.forEach(function (lv) {
+      var p = academyPct(weeks, lv.from, lv.to), row = el("div");
+      row.className = "ac-level"; row.textContent = lv.name + " · " + p.pct + "%";
+      var bar = el("div"); bar.className = "ac-progress";
+      var fill = el("i"); fill.style.width = p.pct + "%"; bar.appendChild(fill);
+      add(c, row, bar, el("p", p.done + " of " + p.total + " weeks completed", { className: "mu" }));
+      var completed = ACADEMY_WEEKS.filter(function (w) { return w.week >= lv.from && w.week <= lv.to && (weeks || []).map(Number).indexOf(w.week) >= 0; });
+      if (completed.length) add(c, el("p", "Completed: " + completed.map(function (w) { return "W" + w.week; }).join(", "), { className: "ac-done" }));
+      if (p.done === p.total) add(c, el("p", "Instructor has marked this level's weekly curriculum complete. Final exam and assessment requirements still apply.", { className: "mu" }));
+    });
+    var details = el("details"), summary = el("summary", "View 48-week curriculum and instructor records");
+    details.appendChild(summary);
+    ACADEMY_WEEKS.forEach(function (w) {
+      var done = (weeks || []).map(Number).indexOf(w.week) >= 0;
+      var line = el("div"); line.className = "ac-week";
+      add(line, el("span", done ? "✓" : "○", { className: done ? "ac-done" : "mu" }),
+        el("div", "Week " + w.week + " · " + w.title + (done ? " — Completed by instructor" : " — Not yet marked complete"), { className: done ? "ac-done" : "" }));
+      details.appendChild(line);
+    });
+    c.appendChild(details); parent.appendChild(c);
+  }
+  async function academyStudentTab(body) {
+    var r = await sb.rpc("academy_v2_my_course_progress");
+    if (r.error || !r.data) { add(body, el("p", r.error ? r.error.message : "Academy progress is not available yet. Ask the academy administrator to apply the academy-progress.sql setup file.", { className: "msg err" })); return; }
+    var d = r.data || {}, base = await sb.rpc("my_progress"), weeks = (d.completed_weeks || []).map(Number), att = base.data && base.data.attendance || {}, attended = Number(att.present || 0) + Number(att.late || 0), attendancePct = Number(att.total || 0) ? attended / Number(att.total) * 100 : 0;
+    academyProgressCard(body, weeks, d.major || "", true);
+    var cert = card(); cert.appendChild(el("h3", "🏅 Certificates"));
+    function canFinish(end, score) { for (var i=1;i<=end;i++) if (weeks.indexOf(i)<0) return false; return Number(score)>=70; }
+    function certificateButton(name, eligible, detail) { var row=el("div"); add(row,el("p",name+" — "+detail,{className:"mu"}), eligible ? btn("Print certificate",function(){printAcademyCertificate(d.name || (base.data && base.data.name) || "Student",name,d.major || "",new Date().toLocaleDateString());},"sm") : el("span","Not yet eligible",{className:"mu"})); cert.appendChild(row); }
+    certificateButton("Level 1 · Foundation of Music",canFinish(12,d.level1_exam_score),"12 weeks completed and exam score at least 70");
+    certificateButton("Level 2 · Intermediate Musicianship",canFinish(24,d.level1_exam_score)&&Number(d.level2_exam_score)>=70,"24 weeks completed, Level 1 passed and Level 2 exam at least 70");
+    certificateButton("AZMARI MUSIC ACADEMY Diploma",canFinish(48,d.level1_exam_score)&&Number(d.level2_exam_score)>=70&&Number(d.final_exam_score)>=70&&attendancePct>=80,"48 weeks completed, all required exams passed and attendance at least 80% (current "+Math.round(attendancePct)+"%)");
+    add(body, cert, el("p", "Your instructor updates this record. You cannot change or self-mark course progress.", { className: "mu" }));
+  }
+  async function academyStaffTab(body) {
+    var o = await overview(); if (o.err) { add(body, el("p", o.err, { className: "msg err" })); return; }
+    if (!o.data.length) { add(body, el("p", "No students are registered yet.", { className: "mu" })); return; }
+    var who = studentSelect(o.data), editor = el("div"), m = msg(), selected = null, completed = [];
+    var top = card(); add(top, el("h3", "Instructor progress entry"), el("p", "Select a student, review the 48-week academy plan, and mark only the weeks the instructor has verified. Students see this record read-only with red progress bars.", { className: "mu" }), lab("Student", who), m);
+    async function loadStudent() {
+      clear(editor); selected = o.data.find(function (s) { return s.student_no === who.value; });
+      var q = await sb.rpc("academy_v2_staff_get_course_progress", { p_student_no: who.value });
+      if (q.error) { say(m, q.error.message + " · If this is the first setup, run supabase/academy-progress.sql in Supabase SQL Editor.", true); return; }
+      completed = (q.data && q.data.completed_weeks || []).map(Number);
+      var major = (selected && selected.instrument) || (q.data && q.data.major) || "";
+      var c = card(); add(c, el("h3", (selected ? selected.name : who.value) + " · " + who.value), el("p", "Major course: " + (major || "Not selected"), { className: "mu" }));
+      add(c, el("p", "Tick a week only after the instructor has assessed the student's work. This updates the student's read-only progress view.", { className: "mu" }));
+      ACADEMY_LEVELS.forEach(function (lv) {
+        c.appendChild(el("h3", lv.name, { className: "ac-level" }));
+        ACADEMY_WEEKS.filter(function (w) { return w.week >= lv.from && w.week <= lv.to; }).forEach(function (w) {
+          var line = el("label"); line.className = "ac-week";
+          var check = el("input", null, { type: "checkbox", checked: completed.indexOf(w.week) >= 0 });
+          check.onchange = function () { if (check.checked && completed.indexOf(w.week) < 0) completed.push(w.week); else completed = completed.filter(function (x) { return x !== w.week; }); };
+          add(line, check, el("span", "Week " + w.week + " — " + w.title + ". " + w.summary)); c.appendChild(line);
+        });
+      });
+      var e1 = inp("Level 1 exam score (0–100)", "number", q.data && q.data.level1_exam_score != null ? q.data.level1_exam_score : "");
+      var e2 = inp("Level 2 exam score (0–100)", "number", q.data && q.data.level2_exam_score != null ? q.data.level2_exam_score : "");
+      var ef = inp("Final diploma exam score (0–100)", "number", q.data && q.data.final_exam_score != null ? q.data.final_exam_score : "");
+      add(c, el("h3", "Instructor exam results"), lab("Level 1 exam", e1), lab("Level 2 exam", e2), lab("Final diploma exam", ef), el("p", "Enter a score only after the corresponding assessment. Certificates require a score of at least 70; the diploma also requires 80% attendance.", { className: "mu" }));
+      add(c, btn("Save instructor progress", async function () {
+        function examValue(input) { if (input.value.trim() === "") return null; var n = Number(input.value); return Number.isFinite(n) && n >= 0 && n <= 100 ? n : NaN; }
+        var v1=examValue(e1),v2=examValue(e2),vf=examValue(ef); if ([v1,v2,vf].some(function(x){return Number.isNaN(x);})) { say(m,"Exam scores must be between 0 and 100.",true); return; }
+        var save = await sb.rpc("academy_v2_staff_set_course_progress", { p_student_no: who.value, p_major: major, p_completed_weeks: completed.sort(function (a,b) { return a-b; }), p_note: "Instructor-updated curriculum progress", p_level1_exam_score:v1, p_level2_exam_score:v2, p_final_exam_score:vf });
+        if (save.error) say(m, save.error.message, true); else say(m, "Progress saved. The student can now view the updated red progress bars.");
+      }, "full"));
+      editor.appendChild(c);
+      var prev = card(); academyProgressCard(prev, completed, major, true); editor.appendChild(prev);
+    }
+    who.onchange = loadStudent; add(body, top, editor); loadStudent();
+  }
+
+>>>>>>> 8941f26
   async function sectionsTab(body) {
     var r = await sb.rpc("my_progress");
     var open = (r.data && r.data.access) || [];
@@ -208,7 +349,11 @@ tr.click{cursor:pointer}tr.click:hover{background:#16224a}
   /* ---------- staff ---------- */
   function staffView(role) {
     clear(app); shell(role);
+<<<<<<< HEAD
     var items = [["Students", studentsTab], ["Attendance", attendanceTab], ["Grades", gradesTab], ["Codes", codesTab], ["Lessons", lessonsTab]];
+=======
+    var items = [["Students", studentsTab], ["Academy progress", academyStaffTab], ["Attendance", attendanceTab], ["Grades", gradesTab], ["Codes", codesTab], ["Lessons", lessonsTab]];
+>>>>>>> 8941f26
     if (role === "admin") { items.unshift(["Applications", applicationsTab]); items.push(["Payments", paymentsTab], ["Register", registerTab], ["Team", teamTab]); }
     tabbed(items);
   }

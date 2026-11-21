@@ -1,5 +1,37 @@
 (function () {
+<<<<<<< HEAD
   var sb = supabase.createClient("https://rnqizccrzbolsynfsxbu.supabase.co", "sb_publishable_1pbzO1FOGTjIjjE-yF7d1A__OFPESB2", { auth: { persistSession: false, autoRefreshToken: false } });
+=======
+  var sb = supabase.createClient("https://rnqizccrzbolsynfsxbu.supabase.co", "sb_publishable_1pbzO1FOGTjIjjE-yF7d1A__OFPESB2", { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true } });
+  window.azSupabase = sb;
+
+  // Supabase customer authentication
+  window.azAuthSignUp = function (email, password) {
+    return sb.auth.signUp({
+      email: email,
+      password: password,
+      options: {
+        emailRedirectTo: "https://nahom1927.github.io/Azmari-Bet/"
+      }
+    });
+  };
+
+  window.azAuthSignIn = function (email, password) {
+    return sb.auth.signInWithPassword({
+      email: email,
+      password: password
+    });
+  };
+
+  window.azAuthSignOut = function () {
+    return sb.auth.signOut();
+  };
+
+  window.azAuthSession = function () {
+    return sb.auth.getSession();
+  };
+
+>>>>>>> 8941f26
   var CODES = {1599:"band_profile",15000:"course_3mo",5998:"event_platinum",2998:"event_gold",1598:"event_silver",798:"event_bronze",398:"event_basic"};
   window.azCode = function (amount, isStore) {
     if (amount === 100) return isStore ? "post" : "seeker_profile";
