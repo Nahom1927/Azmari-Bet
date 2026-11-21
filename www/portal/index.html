@@ -540,7 +540,7 @@ input, select, textarea {
       });
     }
     async function decide(o, ok) {
-      var q = await sb.rpc("admin_decide_order", { p_key: String(o.id), p_approve: ok });
+      var q = await sb.rpc("admin_decide_order", { p_id: Number(o.id), p_approve: ok });
       if (q.error) { say(m, q.error.message, true); return; }
       say(m, ok ? "Approved." : "Rejected."); await load();
     }

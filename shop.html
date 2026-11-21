@@ -16,7 +16,7 @@ header input{width:100%;padding:11px;border-radius:10px;border:0;box-sizing:bord
 .row{display:flex;justify-content:space-between;align-items:center;background:var(--sf);border:1px solid var(--ln);border-radius:10px;padding:10px;margin:8px 0}
 input.f{width:100%;padding:11px;border:1px solid var(--ln);border-radius:8px;box-sizing:border-box;margin:6px 0}@media(prefers-color-scheme:dark){:root{--bg:#060b1a;--sf:#0d1530;--ink:#e6efff;--mu:#8fa3d1;--ln:#1c2b57;--gr:#3cc8ff}button{color:#021226}}</style></head>
 <body>
-<header><div class="top"><a href="index.html" style="color:#fff;text-decoration:none">← Azmari Bet</a><span><span id="ordbtn" style="margin-right:14px">📦 Orders</span><span><span id="ordbtn" style="margin-right:14px">📦 Orders</span><span><span id="ordbtn" style="margin-right:14px">📦 Orders</span><span id="cartbtn">🛒 <span id="cn">0</span></span></span></div>
+<header><div class="top"><a href="index.html" style="color:#fff;text-decoration:none">← Azmari Bet</a><span><span id="ordbtn" style="margin-right:14px">📦 Orders</span><span id="cartbtn">🛒 <span id="cn">0</span></span></span></div>
 <input id="q" placeholder="Search instruments, accessories…"></header>
 <div class="chips" id="chips"></div><div class="grid" id="grid"></div>
 <div class="sheet" id="detail"></div><div class="sheet" id="cart"></div>
@@ -47,28 +47,91 @@ var b=r.lastChild;b.append(el("button","−",{onclick:function(){add(+id,-1);sho
 if(!Object.keys(cart).length){s.appendChild(el("p","Cart is empty"));return}
 var a=JSON.parse(localStorage.getItem("acct")||"null")||{};
 var ref=el("input",null,{className:"f",placeholder:"Payment transaction ID"}),m=el("p");
-s.append(el("h3","Total: "+total().toLocaleString()+" birr"),el("p","Pay by Telebirr/bank, then enter the transaction ID. The admin approves your order.",{className:"mu"}),ref,
-el("button","Place order",{onclick:async function(){if(!a.phone||!a.name){m.textContent="Create your account in the app first.";return}
-if(!ref.value.trim()){m.textContent="Enter the transaction ID";return}
-var tok=crypto.getRandomValues(new Uint8Array(16)),t=Array.from(tok).map(function(b){return b.toString(16).padStart(2,"0")}).join("");
-var h=Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256",new TextEncoder().encode(t)))).map(function(b){return b.toString(16).padStart(2,"0")}).join("");
-var items=Object.keys(cart).map(function(id){return cart[id]+"x "+P.find(function(p){return p.id==id}).n}).join(", ");
-var r=await sb.rpc("submit_order",{p_code:"SHOP-"+total(),p_ref:ref.value.trim(),p_name:a.name,p_phone:a.phone,p_item:("Store: "+items).slice(0,120),p_method:"",p_time:null,p_tracking_hash:h});
-if(r.error){m.textContent="Could not send. "+(r.error.code||"")+" "+r.error.message;return}
-var o=JSON.parse(localStorage.getItem("az_shop_orders")||"[]");o.unshift({t:Date.now(),items:items,total:total(),status:"pending"});localStorage.setItem("az_shop_orders",JSON.stringify(o));
-cart={};save();s.textContent="";s.append(el("h2","Order sent ✔"),el("p","Status: pending admin approval."),el("button","Close",{onclick:function(){s.style.display="none"}}))}}),m)}
+s.append(el("h3","Total: "+total().toLocaleString()+" birr"),
+el("p","Pay by Telebirr/bank, then enter the transaction ID. The admin approves your order.",{className:"mu"}),ref,
+el("button","Place order",{onclick:async function(){
+  if(!a.phone||!a.name){m.textContent="Create your account in the app first.";return}
+  if(!Object.keys(cart).length){m.textContent="Your cart is empty.";return}
+  var paymentRef=ref.value.trim();
+  if(!/^[A-Za-z0-9]{6,40}$/.test(paymentRef)){m.textContent="Enter a valid transaction ID (6–40 letters or numbers).";return}
+  if(!window.crypto||!crypto.getRandomValues||!crypto.subtle){m.textContent="Secure payment tracking is unavailable in this browser.";return}
+
+  var bytes=crypto.getRandomValues(new Uint8Array(32));
+  var token=Array.from(bytes).map(function(b){return b.toString(16).padStart(2,"0")}).join("");
+  var digest=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(token));
+  var hash=Array.from(new Uint8Array(digest)).map(function(b){return b.toString(16).padStart(2,"0")}).join("");
+  var cartItems=Object.keys(cart).map(function(id){return {id:Number(id),qty:Number(cart[id])}});
+  var items=Object.keys(cart).map(function(id){var x=P.find(function(p){return p.id==id});return cart[id]+"x "+(x?x.n:"Item "+id)}).join(", ");
+  var order={t:Date.now(),items:items,total:total(),status:"submitting",token:token};
+  var orders=JSON.parse(localStorage.getItem("az_shop_orders")||"[]");
+  orders.unshift(order);
+  localStorage.setItem("az_shop_orders",JSON.stringify(orders.slice(0,50)));
+  m.textContent="Sending your order securely…";
+
+  var r;
+  try{
+    r=await sb.rpc("submit_store_order",{
+      p_ref:paymentRef,
+      p_name:a.name,
+      p_phone:a.phone,
+      p_cart:cartItems,
+      p_method:"",
+      p_time:null,
+      p_tracking_hash:hash
+    });
+  }catch(err){
+    order.status="check status";
+    localStorage.setItem("az_shop_orders",JSON.stringify(orders.slice(0,50)));
+    m.textContent="The response was interrupted. Check My Orders before trying again.";
+    return;
+  }
+
+  if(r.error){
+    order.status="check status";
+    localStorage.setItem("az_shop_orders",JSON.stringify(orders.slice(0,50)));
+    m.textContent="Order not confirmed: "+(r.error.message||r.error.code||"Please check My Orders before retrying.");
+    return;
+  }
+
+  var result=Array.isArray(r.data)?r.data[0]:r.data;
+  if(typeof result==="string"){try{result=JSON.parse(result)}catch(e){}}
+  if(result&&result.total!=null)order.total=Number(result.total);
+  order.status="pending";
+  order.order_id=result&&result.order_id!=null?result.order_id:null;
+  localStorage.setItem("az_shop_orders",JSON.stringify(orders.slice(0,50)));
+
+  cart={};save();s.textContent="";
+  s.append(el("h2","Order sent ✔"),el("p","Your order was received. Status: pending admin approval."),el("p","Keep your transaction ID for reference."),el("button","Close",{onclick:function(){s.style.display="none"}}));
+}}),m)}
 var sb=supabase.createClient("https://rnqizccrzbolsynfsxbu.supabase.co","sb_publishable_1pbzO1FOGTjIjjE-yF7d1A__OFPESB2");
 $("q").oninput=drawGrid;$("cartbtn").onclick=showCart;drawChips();drawGrid();save();
-$("ordbtn").onclick=function(){var s=$("detail");s.textContent="";s.style.display="block";
-s.append(el("button","← Back",{onclick:function(){s.style.display="none"}}),el("h2","My orders"));
-var o=JSON.parse(localStorage.getItem("az_shop_orders")||"[]");if(!o.length)s.append(el("p","No orders yet"));
-o.forEach(function(x){s.append(el("div",new Date(x.t).toLocaleString()+" · "+x.total.toLocaleString()+" birr · "+x.status+" — "+x.items,{className:"row"}))})};
-$("ordbtn").onclick=function(){var s=$("detail");s.textContent="";s.style.display="block";
-s.append(el("button","← Back",{onclick:function(){s.style.display="none"}}),el("h2","My orders"));
-var o=JSON.parse(localStorage.getItem("az_shop_orders")||"[]");if(!o.length)s.append(el("p","No orders yet"));
-o.forEach(function(x){s.append(el("div",new Date(x.t).toLocaleString()+" · "+x.total.toLocaleString()+" birr · "+x.status+" — "+x.items,{className:"row"}))})};
-$("ordbtn").onclick=function(){var s=$("detail");s.textContent="";s.style.display="block";
-s.append(el("button","← Back",{onclick:function(){s.style.display="none"}}),el("h2","My orders"));
-var o=JSON.parse(localStorage.getItem("az_shop_orders")||"[]");if(!o.length)s.append(el("p","No orders yet"));
-o.forEach(function(x){s.append(el("div",new Date(x.t).toLocaleString()+" · "+x.total.toLocaleString()+" birr · "+x.status+" — "+x.items,{className:"row"}))})};
+function renderShopOrders(s,orders){
+  s.textContent="";
+  s.append(el("button","← Back",{onclick:function(){s.style.display="none"}}),el("h2","My orders"));
+  if(!orders.length){s.append(el("p","No orders yet"));return}
+  orders.forEach(function(x){
+    s.append(el("div",new Date(x.t).toLocaleString()+" · "+Number(x.total||0).toLocaleString()+" birr · "+(x.status||"pending")+" — "+(x.items||"Store order"),{className:"row"}));
+  });
+}
+$("ordbtn").onclick=async function(){
+  var s=$("detail");
+  s.style.display="block";
+  var orders=JSON.parse(localStorage.getItem("az_shop_orders")||"[]");
+  renderShopOrders(s,orders);
+  for(var i=0;i<orders.length;i++){
+    var x=orders[i];
+    if(!x.token)continue;
+    try{
+      var r=await sb.rpc("order_status_by_token",{p_token:x.token,p_code:"store_order"});
+      if(r.error||!r.data)continue;
+      var data=Array.isArray(r.data)?r.data[0]:r.data;
+      if(typeof data==="string"){try{data=JSON.parse(data)}catch(e){}}
+      if(data&&data.status)x.status=data.status;
+    }catch(e){}
+  }
+  localStorage.setItem("az_shop_orders",JSON.stringify(orders));
+  if(s.style.display==="block")renderShopOrders(s,orders);
+};
+
+
 </script></body></html>
