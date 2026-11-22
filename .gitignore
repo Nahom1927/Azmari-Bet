@@ -12,3 +12,5 @@ android/**/build/
 index.backup.html
 android/local.properties
 **/build/
+node_modules
+www/
