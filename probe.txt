@@ -1,0 +1,19 @@
+ab_jobs
+ab_live
+ab_pin
+ab_sa
+ab_st
+ab_ta
+ab_tc
+function render(){if(view!=="tuner"&&T.on)stopMic();const n=[["home","🏠"],["academy","🎓"],["store","🛒"],["events","🎫"],["more","☰"]];
+function adInit(){clearInterval(adTm);const el=document.getElementById("adt");if(!el)return;const dots=[...document.querySelectorAll("#add i")];let k=0,hold=false;const go=n=>{k=(n+AD.length)%AD.length;el.scrollTo({left:k*el.clientWidth,behavior:"smooth"})};el.addEventListener("scroll",()=>{const n=Math.round(el.scrollLeft/el.clientWidth);k=n;dots.forEach((d,i)=>d.classList.toggle("on",i===n))},{passive:true});["pointerdown","touchstart","mouseenter","focusin"].forEach(ev=>el.addEventListener(ev,()=>hold=true,{passive:true}));["pointerup","touchend","mouseleave","focusout"].forEach(ev=>el.addE
+:root{--bg:#eef4ff;--sf:#fff;--ink:#0d1b3a;--mu:#566488;--ln:#d3dcf2;--gr:#0a66ff;--nb:#3cc8ff;--rb:#0095d9;--gd:#b07a05;--rd:#b23a30;--gb:#fbefcf;--on:#021226;--sd:none;--neb:radial-gradient(60% 40% 
+box-sizing:border-box}
+:root[data-theme="dark"]{--bg:#060b1a;--sf:#0d1530;--ink:#e6efff;--mu:#8fa3d1;--ln:#1c2b57;--gr:#3cc8ff;--nb:#3cc8ff;--sd:block;--neb:radial-gradient(60% 45% at 15% 0%,rgba(30,110,255,.45),transparent
+*{box-sizing:border-box}
+:root{--gd:#0a66ff;--gb:#dcebff;--neb:radial-gradient(60% 40% at 15% 0%,rgba(60,200,255,.4),transparent),radial-gradient(50% 40% at 95% 30%,rgba(10,102,255,.18),transparent)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--gd:#5aa9ff;--gb:#0f2a5c;--neb:radial-gradient(60% 45% at 15% 0%,rgba(30,110,255,.45),transparent),radial-gradient(55% 45% at 95% 35
+:root[data-theme="dark"]{--gd:#5aa9ff;--gb:#0f2a5c;--neb:radial-gradient(60% 45% at 15% 0%,rgba(30,110,255,.45),transparent),radial-gradient(55% 45% at 95% 35%,rgba(10,102,255,.3),transparent),radial-
+.hero{background:radial-gradient(80% 120% at 100% 0%,rgba(60,200,255,.45),transparent 60%),radial-gradient(70% 90% at 0% 100%,rgba(10,102,255,.6),transparent 60%),linear-gradient(160deg,#07123d,#0a3fb
+352:store(){const items=[["🎹","Electric keyboard","Keyboards"],["🎹","Digital piano","Keyboards"],["🎸","Acoustic guitar","Strings"],["🎸","Electric guitar","Strings"],["🎸","Bass guitar","Strings"],["🎻","Violin","Strings"],["🪕","Krar, hand made","Traditional"],["🎻","Masinko","Traditional"],["🪕","Begena
+369:legends(){return `<h2>Legends</h2><p class="mu">Honoring Ethiopian legend performers. Names are placeholders: verify facts and photo permission before publishing.</p><div class="card legend"><button class="pic g" data-act="ph" data-v="Legend 1" style="width:100%;border:0;cursor:pointer;overflow:
