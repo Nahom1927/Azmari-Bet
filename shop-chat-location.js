@@ -103,6 +103,9 @@
   let currentCoords = null;
   let liveWatchId = null;
   let statusBanner = "";
+  let realtimeChannel = null;
+  let subscribedKey = "";
+  let realtimeStatus = "disconnected";
 
   function getSupabase() {
     return window.supabaseClient || window.sb || window.supabase || null;
@@ -185,6 +188,34 @@
     return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   }
 
+  function upsertLocalMessage(msg) {
+    if (!msg || !msg.id) return false;
+    const all = readJson(STORAGE_MESSAGES_KEY, []);
+    const exists = all.some((m) => String(m.id) === String(msg.id));
+    if (exists) {
+      const next = all.map((m) => (String(m.id) === String(msg.id) ? Object.assign({}, m, msg) : m));
+      writeJson(STORAGE_MESSAGES_KEY, next);
+      return false;
+    }
+    writeJson(STORAGE_MESSAGES_KEY, all.concat(msg));
+    return true;
+  }
+
+  function upsertLocalListing(row) {
+    if (!row || !row.id) return;
+    const normalized = Object.assign({}, row, {
+      verified: row.verified !== undefined ? row.verified : Boolean(row.approved),
+      icon: row.icon || categoryIcon(row.category)
+    });
+    const current = readJson(STORAGE_LISTINGS_KEY, []);
+    const idx = current.findIndex((x) => String(x.id) === String(normalized.id));
+    const next =
+      idx >= 0
+        ? current.map((x, i) => (i === idx ? Object.assign({}, x, normalized) : x))
+        : [normalized].concat(current);
+    writeJson(STORAGE_LISTINGS_KEY, next);
+  }
+
   async function loadListings() {
     let local = readJson(STORAGE_LISTINGS_KEY, null);
     if (!Array.isArray(local) || local.length === 0) {
@@ -262,15 +293,13 @@
         const { data, error } = await sb.from("shop_listings").insert(dbRow).select().single();
         if (!error && data) {
           const merged = Object.assign({}, newItem, data, { verified: true, icon: newItem.icon });
-          const current = readJson(STORAGE_LISTINGS_KEY, []);
-          writeJson(STORAGE_LISTINGS_KEY, [merged].concat(current));
+          upsertLocalListing(merged);
           return { item: merged, synced: true };
         }
       } catch (_) {}
     }
 
-    const current = readJson(STORAGE_LISTINGS_KEY, []);
-    writeJson(STORAGE_LISTINGS_KEY, [newItem].concat(current));
+    upsertLocalListing(newItem);
     return { item: newItem, synced: false };
   }
 
@@ -334,8 +363,7 @@
       created_at: new Date().toISOString()
     };
 
-    const all = readJson(STORAGE_MESSAGES_KEY, []);
-    writeJson(STORAGE_MESSAGES_KEY, all.concat(record));
+    upsertLocalMessage(record);
 
     const sb = getSupabase();
     if (sb && typeof sb.from === "function" && !String(record.listing_id).startsWith("seed-")) {
@@ -355,13 +383,96 @@
           .select()
           .single();
         if (!error && data) {
-          const replaced = readJson(STORAGE_MESSAGES_KEY, []).map((m) => (m.id === record.id ? data : m));
-          writeJson(STORAGE_MESSAGES_KEY, replaced);
+          upsertLocalMessage(data);
           return data;
         }
       } catch (_) {}
     }
     return record;
+  }
+
+  function cleanupRealtime() {
+    const sb = getSupabase();
+    if (realtimeChannel) {
+      try {
+        if (sb && typeof sb.removeChannel === "function") {
+          sb.removeChannel(realtimeChannel);
+        } else if (typeof realtimeChannel.unsubscribe === "function") {
+          realtimeChannel.unsubscribe();
+        }
+      } catch (_) {}
+      realtimeChannel = null;
+    }
+    subscribedKey = "";
+    realtimeStatus = "disconnected";
+  }
+
+  function ensureRealtimeSubscription(listingId, threadKey) {
+    const sb = getSupabase();
+    if (!sb || typeof sb.channel !== "function" || !listingId || String(listingId).startsWith("seed-")) {
+      return;
+    }
+
+    const nextKey = String(listingId) + "::" + String(threadKey);
+    if (realtimeChannel && subscribedKey === nextKey) {
+      return;
+    }
+
+    cleanupRealtime();
+    subscribedKey = nextKey;
+    realtimeStatus = "connecting";
+
+    try {
+      const channelName = `azmari-store-live-${String(listingId).slice(0, 8)}-${Date.now()}`;
+      realtimeChannel = sb
+        .channel(channelName)
+        .on(
+          "postgres_changes",
+          {
+            event: "INSERT",
+            schema: "public",
+            table: "shop_messages",
+            filter: `listing_id=eq.${listingId}`
+          },
+          async (payload) => {
+            const row = payload && payload.new ? payload.new : null;
+            if (!row) return;
+            if (String(row.thread_key || "buyer-1") !== String(activeThreadKey)) return;
+            const added = upsertLocalMessage(row);
+            if (added && String(chatListingId) === String(listingId)) {
+              await render({ skipRealtimeSync: true });
+              const stream = document.getElementById("az-chat-stream");
+              if (stream) stream.scrollTop = stream.scrollHeight;
+            }
+          }
+        )
+        .on(
+          "postgres_changes",
+          {
+            event: "UPDATE",
+            schema: "public",
+            table: "shop_listings",
+            filter: `id=eq.${listingId}`
+          },
+          async (payload) => {
+            const row = payload && payload.new ? payload.new : null;
+            if (!row) return;
+            upsertLocalListing(row);
+            if (String(chatListingId) === String(listingId)) {
+              await render({ skipRealtimeSync: true });
+            }
+          }
+        )
+        .subscribe((status) => {
+          realtimeStatus = String(status || "subscribing").toLowerCase();
+          const badge = document.getElementById("az-rt-badge");
+          if (badge) {
+            badge.textContent = realtimeStatus === "subscribed" ? "● Live Realtime" : `○ ${realtimeStatus}`;
+          }
+        });
+    } catch (_) {
+      realtimeStatus = "fallback";
+    }
   }
 
   function grabGpsOnce(onOk, onErr) {
@@ -429,6 +540,7 @@
       .az-st-bubble.buyer { align-self: flex-start; background: #ffffff; border: 1px solid #cbd5e1; }
       .az-st-bubble.seller { align-self: flex-end; background: #dcfce7; border: 1px solid #86efac; }
       .az-st-banner { font-size: 0.82rem; color: #0369a1; margin-bottom: 8px; font-weight: 600; }
+      .az-rt-pill { display: inline-block; font-size: 0.72rem; font-weight: 700; color: #15803d; background: #dcfce7; padding: 2px 8px; border-radius: 999px; margin-left: 6px; }
     `;
     document.head.appendChild(style);
   }
@@ -456,7 +568,8 @@
     return mount;
   }
 
-  async function render() {
+  async function render(opts) {
+    const options = opts || {};
     injectStyles();
     const mount = findStoreMountPoint();
     const allListings = await loadListings();
@@ -477,6 +590,13 @@
     const activeChatItem = chatListingId
       ? allListings.find((x) => String(x.id) === String(chatListingId)) || null
       : null;
+
+    if (activeChatItem && !options.skipRealtimeSync) {
+      ensureRealtimeSubscription(activeChatItem.id, activeThreadKey);
+    } else if (!activeChatItem) {
+      cleanupRealtime();
+    }
+
     const chatMessages = activeChatItem ? await loadMessages(activeChatItem.id, activeThreadKey) : [];
 
     const catsHtml = CATEGORIES.map(
@@ -608,6 +728,7 @@
             <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
               <div>
                 <strong style="font-size:1.05rem;">${esc(activeChatItem.title)} • ${esc(formatEtb(activeChatItem.price_etb))}</strong>
+                <span class="az-rt-pill" id="az-rt-badge">${realtimeStatus === "subscribed" ? "● Live Realtime" : `○ ${esc(realtimeStatus)}`}</span>
                 <div style="font-size:0.8rem;color:#475569;">
                   Seller: <strong>${esc(activeChatItem.seller_name)}</strong>${activeChatItem.seller_phone ? ` • ${esc(activeChatItem.seller_phone)}` : ""}
                 </div>
@@ -870,6 +991,7 @@
     const closeChatBtn = mount.querySelector("#az-close-chat");
     if (closeChatBtn) {
       closeChatBtn.addEventListener("click", () => {
+        cleanupRealtime();
         chatListingId = null;
         render();
       });
@@ -930,7 +1052,7 @@
           shared_lng: coords ? coords.lng : null,
           shared_label: coords ? "Live Location" : ""
         });
-        await render();
+        await render({ skipRealtimeSync: true });
         const stream = document.getElementById("az-chat-stream");
         if (stream) stream.scrollTop = stream.scrollHeight;
       };
@@ -952,7 +1074,7 @@
     if (sendPinBtn) sendPinBtn.addEventListener("click", () => handleSendChat(true));
   }
 
-  window.AzmariShopChatLocation = { render: render };
+  window.AzmariShopChatLocation = { render: render, cleanupRealtime: cleanupRealtime };
 
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", () => render());
