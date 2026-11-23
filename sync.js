@@ -1,7 +1,6 @@
 (function () {
   var URL = "https://rnqizccrzbolsynfsxbu.supabase.co/rest/v1/user_entries";
   var KEY = "sb_publishable_1pbzO1FOGTjIjjE-yF7d1A__OFPESB2";
-<<<<<<< HEAD
   var HEADERS = {
     apikey: KEY,
     Authorization: "Bearer " + KEY,
@@ -49,16 +48,13 @@
 
   function send(kind, phone, name, data) {
     if (kind === "account") return upsertAccount(phone, name, data);
-=======
   var last = {};
   function send(kind, phone, name, data) {
->>>>>>> store-backend
     var s = JSON.stringify(data);
     if (last[kind] === s) return;
     last[kind] = s;
     fetch(URL, {
       method: "POST",
-<<<<<<< HEAD
       headers: Object.assign({}, HEADERS, { Prefer: "return=minimal" }),
       body: JSON.stringify({ kind: kind, phone: normPhone(phone) || null, name: name || null, data: data })
     }).catch(function () {});
@@ -109,7 +105,6 @@
       hydrateAccount(saved.phone);
     }
   } catch (e) {}
-=======
       headers: { apikey: KEY, Authorization: "Bearer " + KEY, "Content-Type": "application/json", Prefer: "return=minimal" },
       body: JSON.stringify({ kind: kind, phone: phone || null, name: name || null, data: data })
     }).catch(function () {});
@@ -123,5 +118,4 @@
       else if (k === "ab_jobs" && o && o[0]) { var ac = JSON.parse(localStorage.getItem("acct") || "null") || {}; send("job", ac.phone, ac.name, o[0]); }
     } catch (e) {}
   };
->>>>>>> store-backend
 })();

@@ -45,7 +45,6 @@ var SECT=[["attendance","Attendance"],["videos","Uploaded videos"],["live","Live
 function login(){app.textContent="";var a=inp("Student ID (AZ-26-0001)"),b=inp("Phone","tel"),m=el("p");
  try{a.value=localStorage.getItem("sid")||""}catch(e){}
  app.append(el("h2","Student login"),a,b,el("button","Open my progress",{onclick:function(){ID=a.value;PH=b.value;show(m)}}),m)}
-<<<<<<< HEAD
 async function show(m){var r=await sb.rpc("student_progress",{p_student_no:ID,p_phone:PH});
  if(r.error||!r.data){if(m)m.textContent="ID or phone not found.";return}
  try{localStorage.setItem("sid",ID)}catch(e){}
@@ -63,7 +62,6 @@ login();
 </script>  <script src="student-embed.js"></script>
   <script src="academy-progress.js"></script>
 </body></html>
-=======
 
 function progressBar(value){
   value=Math.max(0,Math.min(100,Number(value)||0));
@@ -157,4 +155,3 @@ async function show(m){
 
 login();
 </script></body></html>
->>>>>>> store-backend

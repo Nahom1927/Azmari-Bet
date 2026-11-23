@@ -123,8 +123,6 @@
     }
   };
 
-<<<<<<< HEAD
-=======
   window.azSubmitPaidPost = async function (opts) {
     var token = null;
     var rpcStarted = false;
@@ -198,7 +196,6 @@
   };
 
 
->>>>>>> store-backend
   var QK = "az_rec_queue";
   function qget() { try { return JSON.parse(localStorage.getItem(QK) || "[]"); } catch (e) { return []; } }
   function qset(a) { try { localStorage.setItem(QK, JSON.stringify(a.slice(-20))); } catch (e) {} }
@@ -325,8 +322,6 @@
   }
   if (document.readyState === "complete") boot(); else window.addEventListener("load", boot);
 })();
-<<<<<<< HEAD
-=======
 
 window.azUploadPostMedia = async function(file) {
   const sb = window.azSupabase;
@@ -363,4 +358,3 @@ window.azUploadPostMedia = async function(file) {
 
   return data.publicUrl;
 };
->>>>>>> store-backend

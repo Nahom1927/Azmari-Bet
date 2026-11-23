@@ -90,7 +90,6 @@ async function decide(o, approve) {
   if (r.error) alert(r.error.message); else load();
 }
 
-<<<<<<< HEAD
 async function load() {
   var s = (await sb.auth.getSession()).data.session;
   if (!s) { login(); return; }
@@ -98,7 +97,6 @@ async function load() {
   app.textContent = "";
   var top = el("div", "", "margin-bottom:12px");
   ["pending", "approved", "rejected", "expiring"].forEach(function (t) {
-=======
 async function decidePost(post, approve) {
   var refTxt = post.reference ? " (" + post.reference + ")" : "";
   var q = approve
@@ -180,7 +178,6 @@ async function load() {
   app.textContent = "";
   var top = el("div", "", "margin-bottom:12px");
   ["pending", "posts", "approved", "rejected", "expiring"].forEach(function (t) {
->>>>>>> store-backend
     top.appendChild(btn(t, function () { tab = t; load(); }, t === tab ? "#29c5ff" : "#8899aa"));
   });
   top.appendChild(btn("Refresh", load, "#cfd8e3"));

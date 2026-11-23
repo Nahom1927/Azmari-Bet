@@ -73,7 +73,6 @@ input, select, textarea {
 }
 </style>
 
-<<<<<<< HEAD
 <style id="azmari-theme-sync">
 :root{--on:#04210f}
 button,.tabs button.on{color:var(--on)}
@@ -90,8 +89,6 @@ function apply(){var t=pick();document.documentElement.setAttribute("data-theme"
 apply();window.addEventListener("storage",apply);window.addEventListener("focus",apply);window.addEventListener("pageshow",apply);document.addEventListener("visibilitychange",apply);
 try{matchMedia("(prefers-color-scheme: dark)").addEventListener("change",apply)}catch(e){}})();
 </script>
-=======
->>>>>>> store-backend
 </head>
 <body><div id="app"></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
@@ -208,11 +205,8 @@ try{matchMedia("(prefers-color-scheme: dark)").addEventListener("change",apply)}
   /* ---------- student ---------- */
   function studentView() {
     clear(app); shell("student");
-<<<<<<< HEAD
     tabbed([["My progress", progressTab], ["Academy", academyStudentTab], ["Exams", examsTab], ["Sections", sectionsTab]]);
-=======
     tabbed([["My progress", progressTab], ["Academy", academyStudentTab], ["Sections", sectionsTab]]);
->>>>>>> store-backend
   }
   async function progressTab(body) {
     var r = await sb.rpc("my_progress");
@@ -260,7 +254,6 @@ try{matchMedia("(prefers-color-scheme: dark)").addEventListener("change",apply)}
     });
     c.appendChild(details); parent.appendChild(c);
   }
-<<<<<<< HEAD
   /* ---------- written theory exams (from AZMARI MUSIC ACADEMY guide book) ---------- */
   var EXAMS = [
     { id: "l1", title: "Level 1 · Foundation theory exam", about: "Weeks 1–12: notes, scales, triads, rhythm and the first qenet.", qs: [
@@ -445,8 +438,6 @@ try{matchMedia("(prefers-color-scheme: dark)").addEventListener("change",apply)}
     }
     who.onchange = load; add(body, top, host); load();
   }
-=======
->>>>>>> store-backend
   async function academyStudentTab(body) {
     var r = await sb.rpc("academy_my_course_progress");
     if (r.error || !r.data) { add(body, el("p", r.error ? r.error.message : "Academy progress is not available yet. Ask the academy administrator to apply the academy-progress.sql setup file.", { className: "msg err" })); return; }
@@ -540,11 +531,8 @@ try{matchMedia("(prefers-color-scheme: dark)").addEventListener("change",apply)}
   /* ---------- staff ---------- */
   function staffView(role) {
     clear(app); shell(role);
-<<<<<<< HEAD
     var items = [["Students", studentsTab], ["Academy progress", academyStaffTab], ["Exam papers", examsTab], ["Exam results", examResultsTab], ["Attendance", attendanceTab], ["Grades", gradesTab], ["Codes", codesTab], ["Lessons", lessonsTab]];
-=======
     var items = [["Students", studentsTab], ["Academy progress", academyStaffTab], ["Attendance", attendanceTab], ["Grades", gradesTab], ["Codes", codesTab], ["Lessons", lessonsTab]];
->>>>>>> store-backend
     if (role === "admin") { items.unshift(["Applications", applicationsTab]); items.push(["Payments", paymentsTab], ["Register", registerTab], ["Team", teamTab]); }
     tabbed(items);
   }
