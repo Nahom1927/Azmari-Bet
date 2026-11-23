@@ -145,7 +145,6 @@
       ["Instrument / Course", record.instrument || ""],
       ["Level", record.level || ""],
       ["Region", record.region || ""],
-      ["Status", "Saved Forever (Read-Only)"]
     ];
 
     fields.forEach(function (pair) {

@@ -238,7 +238,6 @@
         "<p style='margin:3px 0;'><strong>Student No:</strong> " + (rec.student_no || "-") + "</p>" +
         "<p style='margin:3px 0;'><strong>Phone:</strong> " + (rec.phone || "-") + "</p>" +
         "<p style='margin:3px 0;'><strong>Section & Code:</strong> " + (rec.section || "-") + " / " + (rec.code || "-") + "</p>" +
-        "<p style='margin:3px 0;'><strong>Lock Status:</strong> Saved Forever (Read-Only)</p>" +
         grantLine;
     }
 

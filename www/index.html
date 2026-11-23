@@ -206,7 +206,6 @@ input, select, textarea {
 }
 </style>
 
-
 <style id="azmari-phone-fixes">
 /* Keep the language selector compact without squeezing the app title. */
 .top h1 { min-width: 0; }
@@ -505,7 +504,6 @@ case"evpay":if(needMedia("event"))return;if(S.ev.title&&modr(S.ev.title)){toast(
 case"call":toast("Contact is not available yet");return;case"offerok":if(needMedia("offer"))return;toast(t("waiting"));return;case"tribute":toast("Tributes are checked by the admin first");return;
 case"jobpost":{const d=D.job||{},ti=(d.title||"").trim(),lo=(d.loc||"").trim(),de=(d.desc||"").trim(),co=(d.con||"").trim();if(!ti||!lo||!co){toast("Write the job title, place and contact first");return}const bd=modr(ti+" "+lo+" "+de);if(bd){toast("Blocked: "+bd+". Please change your text.");return}JOBS.unshift({id:Date.now(),title:ti,loc:lo,desc:de,con:co,by:acct.name,t:Date.now(),mine:1});jobSave();D.job={};toast("Job posted ✓ It is live now");break}
 
-
 case"jobdel":if(!confirm("Remove this job offer?"))return;JOBS=JOBS.filter(j=>j.id!=v);jobSave();break}
 render()});
 document.addEventListener("input",e=>{const dd=e.target.dataset&&e.target.dataset.d;if(dd){const q=dd.split("|");(D[q[0]]||(D[q[0]]={}))[q[1]]=e.target.type==="checkbox"?e.target.checked:e.target.value;return}const f=e.target.dataset&&e.target.dataset.f;if(!f)return;if(f==="evtitle")S.ev.title=e.target.value;else S.reg[f]=e.target.value});
@@ -607,5 +605,10 @@ if("serviceWorker" in navigator && location.protocol.indexOf("http")===0){window
 <script src="zone.js"></script>
 <script src="reg-sync.js"></script>
 <script src="payments.js"></script>
-<script src="section-slideshow.js"></script></body>
+<script src="section-slideshow.js"></script>
+<script src="events-section.js"></script>
+<script src="bands-section.js"></script>
+<script src="jobs-section.js"></script>
+<script src="legend-section.js"></script>
+</body>
 </html>

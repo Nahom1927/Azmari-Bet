@@ -168,8 +168,7 @@
         phoneInput.value = prof.phone;
         nameInput.readOnly = true;
         phoneInput.readOnly = true;
-        profileBox.innerHTML =
-          "<div><strong>Embedded Profile (Saved Forever):</strong> " + prof.name + " • " + prof.phone + " • <em>Locked Read-Only</em></div>";
+        profileBox.innerHTML = "";
       } else {
         profileBox.innerHTML =
           "<div><strong>Profile Status:</strong> Enter your name and phone once—once saved, your profile stays embedded as read-only text forever.</div>";
