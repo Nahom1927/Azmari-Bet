@@ -145,7 +145,6 @@
 
     document.body.appendChild(container);
 
-    var profileBox = container.querySelector("#jobs-embedded-profile");
     var listBox = container.querySelector("#jobs-list");
     var statusEl = container.querySelector("#jobs-form-status");
     var nameInput = container.querySelector("#job-poster-name");
@@ -158,9 +157,9 @@
         phoneInput.value = prof.phone;
         nameInput.readOnly = true;
         phoneInput.readOnly = true;
-        profileBox.innerHTML = "";
+
       } else {
-        profileBox.innerHTML =
+
           "<div><strong>Profile Status:</strong> Enter your name and phone once—once saved, your profile stays embedded as read-only text forever.</div>";
       }
     }
@@ -200,7 +199,7 @@
         phone: phoneInput.value
       });
       if (!locked) {
-        statusEl.textContent = "Please enter your name and phone number to register your embedded profile.";
+
         return;
       }
       syncEmbeddedProfileUI();

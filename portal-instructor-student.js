@@ -322,7 +322,7 @@
         });
         var grantInfo = await fetchGrantStatus(rec.student_no, rec.phone);
         paintStudentCard(saved.lockedStudent, grantInfo);
-        stuMsg.textContent = "Code redeemed and student saved forever as embedded text.";
+
         refreshGrantAndLessons();
       } catch (err) {
         stuMsg.textContent = err.message;

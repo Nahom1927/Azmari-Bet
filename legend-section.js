@@ -152,7 +152,6 @@
 
     document.body.appendChild(container);
 
-    var profileBox = container.querySelector("#legend-embedded-profile");
     var formEl = container.querySelector("#legend-post-form");
     var lockedNote = container.querySelector("#legend-locked-note");
     var keyInput = container.querySelector("#legend-admin-key");
@@ -168,9 +167,9 @@
         phoneInput.value = prof.phone;
         nameInput.readOnly = true;
         phoneInput.readOnly = true;
-        profileBox.innerHTML = "";
+
       } else {
-        profileBox.innerHTML =
+
           "<div><strong>Profile Status:</strong> Enter your name and phone once—once saved, your profile stays embedded as read-only text forever.</div>";
       }
     }
@@ -234,7 +233,7 @@
         role: "Admin"
       });
       if (!locked) {
-        statusEl.textContent = "Please enter your name and phone number to register your embedded profile.";
+
         return;
       }
       syncEmbeddedProfileUI();
