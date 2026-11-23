@@ -17,3 +17,8 @@ node_modules
 www/
 =======
 >>>>>>> store-backend
+
+# Store-only backend local DB, logs, and uploads
+store-backend/store_only.db
+store-backend/store.log
+store-backend/public/uploads/*
