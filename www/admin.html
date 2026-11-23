@@ -90,6 +90,7 @@ async function decide(o, approve) {
   if (r.error) alert(r.error.message); else load();
 }
 
+<<<<<<< HEAD
 async function load() {
   var s = (await sb.auth.getSession()).data.session;
   if (!s) { login(); return; }
@@ -97,6 +98,89 @@ async function load() {
   app.textContent = "";
   var top = el("div", "", "margin-bottom:12px");
   ["pending", "approved", "rejected", "expiring"].forEach(function (t) {
+=======
+async function decidePost(post, approve) {
+  var refTxt = post.reference ? " (" + post.reference + ")" : "";
+  var q = approve
+    ? "Approve post #" + post.id + refTxt + " so it goes live publicly?"
+    : "Reject post #" + post.id + refTxt + "?";
+  if (!confirm(q)) return;
+  var r = await sb.rpc("app_admin_decide_post", { p_id: post.id, p_approve: approve });
+  if (r.error) alert(r.error.message); else load();
+}
+
+async function verifyPostPay(post) {
+  var note = prompt("Optional payment verification note:", post.payment_note || "");
+  if (note === null) return;
+  var r = await sb.rpc("app_admin_update_post_payment", {
+    p_id: post.id,
+    p_verified: true,
+    p_note: note.trim() || null
+  });
+  if (r.error) alert(r.error.message); else { alert("Payment marked verified"); load(); }
+}
+
+function renderPostsTab(container) {
+  container.appendChild(el("p", "Loading pending posts...", "opacity:.8"));
+  sb.rpc("admin_list_pending_posts").then(function (r) {
+    container.textContent = "";
+    if (r.error) {
+      container.appendChild(el("p", "Error loading posts: " + r.error.message, "color:#ffb3b3"));
+      return;
+    }
+    var list = Array.isArray(r.data) ? r.data : [];
+    if (!list.length) {
+      container.appendChild(el("p", "No pending posts."));
+      return;
+    }
+    list.forEach(function (post) {
+      var d = post.data && typeof post.data === "object" ? post.data : {};
+      var card = el("div", "", "border:1px solid #445;border-radius:10px;padding:12px;margin:10px 0;background:#141b33");
+      card.appendChild(el("div", (d.title || post.kind || "Post") + " · " + (post.kind || "item") + (post.price != null ? " · " + post.price + " ETB" : ""), "font-weight:bold;font-size:17px"));
+      card.appendChild(el("div", (post.author_name || post.customer_name || "(no name)") + " · " + (post.author_phone || post.customer_phone || "no phone"), "font-weight:bold"));
+      if (post.reference) card.appendChild(el("div", "Transaction ID: " + post.reference, "font-family:monospace;margin:4px 0"));
+      if (d.loc) card.appendChild(el("div", "Place: " + d.loc));
+      if (d.con) card.appendChild(el("div", "Contact: " + d.con));
+      if (d.desc) card.appendChild(el("div", d.desc, "margin:6px 0;opacity:.92"));
+      if (Array.isArray(d.photos) && d.photos.length) {
+        var pw = el("div", "", "display:flex;gap:8px;flex-wrap:wrap;margin:8px 0");
+        d.photos.forEach(function (u) {
+          if (!u) return;
+          var im = el("img", "");
+          im.src = u;
+          im.style.cssText = "width:96px;height:96px;object-fit:cover;border-radius:8px";
+          pw.appendChild(im);
+        });
+        card.appendChild(pw);
+      }
+      if (d.video) {
+        var vd = el("video", "");
+        vd.src = d.video;
+        vd.controls = true;
+        vd.preload = "metadata";
+        vd.style.cssText = "max-width:260px;border-radius:8px;margin:8px 0;display:block";
+        card.appendChild(vd);
+      }
+      if (post.created_at) {
+        card.appendChild(el("div", "Submitted: " + new Date(post.created_at).toLocaleString("en-GB", {timeZone:"Africa/Addis_Ababa",day:"2-digit",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit",second:"2-digit",hour12:false}), "opacity:.85;font-size:13px"));
+      }
+      card.appendChild(btn("Verify Payment", function () { verifyPostPay(post); }, "#ffd27a"));
+      card.appendChild(btn("Approve Post", function () { decidePost(post, true); }, "#5ee38a"));
+      card.appendChild(btn("Reject Post", function () { decidePost(post, false); }, "#ff8a8a"));
+      container.appendChild(card);
+    });
+  });
+}
+
+async function load() {
+  var s = (await sb.auth.getSession()).data.session;
+  if (!s) { login(); return; }
+  if (tab === "posts") { var pWrap = el("div", ""); app.appendChild(pWrap); renderPostsTab(pWrap); return; }
+  var r = tab === "expiring" ? await sb.rpc("admin_expiring", { p_days: 7 }) : await sb.rpc("admin_list_orders", { p_status: tab });
+  app.textContent = "";
+  var top = el("div", "", "margin-bottom:12px");
+  ["pending", "posts", "approved", "rejected", "expiring"].forEach(function (t) {
+>>>>>>> store-backend
     top.appendChild(btn(t, function () { tab = t; load(); }, t === tab ? "#29c5ff" : "#8899aa"));
   });
   top.appendChild(btn("Refresh", load, "#cfd8e3"));
