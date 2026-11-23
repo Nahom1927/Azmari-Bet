@@ -73,6 +73,22 @@ input, select, textarea {
 }
 </style>
 
+<style id="azmari-theme-sync">
+:root{--on:#04210f}
+button,.tabs button.on{color:var(--on)}
+:root[data-theme="light"]{--bg:#eef4ff;--sf:#ffffff;--sf2:#f3f6ff;--ln:#d3dcf2;--ink:#0d1b3a;--mu:#566488;--gr:#168a4a;--gd:#b07a05;--rd:#b23a30;--on:#ffffff;color-scheme:light}
+:root[data-theme="light"] body{background:radial-gradient(1200px 600px at 50% -10%,#dbe8ff 0,var(--bg) 60%) fixed}
+:root[data-theme="light"] tr.click:hover{background:#e6eeff}
+:root[data-theme="light"] .badge,:root[data-theme="light"] button.gd{color:#fff}
+:root[data-theme="light"] .ac-progress{background:#fde8ea;border-color:#f3b6bc}
+:root[data-theme="light"] .ac-done{color:#c4202e}:root[data-theme="light"] .ac-level{color:#b23a30}
+</style>
+<script>
+(function(){function pick(){var t=null;try{t=localStorage.getItem("theme")}catch(e){}if(t==="light"||t==="dark")return t;try{return matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"}catch(e){return"dark"}}
+function apply(){var t=pick();document.documentElement.setAttribute("data-theme",t);var m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute("content",t==="light"?"#eef4ff":"#060B1A")}
+apply();window.addEventListener("storage",apply);window.addEventListener("focus",apply);window.addEventListener("pageshow",apply);document.addEventListener("visibilitychange",apply);
+try{matchMedia("(prefers-color-scheme: dark)").addEventListener("change",apply)}catch(e){}})();
+</script>
 </head>
 <body><div id="app"></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
@@ -339,6 +355,12 @@ input, select, textarea {
           btn("Start exam", function () { run(x); window.scrollTo(0, 0); }));
         host.appendChild(c);
       });
+      var hc = card(); add(hc, el("h3", "Your saved attempts")); host.appendChild(hc);
+      sb.rpc("academy_my_exam_attempts").then(function (q) {
+        if (q.error) { hc.remove(); return; }
+        if (!q.data || !q.data.length) { hc.appendChild(el("p", "No saved attempts yet.", { className: "mu" })); return; }
+        q.data.slice(0, 8).forEach(function (a) { hc.appendChild(el("p", new Date(a.created_at).toLocaleDateString() + " · " + examTitleOf(a.exam_id) + " · " + a.right_count + "/" + a.total + " (" + Math.round(a.pct) + "%)", { className: "mu", style: "margin:2px 0" })); });
+      }, function () { hc.remove(); });
     }
     function run(x) {
       clear(host);
@@ -347,7 +369,7 @@ input, select, textarea {
       items.forEach(function (it, n) {
         var c = card(), btns = [];
         add(c, el("p", (n + 1) + ". " + it.q, { style: "font-weight:700" }));
-        function paint() { btns.forEach(function (b, k) { var on = it.pick === k; b.style.background = on ? "var(--gr)" : "transparent"; b.style.color = on ? "#04210f" : "var(--ink)"; }); }
+        function paint() { btns.forEach(function (b, k) { var on = it.pick === k; b.style.background = on ? "var(--gr)" : "transparent"; b.style.color = on ? "var(--on)" : "var(--ink)"; }); }
         it.opts.forEach(function (o, k) {
           var b = btn(o.t, function () { it.pick = k; paint(); }, "ln full"); b.style.textAlign = "left"; btns.push(b); c.appendChild(b);
         });
@@ -371,6 +393,11 @@ input, select, textarea {
         btn("Try again", function () { run(x); window.scrollTo(0, 0); }), btn("Back to exams", function () { showList(); window.scrollTo(0, 0); }, "ln"));
       host.appendChild(r);
       var wrong = items.filter(function (it) { return !it.opts[it.pick].ok; });
+      var saveNote = el("p", "Saving your attempt…", { className: "mu" }); r.appendChild(saveNote);
+      sb.rpc("academy_submit_exam_attempt", { p_exam_id: x.id, p_right: right, p_total: items.length, p_missed: wrong.map(function (it) { return it.q; }) }).then(function (res) {
+        if (res.error) { saveNote.textContent = "Not saved to your teacher: " + res.error.message; saveNote.className = "msg err"; }
+        else { saveNote.textContent = "✓ Saved. Your teacher can see this attempt."; saveNote.style.color = "var(--gr)"; }
+      }, function () { saveNote.textContent = "Not saved: no connection."; saveNote.className = "msg err"; });
       if (wrong.length) {
         var w = card(); w.appendChild(el("h3", "Review your mistakes"));
         wrong.forEach(function (it) {
@@ -381,6 +408,34 @@ input, select, textarea {
       }
       window.scrollTo(0, 0);
     }
+  }
+  function examTitleOf(id) { var f = EXAMS.filter(function (x) { return x.id === id; })[0]; return f ? f.title.split(" · ")[0] : id; }
+  async function examResultsTab(body) {
+    var o = await overview(); if (o.err) { add(body, el("p", o.err, { className: "msg err" })); return; }
+    var names = {}; o.data.forEach(function (s) { names[s.student_no] = s.name; });
+    var who = sel([["", "All students"]].concat(o.data.map(function (s) { return [s.student_no, s.student_no + " · " + s.name]; }))), host = el("div"), m = msg();
+    var top = card(); add(top, el("h3", "📝 Student exam attempts"), el("p", "Self-check attempts students made in the portal. Tap a row to see the questions they missed. Official scores are still entered under Academy progress.", { className: "mu" }), lab("Student", who), m);
+    async function load() {
+      clear(host); say(m, "Loading…");
+      var q = await sb.rpc("academy_staff_list_exam_attempts", { p_student_no: who.value || null });
+      if (q.error) { say(m, q.error.message + " · If this is the first setup, run supabase/academy-exam-attempts.sql in the Supabase SQL Editor.", true); return; }
+      say(m, ""); var rows = q.data || [];
+      if (!rows.length) { add(host, el("p", "No attempts yet.", { className: "mu" })); return; }
+      var c = card(), t = el("table"), th = el("tr");
+      ["Date", "Student", "Exam", "Score", ""].forEach(function (h) { th.appendChild(el("th", h)); }); t.appendChild(th);
+      rows.forEach(function (r) {
+        var tr = el("tr"), ok = Number(r.pct) >= 70, det = el("tr"), cell = el("td", null, { colSpan: 5 });
+        tr.className = "click"; det.style.display = "none";
+        add(tr, el("td", new Date(r.created_at).toLocaleString()), el("td", (names[r.student_no] || "") + " · " + r.student_no), el("td", examTitleOf(r.exam_id)),
+          el("td", r.right_count + "/" + r.total + " · " + Math.round(r.pct) + "%"), el("td", ok ? "Pass" : "Below 70", { className: "pill " + (ok ? "p" : "a") }));
+        var missed = r.missed || [];
+        if (missed.length) { missed.forEach(function (qq) { cell.appendChild(el("p", "✗ " + qq, { className: "mu", style: "margin:2px 0" })); }); } else cell.appendChild(el("p", "No missed questions.", { className: "mu" }));
+        det.appendChild(cell); tr.onclick = function () { det.style.display = det.style.display === "none" ? "" : "none"; };
+        t.appendChild(tr); t.appendChild(det);
+      });
+      c.appendChild(el("div", null, { className: "scroll" })).appendChild(t); host.appendChild(c);
+    }
+    who.onchange = load; add(body, top, host); load();
   }
   async function academyStudentTab(body) {
     var r = await sb.rpc("academy_my_course_progress");
@@ -475,7 +530,7 @@ input, select, textarea {
   /* ---------- staff ---------- */
   function staffView(role) {
     clear(app); shell(role);
-    var items = [["Students", studentsTab], ["Academy progress", academyStaffTab], ["Exam papers", examsTab], ["Attendance", attendanceTab], ["Grades", gradesTab], ["Codes", codesTab], ["Lessons", lessonsTab]];
+    var items = [["Students", studentsTab], ["Academy progress", academyStaffTab], ["Exam papers", examsTab], ["Exam results", examResultsTab], ["Attendance", attendanceTab], ["Grades", gradesTab], ["Codes", codesTab], ["Lessons", lessonsTab]];
     if (role === "admin") { items.unshift(["Applications", applicationsTab]); items.push(["Payments", paymentsTab], ["Register", registerTab], ["Team", teamTab]); }
     tabbed(items);
   }
