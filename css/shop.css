@@ -21,7 +21,8 @@
 .azs *, .azs-overlay *, .azs-chat *, .azs-toast * { box-sizing: border-box; }
  
 /* ---------- page ---------- */
-.azs { padding: 12px; color: inherit; }
+.azs { padding: 14px 12px 20px; margin: 0; color: var(--azs-text); background: var(--azs-bg); border-radius: 16px; min-height: 60vh; }
+.azs .azs-h { color: var(--azs-text); }
 .azs-card, .azs-sheet, .azs-toast { color: var(--azs-text); }
 .azs-top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; }
 .azs-h { margin: 0; font-size: 22px; }
