@@ -92,7 +92,7 @@ BEFORE INSERT ON listings
 WHEN (SELECT seller_status FROM users WHERE id = NEW.seller_id) <> 'approved'
  AND (SELECT role FROM users WHERE id = NEW.seller_id) <> 'admin'
  AND (SELECT COUNT(*) FROM listings
-       WHERE seller_id = NEW.seller_id AND status <> 'rejected') >= 2
+       WHERE seller_id = NEW.seller_id AND status <> 'rejected') >= 10
 BEGIN
   SELECT RAISE(ABORT, 'POST_LIMIT');
 END;
