@@ -15,13 +15,13 @@ const Database = require('better-sqlite3');
 const { Server } = require('socket.io');
  
 // ---------- config ----------
-const PORT = Number(process.env.PORT) || 4000;
+const PORT = Number(process.env.PORT) || 8080;
 const JWT_SECRET = process.env.JWT_SECRET || '';
 if (JWT_SECRET.length < 32) {
   console.error('JWT_SECRET is missing or shorter than 32 characters. Check .env');
   process.exit(1);
 }
-const ORIGINS = (process.env.CORS_ORIGINS || 'http://localhost:4000')
+const ORIGINS = (process.env.CORS_ORIGINS || 'http://localhost:8080,http://localhost:8080')
   .split(',').map((s) => s.trim()).filter(Boolean);
 const FREE_POST_LIMIT = 2; // keep in sync with trigger trg_post_limit in schema.sql
 const UPLOAD_DIR = path.join(__dirname, 'uploads');
@@ -38,7 +38,7 @@ app.use(helmet({ contentSecurityPolicy: false, crossOriginResourcePolicy: { poli
 app.use(cors({ origin: ORIGINS }));
 app.use(express.json({ limit: '50kb' }));
 app.use('/uploads', express.static(UPLOAD_DIR, { maxAge: '7d' }));
-app.use(express.static(path.join(__dirname, '..', 'www'))); // serves your app at http://localhost:4000
+app.use(express.static(path.join(__dirname, '..', 'www'))); // serves your app at http://localhost:8080,http://localhost:8080
  
 const authLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 30, standardHeaders: true, legacyHeaders: false });
 const writeLimiter = rateLimit({ windowMs: 60 * 1000, limit: 60, standardHeaders: true, legacyHeaders: false });
