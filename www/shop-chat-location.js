@@ -7,7 +7,13 @@
   const STORAGE_USER_KEY = "azmari_store_user_v2";
 
   const CATEGORIES = [
-    { id: "All", label: "All", icon: "🛍️" },
+    { id: "All", label: "All items", icon: "🛍️" },
+    { id: "Phones", label: "Phones", icon: "📱" },
+    { id: "Electronics", label: "Electronics", icon: "💻" },
+    { id: "Fashion", label: "Fashion", icon: "👕" },
+    { id: "Home & Furniture", label: "Home & Furniture", icon: "🛋️" },
+    { id: "Vehicles", label: "Vehicles", icon: "🚗" },
+    { id: "Property", label: "Property", icon: "🏠" },
     { id: "Keyboards", label: "Keyboards", icon: "🎹" },
     { id: "Strings", label: "Strings", icon: "🎸" },
     { id: "Traditional", label: "Traditional", icon: "🪕" },
@@ -391,33 +397,33 @@
     const style = document.createElement("style");
     style.id = "az-jiji-store-styles";
     style.textContent = `
-      .az-st-shell { max-width: 780px; margin: 12px auto 84px; padding: 14px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #e8f1fb; color: #0f172a; border-radius: 18px; }
+      .az-st-shell { width: 100%; max-width: 1240px; box-sizing: border-box; margin: 12px auto 84px; padding: clamp(12px, 2.2vw, 24px); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #07123d; color: #f4f7ff; border: 1px solid rgba(60,200,255,.18); border-radius: 18px; }
       .az-st-topbar { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 12px; }
-      .az-st-h1 { margin: 0; font-size: 1.65rem; font-weight: 800; color: #0f172a; letter-spacing: -0.02em; }
-      .az-st-post-cta { background: #16a34a; color: #fff; border: none; border-radius: 999px; padding: 9px 16px; font-weight: 700; font-size: 0.9rem; cursor: pointer; box-shadow: 0 3px 10px rgba(22,163,74,0.28); }
-      .az-st-live-cta { background: #2563eb; color: #fff; border: none; border-radius: 999px; padding: 8px 13px; font-weight: 700; font-size: 0.82rem; cursor: pointer; }
-      .az-st-search { display: flex; align-items: center; gap: 8px; background: #ffffff; border-radius: 14px; padding: 10px 14px; box-shadow: 0 2px 8px rgba(15,23,42,0.06); margin-bottom: 12px; }
-      .az-st-search input { border: none; outline: none; width: 100%; font-size: 0.98rem; color: #0f172a; background: transparent; }
+      .az-st-h1 { margin: 0; font-size: clamp(1.45rem, 3vw, 2rem); font-weight: 850; color: #ffffff; letter-spacing: -0.02em; }
+      .az-st-post-cta { background: #e8b23a; color: #07123d; border: none; border-radius: 999px; padding: 9px 16px; font-weight: 700; font-size: 0.9rem; cursor: pointer; box-shadow: 0 3px 10px rgba(22,163,74,0.28); }
+      .az-st-live-cta { background: #0a66ff; color: #fff; border: none; border-radius: 999px; padding: 8px 13px; font-weight: 700; font-size: 0.82rem; cursor: pointer; }
+      .az-st-search { display: flex; align-items: center; gap: 8px; background: #101f50; border-radius: 14px; padding: 10px 14px; box-shadow: 0 2px 8px rgba(15,23,42,0.06); margin-bottom: 12px; }
+      .az-st-search input { border: none; outline: none; width: 100%; font-size: 0.98rem; color: #ffffff; background: transparent; } .az-st-search input::placeholder { color: #aebbdc; }
       .az-st-cats { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 6px; margin-bottom: 14px; scrollbar-width: none; }
       .az-st-cats::-webkit-scrollbar { display: none; }
-      .az-st-cat { flex: 0 0 auto; min-width: 76px; padding: 10px 12px; border-radius: 14px; border: 1px solid #dbeafe; background: #ffffff; color: #1e293b; text-align: center; cursor: pointer; font-size: 0.82rem; font-weight: 600; transition: all 0.15s ease; }
-      .az-st-cat.active { background: #38bdf8; color: #0f172a; border-color: #0ea5e9; font-weight: 700; }
+      .az-st-cat { flex: 0 0 auto; min-width: 76px; padding: 10px 12px; border-radius: 14px; border: 1px solid rgba(60,200,255,.25); background: #101f50; color: #eaf2ff; text-align: center; cursor: pointer; font-size: 0.82rem; font-weight: 600; transition: all 0.15s ease; }
+      .az-st-cat.active { background: #0a66ff; color: #ffffff; border-color: #3cc8ff; font-weight: 800; }
       .az-st-cat-ico { display: block; font-size: 1.45rem; margin-bottom: 4px; }
-      .az-st-sub { margin: 0 0 12px; font-size: 1.05rem; font-weight: 800; color: #0f172a; }
+      .az-st-sub { margin: 0 0 12px; font-size: 1.05rem; font-weight: 800; color: #ffffff; }
       .az-st-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
       @media (min-width: 680px) { .az-st-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
       .az-st-card { background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 3px 12px rgba(15,23,42,0.07); display: flex; flex-direction: column; border: 1px solid #e2e8f0; }
-      .az-st-hero { position: relative; height: 132px; background: linear-gradient(180deg, #0057e7 0%, #0284c7 100%); display: flex; align-items: center; justify-content: center; }
+      .az-st-hero { position: relative; height: 150px; background: linear-gradient(135deg, #0a66ff 0%, #07123d 100%); display: flex; align-items: center; justify-content: center; }
       .az-st-hero img { width: 100%; height: 100%; object-fit: cover; }
       .az-st-hero-emoji { font-size: 3.3rem; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.22)); }
       .az-st-fav { position: absolute; top: 9px; right: 9px; width: 32px; height: 32px; border-radius: 50%; border: none; background: rgba(15,23,42,0.52); color: #fff; font-size: 1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; }
       .az-st-verified { position: absolute; left: 9px; bottom: 9px; background: #22c55e; color: #ffffff; font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px; }
       .az-st-body { padding: 10px 11px 11px; display: flex; flex-direction: column; gap: 4px; flex: 1; }
-      .az-st-price { color: #0ea5e9; font-weight: 800; font-size: 1.05rem; }
+      .az-st-price { color: #0a66ff; font-weight: 800; font-size: 1.05rem; }
       .az-st-title { font-weight: 700; font-size: 0.96rem; color: #0f172a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
       .az-st-meta { font-size: 0.77rem; color: #64748b; display: flex; align-items: center; gap: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
       .az-st-actions { display: flex; gap: 7px; margin-top: 8px; }
-      .az-st-contact { flex: 1; background: #38bdf8; color: #0f172a; border: none; border-radius: 10px; padding: 8px 10px; font-weight: 700; font-size: 0.88rem; cursor: pointer; }
+      .az-st-contact { flex: 1; background: #0a66ff; color: #ffffff; border: none; border-radius: 10px; padding: 8px 10px; font-weight: 700; font-size: 0.88rem; cursor: pointer; }
       .az-st-flag { width: 36px; border: 1px solid #e2e8f0; background: #f8fafc; color: #ef4444; border-radius: 10px; cursor: pointer; font-size: 0.9rem; }
       .az-st-overlay { position: fixed; inset: 0; background: rgba(15,23,42,0.58); z-index: 9999; display: flex; align-items: flex-end; justify-content: center; padding: 10px; }
       @media (min-width: 640px) { .az-st-overlay { align-items: center; } }
@@ -428,7 +434,7 @@
       .az-st-bubble { max-width: 82%; padding: 8px 11px; border-radius: 12px; font-size: 0.88rem; line-height: 1.35; }
       .az-st-bubble.buyer { align-self: flex-start; background: #ffffff; border: 1px solid #cbd5e1; }
       .az-st-bubble.seller { align-self: flex-end; background: #dcfce7; border: 1px solid #86efac; }
-      .az-st-banner { font-size: 0.82rem; color: #0369a1; margin-bottom: 8px; font-weight: 600; }
+      .az-st-banner { font-size: 0.82rem; color: #3cc8ff; margin-bottom: 8px; font-weight: 600; }
     `;
     document.head.appendChild(style);
   }
@@ -540,6 +546,12 @@
               <div class="az-st-field">
                 <label>Category *</label>
                 <select name="category">
+                  <option value="Phones">Phones</option>
+                  <option value="Electronics">Electronics</option>
+                  <option value="Fashion">Fashion</option>
+                  <option value="Home & Furniture">Home & Furniture</option>
+                  <option value="Vehicles">Vehicles</option>
+                  <option value="Property">Property</option>
                   <option value="Keyboards">Keyboards</option>
                   <option value="Strings">Strings</option>
                   <option value="Traditional">Traditional (Krar, Masinko, Washint, Begena)</option>
@@ -670,7 +682,7 @@
     mount.innerHTML = `
       <div class="az-st-shell">
         <div class="az-st-topbar">
-          <h2 class="az-st-h1">Store</h2>
+          <div><h2 class="az-st-h1">Azmari Bet Shop</h2><p style="margin:4px 0 0;color:#b9c8e8;font-size:.9rem;">Buy and sell across Ethiopia</p></div>
           <div style="display:flex;gap:8px;align-items:center;">
             <button type="button" class="az-st-live-cta" id="az-live-gps-btn">${liveWatchId !== null ? "🟢 Live GPS On" : "📍 Live GPS"}</button>
             <button type="button" class="az-st-post-cta" id="az-open-post-btn">+ Post Ad</button>
@@ -686,7 +698,7 @@
 
         <div class="az-st-cats">${catsHtml}</div>
 
-        <h3 class="az-st-sub">Fresh recommendations</h3>
+        <h3 class="az-st-sub">Discover products</h3>
         <div class="az-st-grid">${cardsHtml}</div>
       </div>
       ${postModalHtml}
