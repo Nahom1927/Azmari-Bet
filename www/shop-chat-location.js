@@ -4,7 +4,7 @@
   'use strict';
   // The app redraws its views with innerHTML, so #shop-root is created again every time the
   // Store tab is opened. We therefore mount (and re-mount) whenever a fresh #shop-root appears.
-  const API = (window.AZ_SHOP_API || (location.port === '4000' ? location.origin : 'http://localhost:4000')).replace(/\/$/, '');
+  const API = (window.AZ_SHOP_API || ((location.port === '4000' || location.port === '8080') ? location.origin : 'http://localhost:4000')).replace(/\/$/, '');
   const LIVE_MINUTES = 15;
   const S = { token: '', me: null, quota: null, cats: [], cat: '', q: '', page: 1,
               socket: null, chat: null, convs: [], watch: null, shareConv: 0, liveBox: null };
