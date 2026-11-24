@@ -1,962 +1,529 @@
+/* Azmari Bet - Shop (Jiji-style posting), buyer/seller chat, live location.
+   Self-contained: mounts only inside <div id="shop-root"> and uses its own CSS (css/shop.css). */
 (function () {
-  "use strict";
-
-  const STORAGE_LISTINGS_KEY = "azmari_store_listings_v2";
-  const STORAGE_MESSAGES_KEY = "azmari_store_messages_v2";
-  const STORAGE_FAVS_KEY = "azmari_store_favs_v2";
-  const STORAGE_USER_KEY = "azmari_store_user_v2";
-
-  const CATEGORIES = [
-    { id: "All", label: "All", icon: "🛍️" },
-    { id: "Keyboards", label: "Keyboards", icon: "🎹" },
-    { id: "Strings", label: "Strings", icon: "🎸" },
-    { id: "Traditional", label: "Traditional", icon: "🪕" },
-    { id: "Percussion", label: "Percussion", icon: "🥁" },
-    { id: "Audio", label: "Audio", icon: "🎙️" }
-  ];
-
-  const DEFAULT_LISTINGS = [
-    {
-      id: "seed-1",
-      seller_name: "Dawit Alemu",
-      seller_phone: "+251 911 234567",
-      title: "Electric keyboard",
-      category: "Keyboards",
-      price_etb: 18500,
-      condition: "Like New",
-      city: "Addis Ababa",
-      location_label: "Bole, Addis Ababa",
-      lat: 8.9806,
-      lng: 38.7578,
-      verified: true,
-      icon: "🎹",
-      image_url: "",
-      description: "61-key touch-sensitive keyboard with stand and adapter.",
-      live_location_active: true,
-      created_at: new Date(Date.now() - 2 * 3600 * 1000).toISOString()
-    },
-    {
-      id: "seed-2",
-      seller_name: "Hana Getachew",
-      seller_phone: "+251 912 345678",
-      title: "Digital piano",
-      category: "Keyboards",
-      price_etb: 42000,
-      condition: "New",
-      city: "Addis Ababa",
-      location_label: "Kazanchis, Addis Ababa",
-      lat: 9.0157,
-      lng: 38.7654,
-      verified: true,
-      icon: "🎹",
-      image_url: "",
-      description: "88-key weighted digital piano with sustain pedal.",
-      live_location_active: true,
-      created_at: new Date(Date.now() - 5 * 3600 * 1000).toISOString()
-    },
-    {
-      id: "seed-3",
-      seller_name: "Yonas Tadesse",
-      seller_phone: "+251 913 456789",
-      title: "Acoustic guitar",
-      category: "Strings",
-      price_etb: 7800,
-      condition: "Good",
-      city: "Addis Ababa",
-      location_label: "Piassa, Addis Ababa",
-      lat: 9.0349,
-      lng: 38.7525,
-      verified: false,
-      icon: "🎸",
-      image_url: "",
-      description: "Warm spruce top acoustic guitar with gig bag.",
-      live_location_active: false,
-      created_at: new Date(Date.now() - 8 * 3600 * 1000).toISOString()
-    },
-    {
-      id: "seed-4",
-      seller_name: "Meron Bekele",
-      seller_phone: "+251 914 567890",
-      title: "Electric guitar",
-      category: "Strings",
-      price_etb: 15500,
-      condition: "Like New",
-      city: "Addis Ababa",
-      location_label: "CMC, Addis Ababa",
-      lat: 9.0211,
-      lng: 38.8286,
-      verified: true,
-      icon: "🎸",
-      image_url: "",
-      description: "Clean strat-style electric guitar, ready for studio or stage.",
-      live_location_active: true,
-      created_at: new Date(Date.now() - 12 * 3600 * 1000).toISOString()
+  'use strict';
+  // The app redraws its views with innerHTML, so #shop-root is created again every time the
+  // Store tab is opened. We therefore mount (and re-mount) whenever a fresh #shop-root appears.
+  const API = (window.AZ_SHOP_API || (location.port === '4000' ? location.origin : 'http://localhost:4000')).replace(/\/$/, '');
+  const LIVE_MINUTES = 15;
+  const S = { token: '', me: null, quota: null, cats: [], cat: '', q: '', page: 1,
+              socket: null, chat: null, convs: [], watch: null, shareConv: 0, liveBox: null };
+  try { S.token = localStorage.getItem('azshop_token') || ''; } catch (e) { /* private mode */ }
+ 
+  // ---------- tiny helpers (DOM is built with textContent, never innerHTML => no XSS) ----------
+  function h(tag, props, ...kids) {
+    const e = document.createElement(tag);
+    for (const k in props || {}) {
+      const v = props[k];
+      if (k === 'class') e.className = v;
+      else if (k.slice(0, 2) === 'on') e.addEventListener(k.slice(2), v);
+      else if (v !== false && v != null) e.setAttribute(k, v);
     }
-  ];
-
-  let selectedCategory = "All";
-  let searchQuery = "";
-  let postModalOpen = false;
-  let chatListingId = null;
-  let activeThreadKey = "buyer-1";
-  let activeSide = "buyer"; // "buyer" | "seller"
-  let currentCoords = null;
-  let liveWatchId = null;
-  let statusBanner = "";
-
-  function getSupabase() {
-    return window.supabaseClient || window.sb || window.supabase || null;
+    kids.flat().forEach((c) => { if (c != null && c !== false) e.append(c); });
+    return e;
   }
-
-  function readJson(key, fallback) {
-    try {
-      const raw = localStorage.getItem(key);
-      return raw ? JSON.parse(raw) : fallback;
-    } catch (_) {
-      return fallback;
+  const money = (n, cur) => (cur || 'ETB') + ' ' + Number(n).toLocaleString('en-US');
+  const when = (iso) => new Date(iso);
+  function ago(iso) {
+    const s = Math.max(0, (Date.now() - when(iso)) / 1000);
+    if (s < 3600) return Math.max(1, Math.floor(s / 60)) + ' min ago';
+    if (s < 86400) return Math.floor(s / 3600) + ' hours ago';
+    return s < 172800 ? 'Yesterday' : Math.floor(s / 86400) + ' days ago';
+  }
+  const hhmm = (iso) => when(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  function toast(msg) {
+    const t = h('div', { class: 'azs azs-toast', role: 'status' }, msg);
+    document.body.append(t);
+    setTimeout(() => t.remove(), 3200);
+  }
+  async function api(path, opt) {
+    opt = opt || {};
+    const headers = {};
+    if (S.token) headers.Authorization = 'Bearer ' + S.token;
+    let body = opt.body;
+    if (body && !(body instanceof FormData)) { headers['Content-Type'] = 'application/json'; body = JSON.stringify(body); }
+    const r = await fetch(API + path, { method: opt.method || 'GET', headers, body });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(d.error || 'Error ' + r.status);
+    return d;
+  }
+  function modal(title, ...content) {
+    const sheet = h('div', { class: 'azs-sheet', role: 'dialog', 'aria-label': title });
+    const ov = h('div', { class: 'azs-overlay', onclick: (e) => { if (e.target === ov) close(); } }, sheet);
+    const close = () => { ov.remove(); };
+    sheet.append(h('h3', {}, title, h('button', { class: 'azs-x', 'aria-label': 'Close', onclick: close }, '\u00D7')), ...content);
+    document.body.append(ov);
+    return { sheet, close };
+  }
+ 
+  // ---------- map (Leaflet, loaded only when needed) ----------
+  function loadLeaflet() {
+    if (window.L) return Promise.resolve();
+    if (!S.lp) {
+      S.lp = new Promise((ok, no) => {
+        const css = h('link', { rel: 'stylesheet', href: 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
+          integrity: 'sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=', crossorigin: '' });
+        const js = h('script', { src: 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js',
+          integrity: 'sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=', crossorigin: '',
+          onload: ok, onerror: () => { S.lp = null; no(new Error('Map could not load')); } });
+        document.head.append(css, js);
+      });
     }
+    return S.lp;
   }
-
-  function writeJson(key, val) {
-    try {
-      localStorage.setItem(key, JSON.stringify(val));
-    } catch (_) {}
-  }
-
-  function getUserName() {
-    try {
-      return localStorage.getItem(STORAGE_USER_KEY) || "";
-    } catch (_) {
-      return "";
-    }
-  }
-
-  function setUserName(name) {
-    try {
-      localStorage.setItem(STORAGE_USER_KEY, (name || "").trim());
-    } catch (_) {}
-  }
-
-  function esc(str) {
-    return String(str || "")
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;");
-  }
-
-  function formatEtb(n) {
-    return "ETB " + Number(n || 0).toLocaleString("en-US", { maximumFractionDigits: 0 });
-  }
-
-  function timeAgo(iso) {
-    if (!iso) return "Just now";
-    const diffSec = Math.max(1, Math.floor((Date.now() - new Date(iso).getTime()) / 1000));
-    if (diffSec < 60) return "Just now";
-    const mins = Math.floor(diffSec / 60);
-    if (mins < 60) return mins + (mins === 1 ? " min ago" : " mins ago");
-    const hrs = Math.floor(mins / 60);
-    if (hrs < 24) return hrs + (hrs === 1 ? " hour ago" : " hours ago");
-    const days = Math.floor(hrs / 24);
-    return days + (days === 1 ? " day ago" : " days ago");
-  }
-
-  function categoryIcon(cat) {
-    const found = CATEGORIES.find((c) => c.id === cat);
-    return found ? found.icon : "🎵";
-  }
-
-  function distanceKm(lat1, lon1, lat2, lon2) {
-    if (
-      typeof lat1 !== "number" ||
-      typeof lon1 !== "number" ||
-      typeof lat2 !== "number" ||
-      typeof lon2 !== "number"
-    ) {
-      return null;
-    }
-    const rad = (d) => (d * Math.PI) / 180;
-    const R = 6371;
-    const dLat = rad(lat2 - lat1);
-    const dLon = rad(lon2 - lon1);
-    const a =
-      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.cos(rad(lat1)) * Math.cos(rad(lat2)) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
-    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  }
-
-  async function loadListings() {
-    let local = readJson(STORAGE_LISTINGS_KEY, null);
-    if (!Array.isArray(local) || local.length === 0) {
-      local = DEFAULT_LISTINGS.slice();
-      writeJson(STORAGE_LISTINGS_KEY, local);
-    }
-
-    const sb = getSupabase();
-    if (sb && typeof sb.from === "function") {
-      try {
-        const { data, error } = await sb
-          .from("shop_listings")
-          .select("*")
-          .order("created_at", { ascending: false });
-        if (!error && Array.isArray(data) && data.length > 0) {
-          const normalized = data.map((row) =>
-            Object.assign({}, row, {
-              verified: row.verified !== undefined ? row.verified : Boolean(row.approved),
-              icon: row.icon || categoryIcon(row.category)
-            })
-          );
-          writeJson(STORAGE_LISTINGS_KEY, normalized);
-          return normalized;
-        }
-      } catch (_) {}
-    }
-    return local;
-  }
-
-  async function publishListing(input) {
-    const newItem = {
-      id: crypto.randomUUID ? crypto.randomUUID() : "item-" + Date.now(),
-      seller_name: input.seller_name.trim(),
-      seller_phone: (input.seller_phone || "").trim(),
-      seller_role: "seller",
-      title: input.title.trim(),
-      category: input.category || "Traditional",
-      price_etb: Number(input.price_etb || 0),
-      condition: input.condition || "Good",
-      description: (input.description || "").trim(),
-      image_url: (input.image_url || "").trim(),
-      city: (input.city || "Addis Ababa").trim(),
-      location_label: (input.location_label || input.city || "Addis Ababa").trim(),
-      lat: typeof input.lat === "number" ? input.lat : null,
-      lng: typeof input.lng === "number" ? input.lng : null,
-      live_location_active: typeof input.lat === "number",
-      location_updated_at: typeof input.lat === "number" ? new Date().toISOString() : null,
-      approved: true,
-      verified: true,
-      icon: categoryIcon(input.category),
-      created_at: new Date().toISOString()
-    };
-
-    const sb = getSupabase();
-    if (sb && typeof sb.from === "function") {
-      try {
-        const dbRow = {
-          seller_name: newItem.seller_name,
-          seller_phone: newItem.seller_phone,
-          seller_role: newItem.seller_role,
-          title: newItem.title,
-          category: newItem.category,
-          price_etb: newItem.price_etb,
-          condition: newItem.condition,
-          description: newItem.description,
-          image_url: newItem.image_url,
-          city: newItem.city,
-          location_label: newItem.location_label,
-          lat: newItem.lat,
-          lng: newItem.lng,
-          live_location_active: newItem.live_location_active,
-          location_updated_at: newItem.location_updated_at,
-          approved: true
-        };
-        const { data, error } = await sb.from("shop_listings").insert(dbRow).select().single();
-        if (!error && data) {
-          const merged = Object.assign({}, newItem, data, { verified: true, icon: newItem.icon });
-          const current = readJson(STORAGE_LISTINGS_KEY, []);
-          writeJson(STORAGE_LISTINGS_KEY, [merged].concat(current));
-          return { item: merged, synced: true };
-        }
-      } catch (_) {}
-    }
-
-    const current = readJson(STORAGE_LISTINGS_KEY, []);
-    writeJson(STORAGE_LISTINGS_KEY, [newItem].concat(current));
-    return { item: newItem, synced: false };
-  }
-
-  async function updateListingLocation(listingId, coords, label, active) {
-    const patch = {
-      lat: coords.lat,
-      lng: coords.lng,
-      location_label: label || "Live GPS, Addis Ababa",
-      live_location_active: Boolean(active),
-      location_updated_at: new Date().toISOString()
-    };
-    const updatedList = readJson(STORAGE_LISTINGS_KEY, []).map((it) =>
-      String(it.id) === String(listingId) ? Object.assign({}, it, patch) : it
-    );
-    writeJson(STORAGE_LISTINGS_KEY, updatedList);
-
-    const sb = getSupabase();
-    if (sb && typeof sb.from === "function" && !String(listingId).startsWith("seed-")) {
-      try {
-        await sb.from("shop_listings").update(patch).eq("id", listingId);
-      } catch (_) {}
-    }
-  }
-
-  async function loadMessages(listingId, threadKey) {
-    const local = readJson(STORAGE_MESSAGES_KEY, []).filter(
-      (m) => String(m.listing_id) === String(listingId) && String(m.thread_key) === String(threadKey)
-    );
-    const sb = getSupabase();
-    if (sb && typeof sb.from === "function" && !String(listingId).startsWith("seed-")) {
-      try {
-        const { data, error } = await sb
-          .from("shop_messages")
-          .select("*")
-          .eq("listing_id", listingId)
-          .eq("thread_key", threadKey)
-          .order("created_at", { ascending: true });
-        if (!error && Array.isArray(data)) {
-          const rest = readJson(STORAGE_MESSAGES_KEY, []).filter(
-            (m) => !(String(m.listing_id) === String(listingId) && String(m.thread_key) === String(threadKey))
-          );
-          writeJson(STORAGE_MESSAGES_KEY, rest.concat(data));
-          return data;
-        }
-      } catch (_) {}
-    }
-    return local;
-  }
-
-  async function postMessage(msg) {
-    const record = {
-      id: crypto.randomUUID ? crypto.randomUUID() : "msg-" + Date.now(),
-      listing_id: msg.listing_id,
-      thread_key: msg.thread_key || "buyer-1",
-      sender_name: msg.sender_name || (msg.sender_side === "seller" ? "Seller" : "Buyer"),
-      sender_side: msg.sender_side === "seller" ? "seller" : "buyer",
-      body: msg.body,
-      shared_lat: typeof msg.shared_lat === "number" ? msg.shared_lat : null,
-      shared_lng: typeof msg.shared_lng === "number" ? msg.shared_lng : null,
-      shared_label: msg.shared_label || "",
-      created_at: new Date().toISOString()
-    };
-
-    const all = readJson(STORAGE_MESSAGES_KEY, []);
-    writeJson(STORAGE_MESSAGES_KEY, all.concat(record));
-
-    const sb = getSupabase();
-    if (sb && typeof sb.from === "function" && !String(record.listing_id).startsWith("seed-")) {
-      try {
-        const { data, error } = await sb
-          .from("shop_messages")
-          .insert({
-            listing_id: record.listing_id,
-            thread_key: record.thread_key,
-            sender_name: record.sender_name,
-            sender_side: record.sender_side,
-            body: record.body,
-            shared_lat: record.shared_lat,
-            shared_lng: record.shared_lng,
-            shared_label: record.shared_label
-          })
-          .select()
-          .single();
-        if (!error && data) {
-          const replaced = readJson(STORAGE_MESSAGES_KEY, []).map((m) => (m.id === record.id ? data : m));
-          writeJson(STORAGE_MESSAGES_KEY, replaced);
-          return data;
-        }
-      } catch (_) {}
-    }
-    return record;
-  }
-
-  function grabGpsOnce(onOk, onErr) {
-    if (!navigator.geolocation) {
-      if (onErr) onErr("Geolocation unavailable in this browser.");
-      return;
-    }
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        const coords = {
-          lat: Number(pos.coords.latitude.toFixed(6)),
-          lng: Number(pos.coords.longitude.toFixed(6)),
-          accuracy: Math.round(pos.coords.accuracy || 0)
-        };
-        currentCoords = coords;
-        if (onOk) onOk(coords);
+  function mapBox(height) {
+    const node = h('div', { class: 'azs-map', style: 'height:' + height + 'px' });
+    let map = null; let dot = null;
+    return {
+      node,
+      async set(lat, lng) {
+        await loadLeaflet();
+        if (!map) {
+          map = L.map(node).setView([lat, lng], 15);
+          L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+            { maxZoom: 19, attribution: '&copy; OpenStreetMap' }).addTo(map);
+          dot = L.circleMarker([lat, lng], { radius: 9, color: '#1fc7f5', fillColor: '#1fc7f5', fillOpacity: 0.9 }).addTo(map);
+        } else { dot.setLatLng([lat, lng]); map.panTo([lat, lng]); }
+        setTimeout(() => map && map.invalidateSize(), 60);
       },
-      (err) => {
-        if (onErr) onErr(err && err.message ? err.message : "Location permission denied.");
-      },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 5000 }
-    );
+      destroy() { if (map) { map.remove(); map = null; } },
+    };
   }
-
-  function injectStyles() {
-    if (document.getElementById("az-jiji-store-styles")) return;
-    const style = document.createElement("style");
-    style.id = "az-jiji-store-styles";
-    style.textContent = `
-      .az-st-shell { max-width: 780px; margin: 12px auto 84px; padding: 14px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #e8f1fb; color: #0f172a; border-radius: 18px; }
-      .az-st-topbar { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 12px; }
-      .az-st-h1 { margin: 0; font-size: 1.65rem; font-weight: 800; color: #0f172a; letter-spacing: -0.02em; }
-      .az-st-post-cta { background: #16a34a; color: #fff; border: none; border-radius: 999px; padding: 9px 16px; font-weight: 700; font-size: 0.9rem; cursor: pointer; box-shadow: 0 3px 10px rgba(22,163,74,0.28); }
-      .az-st-live-cta { background: #2563eb; color: #fff; border: none; border-radius: 999px; padding: 8px 13px; font-weight: 700; font-size: 0.82rem; cursor: pointer; }
-      .az-st-search { display: flex; align-items: center; gap: 8px; background: #ffffff; border-radius: 14px; padding: 10px 14px; box-shadow: 0 2px 8px rgba(15,23,42,0.06); margin-bottom: 12px; }
-      .az-st-search input { border: none; outline: none; width: 100%; font-size: 0.98rem; color: #0f172a; background: transparent; }
-      .az-st-cats { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 6px; margin-bottom: 14px; scrollbar-width: none; }
-      .az-st-cats::-webkit-scrollbar { display: none; }
-      .az-st-cat { flex: 0 0 auto; min-width: 76px; padding: 10px 12px; border-radius: 14px; border: 1px solid #dbeafe; background: #ffffff; color: #1e293b; text-align: center; cursor: pointer; font-size: 0.82rem; font-weight: 600; transition: all 0.15s ease; }
-      .az-st-cat.active { background: #38bdf8; color: #0f172a; border-color: #0ea5e9; font-weight: 700; }
-      .az-st-cat-ico { display: block; font-size: 1.45rem; margin-bottom: 4px; }
-      .az-st-sub { margin: 0 0 12px; font-size: 1.05rem; font-weight: 800; color: #0f172a; }
-      .az-st-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
-      @media (min-width: 680px) { .az-st-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
-      .az-st-card { background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 3px 12px rgba(15,23,42,0.07); display: flex; flex-direction: column; border: 1px solid #e2e8f0; }
-      .az-st-hero { position: relative; height: 132px; background: linear-gradient(180deg, #0057e7 0%, #0284c7 100%); display: flex; align-items: center; justify-content: center; }
-      .az-st-hero img { width: 100%; height: 100%; object-fit: cover; }
-      .az-st-hero-emoji { font-size: 3.3rem; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.22)); }
-      .az-st-fav { position: absolute; top: 9px; right: 9px; width: 32px; height: 32px; border-radius: 50%; border: none; background: rgba(15,23,42,0.52); color: #fff; font-size: 1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; }
-      .az-st-verified { position: absolute; left: 9px; bottom: 9px; background: #22c55e; color: #ffffff; font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px; }
-      .az-st-body { padding: 10px 11px 11px; display: flex; flex-direction: column; gap: 4px; flex: 1; }
-      .az-st-price { color: #0ea5e9; font-weight: 800; font-size: 1.05rem; }
-      .az-st-title { font-weight: 700; font-size: 0.96rem; color: #0f172a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-      .az-st-meta { font-size: 0.77rem; color: #64748b; display: flex; align-items: center; gap: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-      .az-st-actions { display: flex; gap: 7px; margin-top: 8px; }
-      .az-st-contact { flex: 1; background: #38bdf8; color: #0f172a; border: none; border-radius: 10px; padding: 8px 10px; font-weight: 700; font-size: 0.88rem; cursor: pointer; }
-      .az-st-flag { width: 36px; border: 1px solid #e2e8f0; background: #f8fafc; color: #ef4444; border-radius: 10px; cursor: pointer; font-size: 0.9rem; }
-      .az-st-overlay { position: fixed; inset: 0; background: rgba(15,23,42,0.58); z-index: 9999; display: flex; align-items: flex-end; justify-content: center; padding: 10px; }
-      @media (min-width: 640px) { .az-st-overlay { align-items: center; } }
-      .az-st-sheet { width: 100%; max-width: 520px; max-height: 88vh; overflow-y: auto; background: #ffffff; color: #0f172a; border-radius: 20px; padding: 16px; box-shadow: 0 20px 45px rgba(15,23,42,0.3); }
-      .az-st-field { display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; font-size: 0.84rem; font-weight: 600; color: #334155; }
-      .az-st-field input, .az-st-field select, .az-st-field textarea { padding: 9px 11px; border-radius: 10px; border: 1px solid #cbd5e1; font: inherit; color: #0f172a; background: #f8fafc; }
-      .az-st-chat-stream { max-height: 250px; overflow-y: auto; background: #f1f5f9; border-radius: 12px; padding: 10px; display: flex; flex-direction: column; gap: 8px; margin: 10px 0; }
-      .az-st-bubble { max-width: 82%; padding: 8px 11px; border-radius: 12px; font-size: 0.88rem; line-height: 1.35; }
-      .az-st-bubble.buyer { align-self: flex-start; background: #ffffff; border: 1px solid #cbd5e1; }
-      .az-st-bubble.seller { align-self: flex-end; background: #dcfce7; border: 1px solid #86efac; }
-      .az-st-banner { font-size: 0.82rem; color: #0369a1; margin-bottom: 8px; font-weight: 600; }
-    `;
-    document.head.appendChild(style);
+  function showMap(lat, lng, title) {
+    const box = mapBox(300);
+    const m = modal(title || 'Location', box.node,
+      h('p', { class: 'azs-note' }, 'Lat ' + Number(lat).toFixed(5) + ', Lng ' + Number(lng).toFixed(5)));
+    box.set(lat, lng).catch((e) => toast(e.message));
+    const old = m.close; m.close = () => { box.destroy(); old(); };
   }
-
-  function findStoreMountPoint() {
-    let mount = document.getElementById("azmari-shop-marketplace");
-    if (mount) return mount;
-
-    const existingStoreSection =
-      document.getElementById("store-section") ||
-      document.getElementById("shop-section") ||
-      document.querySelector('[data-tab="store"], [data-section="store"]');
-
-    if (existingStoreSection) {
-      mount = document.createElement("div");
-      mount.id = "azmari-shop-marketplace";
-      existingStoreSection.prepend(mount);
-      return mount;
-    }
-
-    const parent = document.querySelector("main") || document.body;
-    mount = document.createElement("section");
-    mount.id = "azmari-shop-marketplace";
-    parent.appendChild(mount);
-    return mount;
+ 
+  // ---------- auth ----------
+  async function refreshMe() {
+    if (!S.token) { S.me = null; S.quota = null; return; }
+    try {
+      const d = await api('/api/me');
+      S.me = d.user; S.quota = { used: d.posts_used, limit: d.post_limit };
+      connectSocket();
+    } catch (e) { S.token = ''; S.me = null; try { localStorage.removeItem('azshop_token'); } catch (x) { /* ignore */ } }
   }
-
-  async function render() {
-    injectStyles();
-    const mount = findStoreMountPoint();
-    const allListings = await loadListings();
-    const favs = readJson(STORAGE_FAVS_KEY, []);
-    const savedName = getUserName();
-
-    const q = searchQuery.trim().toLowerCase();
-    const filtered = allListings.filter((item) => {
-      const catOk = selectedCategory === "All" || String(item.category).toLowerCase() === selectedCategory.toLowerCase();
-      if (!catOk) return false;
-      if (!q) return true;
-      const hay = [item.title, item.category, item.location_label, item.city, item.seller_name, item.description]
-        .join(" ")
-        .toLowerCase();
-      return hay.includes(q);
-    });
-
-    const activeChatItem = chatListingId
-      ? allListings.find((x) => String(x.id) === String(chatListingId)) || null
-      : null;
-    const chatMessages = activeChatItem ? await loadMessages(activeChatItem.id, activeThreadKey) : [];
-
-    const catsHtml = CATEGORIES.map(
-      (c) => `
-        <button type="button" class="az-st-cat ${selectedCategory === c.id ? "active" : ""}" data-cat="${esc(c.id)}">
-          <span class="az-st-cat-ico">${c.icon}</span>
-          <span>${esc(c.label)}</span>
-        </button>
-      `
-    ).join("");
-
-    const cardsHtml = filtered.length
-      ? filtered
-          .map((item) => {
-            const isFav = favs.includes(String(item.id));
-            const hasCoords = typeof item.lat === "number" && typeof item.lng === "number";
-            const km =
-              hasCoords && currentCoords
-                ? distanceKm(currentCoords.lat, currentCoords.lng, item.lat, item.lng)
-                : null;
-            const locText =
-              (item.location_label || item.city || "Addis Ababa") +
-              (typeof km === "number" ? ` (${km.toFixed(1)} km)` : "");
-            return `
-              <article class="az-st-card">
-                <div class="az-st-hero">
-                  ${
-                    item.image_url
-                      ? `<img src="${esc(item.image_url)}" alt="${esc(item.title)}" />`
-                      : `<span class="az-st-hero-emoji">${esc(item.icon || categoryIcon(item.category))}</span>`
-                  }
-                  <button type="button" class="az-st-fav" data-fav="${esc(item.id)}" aria-label="Favorite">${isFav ? "❤️" : "🤍"}</button>
-                  ${item.verified ? `<span class="az-st-verified">✓ Verified</span>` : ""}
-                </div>
-                <div class="az-st-body">
-                  <div class="az-st-price">${esc(formatEtb(item.price_etb))}</div>
-                  <div class="az-st-title" title="${esc(item.title)}">${esc(item.title)}</div>
-                  <div class="az-st-meta">📍 ${esc(locText)}</div>
-                  <div class="az-st-meta">🕒 ${esc(timeAgo(item.created_at))}</div>
-                  <div class="az-st-meta">👤 ${esc(item.seller_name)}</div>
-                  <div class="az-st-actions">
-                    <button type="button" class="az-st-contact" data-contact="${esc(item.id)}">Contact</button>
-                    <button type="button" class="az-st-flag" data-report="${esc(item.id)}" title="Report listing">🚩</button>
-                  </div>
-                </div>
-              </article>
-            `;
-          })
-          .join("")
-      : `<div style="grid-column:1/-1;background:#fff;padding:18px;border-radius:14px;text-align:center;color:#475569;">No items match your filter. Tap <strong>+ Post Ad</strong> to list one!</div>`;
-
-    const postModalHtml = postModalOpen
-      ? `
-        <div class="az-st-overlay" id="az-post-overlay">
-          <div class="az-st-sheet">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
-              <strong style="font-size:1.1rem;">Post Item (Afrotie / Gari Style)</strong>
-              <button type="button" id="az-close-post" style="border:none;background:#f1f5f9;border-radius:999px;padding:6px 11px;cursor:pointer;font-weight:700;">✕</button>
-            </div>
-            <form id="az-afrotie-post-form">
-              <div class="az-st-field">
-                <label>Category *</label>
-                <select name="category">
-                  <option value="Keyboards">Keyboards</option>
-                  <option value="Strings">Strings</option>
-                  <option value="Traditional">Traditional (Krar, Masinko, Washint, Begena)</option>
-                  <option value="Percussion">Percussion (Kebero, Drums)</option>
-                  <option value="Audio">Audio & Studio Gear</option>
-                </select>
-              </div>
-              <div class="az-st-field">
-                <label>Item Title *</label>
-                <input name="title" required placeholder="e.g. Yamaha PSR-E473 / Handcrafted Krar" />
-              </div>
-              <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-                <div class="az-st-field">
-                  <label>Price (ETB) *</label>
-                  <input name="price_etb" type="number" min="0" step="1" required placeholder="18500" />
-                </div>
-                <div class="az-st-field">
-                  <label>Condition</label>
-                  <select name="condition">
-                    <option value="New">Brand New</option>
-                    <option value="Like New" selected>Like New</option>
-                    <option value="Good">Used - Good</option>
-                    <option value="Fair">Used - Fair</option>
-                  </select>
-                </div>
-              </div>
-              <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-                <div class="az-st-field">
-                  <label>Your Name *</label>
-                  <input name="seller_name" required value="${esc(savedName)}" placeholder="Dawit Alemu" />
-                </div>
-                <div class="az-st-field">
-                  <label>Phone Number *</label>
-                  <input name="seller_phone" required placeholder="+251 9..." />
-                </div>
-              </div>
-              <div class="az-st-field">
-                <label>Sub-city / Neighborhood *</label>
-                <input name="location_label" id="az-post-loc-label" required value="Bole, Addis Ababa" placeholder="Bole, Kazanchis, Piassa, CMC..." />
-              </div>
-              <div class="az-st-field">
-                <label>Photo Upload or Image URL (optional)</label>
-                <input type="file" id="az-post-photo-file" accept="image/*" />
-                <input name="image_url" id="az-post-image-url" placeholder="Or paste image link https://..." />
-              </div>
-              <div class="az-st-field">
-                <label>Details</label>
-                <textarea name="description" rows="2" placeholder="Specs, accessories included, negotiable or fixed..."></textarea>
-              </div>
-              <input type="hidden" name="lat" id="az-post-lat" value="${currentCoords ? currentCoords.lat : ""}" />
-              <input type="hidden" name="lng" id="az-post-lng" value="${currentCoords ? currentCoords.lng : ""}" />
-              <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;">
-                <button type="button" id="az-post-pin-gps" style="flex:1;padding:10px;border-radius:12px;border:1px solid #2563eb;background:#eff6ff;color:#1d4ed8;font-weight:700;cursor:pointer;">📍 Attach Live GPS</button>
-                <button type="submit" style="flex:1;padding:10px;border-radius:12px;border:none;background:#16a34a;color:#fff;font-weight:700;cursor:pointer;">Publish Ad</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      `
-      : "";
-
-    const chatModalHtml = activeChatItem
-      ? `
-        <div class="az-st-overlay" id="az-chat-overlay">
-          <div class="az-st-sheet">
-            <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
-              <div>
-                <strong style="font-size:1.05rem;">${esc(activeChatItem.title)} • ${esc(formatEtb(activeChatItem.price_etb))}</strong>
-                <div style="font-size:0.8rem;color:#475569;">
-                  Seller: <strong>${esc(activeChatItem.seller_name)}</strong>${activeChatItem.seller_phone ? ` • ${esc(activeChatItem.seller_phone)}` : ""}
-                </div>
-                ${
-                  typeof activeChatItem.lat === "number" && typeof activeChatItem.lng === "number"
-                    ? `<div style="font-size:0.78rem;margin-top:2px;"><a href="https://www.openstreetmap.org/?mlat=${encodeURIComponent(activeChatItem.lat)}&mlon=${encodeURIComponent(activeChatItem.lng)}#map=16/${encodeURIComponent(activeChatItem.lat)}/${encodeURIComponent(activeChatItem.lng)}" target="_blank" rel="noopener">📍 Seller Live Location (${activeChatItem.lat}, ${activeChatItem.lng})</a></div>`
-                    : ""
-                }
-              </div>
-              <button type="button" id="az-close-chat" style="border:none;background:#f1f5f9;border-radius:999px;padding:6px 11px;cursor:pointer;font-weight:700;">✕</button>
-            </div>
-
-            <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:10px;font-size:0.8rem;">
-              <span>Chatting as:</span>
-              <select id="az-chat-side" style="padding:5px 8px;border-radius:8px;border:1px solid #cbd5e1;">
-                <option value="buyer" ${activeSide === "buyer" ? "selected" : ""}>Buyer</option>
-                <option value="seller" ${activeSide === "seller" ? "selected" : ""}>Seller</option>
-              </select>
-              <input id="az-chat-thread-key" value="${esc(activeThreadKey)}" placeholder="Buyer ID / Phone" style="width:130px;padding:5px 8px;border-radius:8px;border:1px solid #cbd5e1;" />
-              <button type="button" id="az-share-seller-live" style="padding:5px 9px;border-radius:8px;border:none;background:#2563eb;color:#fff;font-weight:600;cursor:pointer;">Update Listing Live Pin</button>
-            </div>
-
-            <div class="az-st-chat-stream" id="az-chat-stream">
-              ${
-                chatMessages.length
-                  ? chatMessages
-                      .map(
-                        (m) => `
-                          <div class="az-st-bubble ${m.sender_side === "seller" ? "seller" : "buyer"}">
-                            <div style="font-size:0.72rem;color:#475569;margin-bottom:2px;"><strong>${esc(m.sender_name)}</strong> (${esc(m.sender_side)}) • ${esc(timeAgo(m.created_at))}</div>
-                            <div>${esc(m.body)}</div>
-                            ${
-                              typeof m.shared_lat === "number" && typeof m.shared_lng === "number"
-                                ? `<div style="margin-top:4px;font-size:0.78rem;"><a href="https://www.openstreetmap.org/?mlat=${encodeURIComponent(m.shared_lat)}&mlon=${encodeURIComponent(m.shared_lng)}#map=16/${encodeURIComponent(m.shared_lat)}/${encodeURIComponent(m.shared_lng)}" target="_blank" rel="noopener">📍 Live Location Pin (${m.shared_lat}, ${m.shared_lng})</a></div>`
-                                : ""
-                            }
-                          </div>
-                        `
-                      )
-                      .join("")
-                  : `<div style="text-align:center;color:#64748b;font-size:0.84rem;padding:18px 6px;">Ask about price, condition, or share your live meetup pin below.</div>`
-              }
-            </div>
-
-            <div style="display:flex;flex-direction:column;gap:7px;">
-              <div style="display:flex;gap:6px;">
-                <input id="az-chat-name" value="${esc(savedName)}" placeholder="Your name" style="width:36%;padding:8px 10px;border-radius:10px;border:1px solid #cbd5e1;" />
-                <input id="az-chat-text" placeholder="Write a message..." style="flex:1;padding:8px 10px;border-radius:10px;border:1px solid #cbd5e1;" />
-              </div>
-              <div style="display:flex;gap:7px;">
-                <button type="button" id="az-chat-send-pin" style="flex:1;padding:9px;border-radius:10px;border:1px solid #2563eb;background:#eff6ff;color:#1d4ed8;font-weight:700;cursor:pointer;">📍 Send Live Location</button>
-                <button type="button" id="az-chat-send-btn" style="flex:1;padding:9px;border-radius:10px;border:none;background:#16a34a;color:#fff;font-weight:700;cursor:pointer;">Send Message</button>
-              </div>
-            </div>
-          </div>
-        </div>
-      `
-      : "";
-
-    mount.innerHTML = `
-      <div class="az-st-shell">
-        <div class="az-st-topbar">
-          <h2 class="az-st-h1">Store</h2>
-          <div style="display:flex;gap:8px;align-items:center;">
-            <button type="button" class="az-st-live-cta" id="az-live-gps-btn">${liveWatchId !== null ? "🟢 Live GPS On" : "📍 Live GPS"}</button>
-            <button type="button" class="az-st-post-cta" id="az-open-post-btn">+ Post Ad</button>
-          </div>
-        </div>
-
-        ${statusBanner ? `<div class="az-st-banner">${esc(statusBanner)}</div>` : ""}
-
-        <div class="az-st-search">
-          <span>🔍</span>
-          <input id="az-store-search" value="${esc(searchQuery)}" placeholder="What are you looking for?" />
-        </div>
-
-        <div class="az-st-cats">${catsHtml}</div>
-
-        <h3 class="az-st-sub">Fresh recommendations</h3>
-        <div class="az-st-grid">${cardsHtml}</div>
-      </div>
-      ${postModalHtml}
-      ${chatModalHtml}
-    `;
-
-    bindUi(mount);
+  function needLogin(after) {
+    const err = h('div', { class: 'azs-err' });
+    let mode = 'login';
+    const name = h('input', { class: 'azs-input', autocomplete: 'name', maxlength: 60 });
+    const phone = h('input', { class: 'azs-input', type: 'tel', placeholder: '+2519XXXXXXXX', autocomplete: 'tel' });
+    const pw = h('input', { class: 'azs-input', type: 'password', minlength: 8, autocomplete: 'current-password' });
+    const nameField = h('label', { class: 'azs-field' }, 'Full name', name);
+    nameField.style.display = 'none';
+    const go = h('button', { class: 'azs-btn', onclick: submit }, 'Log in');
+    const sw = h('button', { class: 'azs-link', onclick: toggle }, 'New here? Create an account');
+    const m = modal('Log in', nameField, h('label', { class: 'azs-field' }, 'Phone', phone),
+      h('label', { class: 'azs-field' }, 'Password (8+ characters)', pw), err, go, h('p', {}, sw));
+    function toggle() {
+      mode = mode === 'login' ? 'register' : 'login';
+      nameField.style.display = mode === 'login' ? 'none' : 'block';
+      go.textContent = mode === 'login' ? 'Log in' : 'Create account';
+      sw.textContent = mode === 'login' ? 'New here? Create an account' : 'I already have an account';
+    }
+    async function submit() {
+      err.textContent = ''; go.disabled = true;
+      try {
+        const d = await api('/api/auth/' + mode, { method: 'POST',
+          body: { name: name.value, phone: phone.value, password: pw.value } });
+        S.token = d.token;
+        try { localStorage.setItem('azshop_token', d.token); } catch (e) { /* ignore */ }
+        await refreshMe(); drawTop(); m.close();
+        if (after) after();
+      } catch (e) { err.textContent = e.message; } finally { go.disabled = false; }
+    }
   }
-
-  function bindUi(mount) {
-    const searchEl = mount.querySelector("#az-store-search");
-    if (searchEl) {
-      searchEl.addEventListener("input", (e) => {
-        searchQuery = e.target.value || "";
-        render();
-        const nextInput = document.getElementById("az-store-search");
-        if (nextInput) {
-          nextInput.focus();
-          nextInput.setSelectionRange(searchQuery.length, searchQuery.length);
-        }
-      });
-    }
-
-    mount.querySelectorAll("[data-cat]").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        selectedCategory = btn.getAttribute("data-cat") || "All";
-        render();
-      });
+  function logout() {
+    stopShare();
+    if (S.socket) { S.socket.disconnect(); S.socket = null; }
+    S.token = ''; S.me = null; S.quota = null;
+    try { localStorage.removeItem('azshop_token'); } catch (e) { /* ignore */ }
+    drawTop();
+  }
+ 
+  // ---------- page ----------
+  let ui = null;
+  let timer;
+  function buildPage(root) {
+    ui = {
+      actions: h('div', { class: 'azs-actions' }),
+      search: h('input', { class: 'azs-search', type: 'search', placeholder: 'What are you looking for?',
+        'aria-label': 'Search ads', value: S.q || '' }),
+      cats: h('div', { class: 'azs-cats' }),
+      grid: h('div', { class: 'azs-grid' }),
+      more: h('button', { class: 'azs-btn azs-ghost azs-more', onclick: () => loadListings(false) }, 'Load more'),
+    };
+    root.classList.add('azs');
+    root.textContent = '';
+    root.append(h('div', { class: 'azs-top' }, h('h2', { class: 'azs-h' }, 'Store'), ui.actions),
+      ui.search, ui.cats, h('p', { class: 'azs-sub' }, 'Fresh recommendations'), ui.grid, ui.more);
+    ui.search.addEventListener('input', () => {
+      clearTimeout(timer);
+      const mine = ui;
+      timer = setTimeout(() => { if (mine !== ui) return; S.q = mine.search.value.trim(); loadListings(true); }, 300);
     });
-
-    mount.querySelectorAll("[data-fav]").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        const id = String(btn.getAttribute("data-fav"));
-        const favs = readJson(STORAGE_FAVS_KEY, []);
-        const next = favs.includes(id) ? favs.filter((x) => x !== id) : favs.concat(id);
-        writeJson(STORAGE_FAVS_KEY, next);
-        render();
-      });
-    });
-
-    mount.querySelectorAll("[data-contact]").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        chatListingId = btn.getAttribute("data-contact");
-        render();
-      });
-    });
-
-    mount.querySelectorAll("[data-report]").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        statusBanner = "Listing flagged for admin review.";
-        render();
-      });
-    });
-
-    const openPostBtn = mount.querySelector("#az-open-post-btn");
-    if (openPostBtn) {
-      openPostBtn.addEventListener("click", () => {
-        postModalOpen = true;
-        render();
-      });
+  }
+ 
+  function drawTop() {
+    if (!ui) return;
+    ui.actions.textContent = '';
+    ui.actions.append(h('button', { class: 'azs-btn', onclick: openPost }, '+ Sell'));
+    if (S.me) {
+      ui.actions.append(
+        h('button', { class: 'azs-btn azs-ghost', onclick: openChats }, 'Chats'),
+        h('button', { class: 'azs-btn azs-ghost', onclick: openMine }, 'My ads'));
+      if (S.me.role === 'admin') ui.actions.append(h('button', { class: 'azs-btn azs-ghost', onclick: openAdmin }, 'Admin'));
+      ui.actions.append(h('button', { class: 'azs-btn azs-ghost', onclick: logout }, 'Log out'));
+    } else ui.actions.append(h('button', { class: 'azs-btn azs-ghost', onclick: () => needLogin() }, 'Log in'));
+  }
+  function drawCats() {
+    if (!ui) return;
+    ui.cats.textContent = '';
+    const chip = (slug, icon, label) => h('button', { class: 'azs-chip' + (S.cat === slug ? ' on' : ''),
+      onclick: () => { S.cat = slug; drawCats(); loadListings(true); } }, h('b', {}, icon), label);
+    ui.cats.append(chip('', '\u2728', 'All'), ...S.cats.map((c) => chip(c.slug, c.icon, c.name)));
+  }
+  function card(l) {
+    const media = h('div', { class: 'azs-media' },
+      l.image ? h('img', { src: API + l.image, alt: l.title, loading: 'lazy' }) : h('span', { class: 'azs-emoji' }, l.icon));
+    if (l.verified) media.append(h('span', { class: 'azs-badge' }, '\u2714 Verified'));
+    return h('article', { class: 'azs-card', onclick: () => openDetail(l.id) }, media,
+      h('div', { class: 'azs-body' },
+        h('div', { class: 'azs-price' }, money(l.price, l.currency)),
+        h('div', { class: 'azs-title' }, l.title),
+        h('div', { class: 'azs-meta' }, '\u{1F4CD} ' + l.city),
+        h('div', { class: 'azs-meta' }, '\u{1F552} ' + ago(l.created_at)),
+        h('div', { class: 'azs-meta' }, '\u{1F464} ' + l.seller_name),
+        h('div', { class: 'azs-row' },
+          h('button', { class: 'azs-btn azs-contact', onclick: (e) => { e.stopPropagation(); contact(l.id); } }, 'Contact'),
+          h('button', { class: 'azs-flag', title: 'Report this ad', 'aria-label': 'Report this ad',
+            onclick: (e) => { e.stopPropagation(); report(l.id); } }, '\u2691'))));
+  }
+  async function loadListings(reset) {
+    if (!ui) return;
+    const mine = ui;
+    if (reset) { S.page = 1; ui.grid.textContent = ''; }
+    try {
+      const qs = new URLSearchParams({ page: S.page });
+      if (S.cat) qs.set('category', S.cat);
+      if (S.q) qs.set('q', S.q);
+      const d = await api('/api/listings?' + qs);
+      if (mine !== ui) return; // the Store view was redrawn while loading
+      d.items.forEach((l) => ui.grid.append(card(l)));
+      if (reset && !d.items.length) ui.grid.append(h('p', { class: 'azs-empty' }, 'No ads found yet.'));
+      ui.more.style.display = d.has_more ? 'block' : 'none';
+      S.page += 1;
+    } catch (e) {
+      if (mine === ui) ui.grid.append(h('p', { class: 'azs-empty' }, 'Could not load ads. Is the shop server running?'));
     }
-
-    const closePostBtn = mount.querySelector("#az-close-post");
-    if (closePostBtn) {
-      closePostBtn.addEventListener("click", () => {
-        postModalOpen = false;
-        render();
-      });
-    }
-
-    const liveBtn = mount.querySelector("#az-live-gps-btn");
-    if (liveBtn) {
-      liveBtn.addEventListener("click", () => {
-        if (liveWatchId !== null) {
-          navigator.geolocation.clearWatch(liveWatchId);
-          liveWatchId = null;
-          statusBanner = "Live GPS stopped.";
-          render();
-          return;
-        }
-        if (!navigator.geolocation) {
-          statusBanner = "Geolocation not supported in this browser.";
-          render();
-          return;
-        }
-        statusBanner = "Acquiring live GPS...";
-        liveWatchId = navigator.geolocation.watchPosition(
-          async (pos) => {
-            currentCoords = {
-              lat: Number(pos.coords.latitude.toFixed(6)),
-              lng: Number(pos.coords.longitude.toFixed(6)),
-              accuracy: Math.round(pos.coords.accuracy || 0)
-            };
-            statusBanner = `Live GPS active (${currentCoords.lat}, ${currentCoords.lng})`;
-            if (chatListingId && activeSide === "seller") {
-              await updateListingLocation(chatListingId, currentCoords, "Live GPS, Addis Ababa", true);
-            }
-            render();
-          },
-          (err) => {
-            statusBanner = "GPS error: " + (err && err.message ? err.message : "Permission denied");
-            render();
-          },
-          { enableHighAccuracy: true, maximumAge: 5000, timeout: 12000 }
-        );
-        render();
-      });
-    }
-
-    const photoFile = mount.querySelector("#az-post-photo-file");
-    if (photoFile) {
-      photoFile.addEventListener("change", () => {
-        const file = photoFile.files && photoFile.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = () => {
-          const urlInput = document.getElementById("az-post-image-url");
-          if (urlInput && typeof reader.result === "string") {
-            urlInput.value = reader.result;
-          }
-        };
-        reader.readAsDataURL(file);
-      });
-    }
-
-    const pinGpsBtn = mount.querySelector("#az-post-pin-gps");
-    if (pinGpsBtn) {
-      pinGpsBtn.addEventListener("click", () => {
-        statusBanner = "Reading GPS for listing...";
-        grabGpsOnce(
-          (coords) => {
-            const latEl = document.getElementById("az-post-lat");
-            const lngEl = document.getElementById("az-post-lng");
-            if (latEl) latEl.value = String(coords.lat);
-            if (lngEl) lngEl.value = String(coords.lng);
-            statusBanner = `Live GPS attached (${coords.lat}, ${coords.lng})`;
-            pinGpsBtn.textContent = "✓ Live GPS Attached";
-          },
-          (err) => {
-            statusBanner = "Location error: " + err;
-            render();
-          }
-        );
-      });
-    }
-
-    const postForm = mount.querySelector("#az-afrotie-post-form");
-    if (postForm) {
-      postForm.addEventListener("submit", async (e) => {
-        e.preventDefault();
-        const fd = new FormData(postForm);
-        const sellerName = String(fd.get("seller_name") || "").trim();
-        const title = String(fd.get("title") || "").trim();
-        if (!sellerName || !title) return;
-        setUserName(sellerName);
-        const rawLat = fd.get("lat");
-        const rawLng = fd.get("lng");
-        const lat = rawLat ? Number(rawLat) : null;
-        const lng = rawLng ? Number(rawLng) : null;
-
-        const res = await publishListing({
-          category: String(fd.get("category") || "Traditional"),
-          title,
-          price_etb: Number(fd.get("price_etb") || 0),
-          condition: String(fd.get("condition") || "Like New"),
-          seller_name: sellerName,
-          seller_phone: String(fd.get("seller_phone") || ""),
-          location_label: String(fd.get("location_label") || "Addis Ababa"),
-          image_url: String(fd.get("image_url") || ""),
-          description: String(fd.get("description") || ""),
-          lat: typeof lat === "number" && !isNaN(lat) ? lat : null,
-          lng: typeof lng === "number" && !isNaN(lng) ? lng : null
-        });
-
-        postModalOpen = false;
-        statusBanner = res.synced ? "Ad published live to Store." : "Ad published to Store.";
-        await render();
-      });
-    }
-
-    const closeChatBtn = mount.querySelector("#az-close-chat");
-    if (closeChatBtn) {
-      closeChatBtn.addEventListener("click", () => {
-        chatListingId = null;
-        render();
-      });
-    }
-
-    const sideSel = mount.querySelector("#az-chat-side");
-    if (sideSel) {
-      sideSel.addEventListener("change", () => {
-        activeSide = sideSel.value === "seller" ? "seller" : "buyer";
-        render();
-      });
-    }
-
-    const threadInp = mount.querySelector("#az-chat-thread-key");
-    if (threadInp) {
-      threadInp.addEventListener("change", () => {
-        activeThreadKey = (threadInp.value || "buyer-1").trim() || "buyer-1";
-        render();
-      });
-    }
-
-    const shareSellerLive = mount.querySelector("#az-share-seller-live");
-    if (shareSellerLive) {
-      shareSellerLive.addEventListener("click", () => {
-        if (!chatListingId) return;
-        grabGpsOnce(
-          async (coords) => {
-            await updateListingLocation(chatListingId, coords, "Live Pin, Addis Ababa", true);
-            statusBanner = `Seller live location updated (${coords.lat}, ${coords.lng})`;
-            await render();
-          },
-          (err) => {
-            statusBanner = "GPS error: " + err;
-            render();
-          }
-        );
-      });
-    }
-
-    async function handleSendChat(withPin) {
-      if (!chatListingId) return;
-      const nameEl = document.getElementById("az-chat-name");
-      const textEl = document.getElementById("az-chat-text");
-      const sender = ((nameEl && nameEl.value) || "").trim() || (activeSide === "seller" ? "Seller" : "Buyer");
-      setUserName(sender);
-      let body = ((textEl && textEl.value) || "").trim();
-      if (!body && withPin) body = "Shared live meetup location";
-      if (!body) return;
-
-      const sendNow = async (coords) => {
-        await postMessage({
-          listing_id: chatListingId,
-          thread_key: activeThreadKey,
-          sender_name: sender,
-          sender_side: activeSide,
-          body,
-          shared_lat: coords ? coords.lat : null,
-          shared_lng: coords ? coords.lng : null,
-          shared_label: coords ? "Live Location" : ""
-        });
-        await render();
-        const stream = document.getElementById("az-chat-stream");
-        if (stream) stream.scrollTop = stream.scrollHeight;
+  }
+ 
+  // ---------- ad detail / contact / report ----------
+  async function openDetail(id) {
+    try {
+      const l = await api('/api/listings/' + id);
+      const media = l.images.length
+        ? h('div', { class: 'azs-gallery' }, l.images.map((p) => h('img', { src: API + p, alt: l.title })))
+        : h('div', { class: 'azs-big' }, l.icon);
+      const acts = h('div', { class: 'azs-row' });
+      const m = modal(l.title, media,
+        h('div', { class: 'azs-price' }, money(l.price, l.currency)),
+        h('p', { class: 'azs-meta' }, [l.category, l.item_condition, l.city, ago(l.created_at), l.seller_name].join(' \u2022 ')),
+        h('p', { class: 'azs-desc' }, l.description || 'No description.'), acts);
+      acts.append(h('button', { class: 'azs-btn azs-contact', onclick: () => { m.close(); contact(l.id); } }, 'Chat with seller'));
+      if (l.lat != null && l.lng != null) {
+        acts.append(h('button', { class: 'azs-btn azs-ghost', onclick: () => showMap(l.lat, l.lng, l.city) }, '\u{1F4CD} Map'));
+      }
+    } catch (e) { toast(e.message); }
+  }
+  async function contact(listingId) {
+    if (!S.me) return needLogin(() => contact(listingId));
+    try {
+      const c = await api('/api/conversations', { method: 'POST', body: { listing_id: listingId } });
+      openChats(c.id);
+    } catch (e) { toast(e.message); }
+  }
+  async function report(id) {
+    if (!S.me) return needLogin(() => report(id));
+    const reason = window.prompt('What is wrong with this ad?');
+    if (!reason) return;
+    try { await api('/api/listings/' + id + '/report', { method: 'POST', body: { reason } }); toast('Thanks, the admin will review it'); }
+    catch (e) { toast(e.message); }
+  }
+ 
+  // ---------- post an ad (Jiji style: pick a category, then fill the form) ----------
+  function openPost() {
+    if (!S.me) return needLogin(openPost);
+    const body = h('div');
+    const m = modal('Post ad', body);
+    const quota = S.quota && S.quota.limit != null
+      ? 'Free account: ' + S.quota.used + ' of ' + S.quota.limit + ' ads used. The admin can approve your seller account for unlimited ads.'
+      : 'Your seller account is approved: unlimited ads, published instantly.';
+    body.append(h('p', { class: 'azs-note' }, quota), h('p', { class: 'azs-sub' }, 'Choose a category'),
+      h('div', { class: 'azs-tiles' }, S.cats.map((c) =>
+        h('button', { class: 'azs-tile', onclick: () => form(c) }, h('b', {}, c.icon), c.name))));
+ 
+    function form(cat) {
+      const err = h('div', { class: 'azs-err' });
+      const f = {
+        title: h('input', { class: 'azs-input', maxlength: 80 }),
+        price: h('input', { class: 'azs-input', type: 'number', min: 0, step: 'any', inputmode: 'decimal' }),
+        cond: h('select', { class: 'azs-input' }, ['used', 'new', 'refurbished'].map((v) => h('option', { value: v }, v))),
+        city: h('input', { class: 'azs-input', maxlength: 60, placeholder: 'e.g. Bole, Addis Ababa' }),
+        desc: h('textarea', { class: 'azs-input', maxlength: 2000 }),
+        imgs: h('input', { class: 'azs-input', type: 'file', accept: 'image/jpeg,image/png,image/webp', multiple: '' }),
       };
-
-      if (withPin) {
-        grabGpsOnce(
-          (coords) => sendNow(coords),
-          () => sendNow(currentCoords)
-        );
-      } else {
-        await sendNow(null);
+      let pos = null;
+      const where = h('small', {}, '');
+      const send = h('button', { class: 'azs-btn', onclick: submit }, 'Submit ad');
+      body.textContent = '';
+      body.append(h('p', { class: 'azs-note' }, cat.icon + ' ' + cat.name),
+        h('label', { class: 'azs-field' }, 'Title', f.title), h('label', { class: 'azs-field' }, 'Price (ETB)', f.price),
+        h('label', { class: 'azs-field' }, 'Condition', f.cond), h('label', { class: 'azs-field' }, 'City / area', f.city),
+        h('label', { class: 'azs-field' }, 'Description', f.desc),
+        h('label', { class: 'azs-field' }, 'Photos (up to 5, 3 MB each)', f.imgs),
+        h('button', { class: 'azs-btn azs-ghost', onclick: () => {
+          navigator.geolocation.getCurrentPosition((p) => { pos = p.coords; where.textContent = ' Location added'; },
+            () => toast('Location permission denied'), { enableHighAccuracy: true, timeout: 15000 });
+        } }, '\u{1F4CD} Add my location'), where, err, h('div', { class: 'azs-row' }, send));
+ 
+      async function submit() {
+        err.textContent = '';
+        const files = Array.from(f.imgs.files);
+        if (files.length > 5 || files.some((x) => x.size > 3 * 1024 * 1024)) { err.textContent = 'Max 5 photos, 3 MB each'; return; }
+        const fd = new FormData();
+        fd.append('title', f.title.value); fd.append('price', f.price.value); fd.append('condition', f.cond.value);
+        fd.append('city', f.city.value); fd.append('description', f.desc.value); fd.append('category_id', cat.id);
+        if (pos) { fd.append('lat', pos.latitude); fd.append('lng', pos.longitude); }
+        files.forEach((x) => fd.append('images', x));
+        send.disabled = true;
+        try {
+          const d = await api('/api/listings', { method: 'POST', body: fd });
+          m.close(); await refreshMe();
+          toast(d.status === 'approved' ? 'Your ad is live!' : 'Submitted. It will appear after admin approval.');
+          loadListings(true);
+        } catch (e) { err.textContent = e.message; send.disabled = false; }
       }
     }
-
-    const sendBtn = mount.querySelector("#az-chat-send-btn");
-    if (sendBtn) sendBtn.addEventListener("click", () => handleSendChat(false));
-
-    const sendPinBtn = mount.querySelector("#az-chat-send-pin");
-    if (sendPinBtn) sendPinBtn.addEventListener("click", () => handleSendChat(true));
   }
-
-  window.AzmariShopChatLocation = { render: render };
-
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", () => render());
-  } else {
-    render();
+  async function openMine() {
+    try {
+      const rows = await api('/api/my/listings');
+      const m = modal('My ads', rows.length ? rows.map((r) => h('div', { class: 'azs-item' },
+        h('div', {}, r.title, h('small', {}, money(r.price) + (r.is_sample ? ' \u2022 sample' : ''))),
+        h('span', { class: 'azs-status' }, r.status),
+        r.status === 'removed' ? '' : h('button', { class: 'azs-link', onclick: async () => {
+          if (!window.confirm('Remove this ad?')) return;
+          await api('/api/listings/' + r.id, { method: 'DELETE' }); m.close(); openMine(); loadListings(true);
+        } }, 'Remove'))) : h('p', { class: 'azs-empty' }, 'You have no ads yet.'));
+    } catch (e) { toast(e.message); }
   }
+ 
+  // ---------- admin ----------
+  async function openAdmin() {
+    try {
+      const d = await api('/api/admin/overview');
+      const box = h('div');
+      const m = modal('Admin', box);
+      const act = (fn) => async () => { try { await fn(); m.close(); openAdmin(); loadListings(true); } catch (e) { toast(e.message); } };
+      box.append(h('p', { class: 'azs-sub' }, 'Ads waiting for approval (' + d.listings.length + ')'),
+        d.listings.map((l) => h('div', { class: 'azs-item' },
+          h('div', {}, l.title, h('small', {}, money(l.price) + ' \u2022 ' + l.seller_name + ' ' + l.phone)),
+          h('div', {},
+            h('button', { class: 'azs-btn', onclick: act(() => api('/api/admin/listings/' + l.id, { method: 'PATCH', body: { status: 'approved' } })) }, 'Approve'), ' ',
+            h('button', { class: 'azs-btn azs-danger', onclick: act(() => api('/api/admin/listings/' + l.id, { method: 'PATCH', body: { status: 'rejected' } })) }, 'Reject')))),
+        h('p', { class: 'azs-sub' }, 'Sellers (approve = unlimited ads)'),
+        d.sellers.map((u) => h('div', { class: 'azs-item' },
+          h('div', {}, u.name, h('small', {}, u.phone + ' \u2022 ' + u.seller_status)),
+          h('div', {},
+            h('button', { class: 'azs-btn', onclick: act(() => api('/api/admin/users/' + u.id, { method: 'PATCH', body: { seller_status: 'approved' } })) }, 'Approve seller'), ' ',
+            h('button', { class: 'azs-btn azs-danger', onclick: act(() => api('/api/admin/users/' + u.id, { method: 'PATCH', body: { seller_status: 'blocked' } })) }, 'Block')))),
+        h('p', { class: 'azs-sub' }, 'Recent reports'),
+        d.reports.map((r) => h('div', { class: 'azs-item' }, h('div', {}, r.title, h('small', {}, r.reason)),
+          h('button', { class: 'azs-btn azs-danger', onclick: act(() => api('/api/admin/listings/' + r.listing_id, { method: 'PATCH', body: { status: 'removed' } })) }, 'Remove ad'))));
+    } catch (e) { toast(e.message); }
+  }
+ 
+  // ---------- realtime ----------
+  function loadSocketLib() {
+    if (window.io) return Promise.resolve();
+    if (!S.sp) {
+      S.sp = new Promise((ok, no) => {
+        document.head.append(h('script', { src: API + '/socket.io/socket.io.js', onload: ok,
+          onerror: () => { S.sp = null; no(new Error('Chat server not reachable')); } }));
+      });
+    }
+    return S.sp;
+  }
+  async function connectSocket() {
+    if (S.socket || !S.token) return;
+    try { await loadSocketLib(); } catch (e) { return; }
+    if (S.socket) return;
+    S.socket = window.io(API, { auth: { token: S.token } });
+    S.socket.on('chat:message', (m) => {
+      if (S.chat && S.chat.id === m.conversation_id) { addMsg(m); } else toast('New message');
+      if (S.chat) loadConvs();
+    });
+    S.socket.on('chat:live', (d) => {
+      if (S.chat && S.chat.id === d.conversation_id) showLive(d);
+    });
+    S.socket.on('chat:live-stop', (d) => {
+      if (S.chat && S.chat.id === d.conversation_id) hideLive('Live location ended');
+    });
+  }
+ 
+  // ---------- chat UI (responsive: 2 panes on desktop, 1 pane at a time on phones) ----------
+  function openChats(convId) {
+    if (!S.me) return needLogin(() => openChats(convId));
+    connectSocket();
+    if (S.chat && S.chat.ui) S.chat.ui.remove();
+    const clist = h('div');
+    const msgs = h('div', { class: 'azs-msgs' }, h('p', { class: 'azs-empty-thread' }, 'Select a chat'));
+    const title = h('span', {}, 'Chat');
+    const liveHolder = h('div');
+    const input = h('input', { class: 'azs-input', maxlength: 1000, placeholder: 'Type a message', 'aria-label': 'Message' });
+    const shareBtn = h('button', { class: 'azs-btn azs-ghost', title: 'Share live location', 'aria-label': 'Share live location', onclick: toggleShare }, '\u{1F4CD}');
+    const sendBtn = h('button', { class: 'azs-btn', onclick: send }, 'Send');
+    const wrap = h('div', { class: 'azs-chat' },
+      h('div', { class: 'azs-clist' },
+        h('div', { class: 'azs-chead' }, h('span', {}, 'My chats'),
+          h('button', { class: 'azs-x', 'aria-label': 'Close chats', onclick: closeChats }, '\u00D7')), clist),
+      h('div', { class: 'azs-thread' },
+        h('div', { class: 'azs-chead' },
+          h('button', { class: 'azs-ghost azs-btn azs-back', onclick: () => wrap.classList.remove('in-thread') }, '\u2190'),
+          title, h('button', { class: 'azs-x', 'aria-label': 'Close chats', onclick: closeChats }, '\u00D7')),
+        liveHolder, msgs, h('div', { class: 'azs-compose' }, shareBtn, input, sendBtn)));
+    input.addEventListener('keydown', (e) => { if (e.key === 'Enter') send(); });
+    document.body.append(wrap);
+    S.chat = { id: 0, ui: wrap, clist, msgs, title, liveHolder, input, shareBtn };
+    loadConvs().then(() => { if (typeof convId === 'number') selectConv(convId); });
+ 
+    function send() {
+      const text = input.value.trim();
+      if (!text || !S.chat.id || !S.socket) return;
+      sendBtn.disabled = true;
+      S.socket.emit('chat:send', { conversation_id: S.chat.id, body: text }, (r) => {
+        sendBtn.disabled = false;
+        if (r && r.error) toast(r.error); else input.value = '';
+      });
+    }
+  }
+  function closeChats() {
+    stopShare(); hideLive();
+    if (S.chat) { S.chat.ui.remove(); S.chat = null; }
+  }
+  async function loadConvs() {
+    if (!S.chat) return;
+    try {
+      S.convs = await api('/api/conversations');
+      S.chat.clist.textContent = '';
+      if (!S.convs.length) S.chat.clist.append(h('p', { class: 'azs-empty' }, 'No chats yet. Tap Contact on an ad.'));
+      S.convs.forEach((c) => S.chat.clist.append(h('div', { class: 'azs-conv' + (S.chat.id === c.id ? ' on' : ''),
+        onclick: () => selectConv(c.id) }, h('b', {}, c.other_name), h('small', {}, c.title), h('small', {}, c.last_body || 'No messages yet'))));
+    } catch (e) { toast(e.message); }
+  }
+  async function selectConv(id) {
+    if (!S.chat) return;
+    if (S.chat.id !== id) hideLive();
+    S.chat.id = id;
+    S.chat.ui.classList.add('in-thread');
+    const c = S.convs.find((x) => x.id === id);
+    S.chat.title.textContent = c ? c.other_name + ' \u2022 ' + c.title : 'Chat';
+    S.chat.msgs.textContent = '';
+    try {
+      const list = await api('/api/conversations/' + id + '/messages');
+      if (!S.chat || S.chat.id !== id) return;
+      list.forEach(addMsg);
+      if (!list.length) S.chat.msgs.append(h('p', { class: 'azs-empty-thread' }, 'Say hello \u{1F44B}'));
+      loadConvs();
+    } catch (e) { toast(e.message); }
+  }
+  function addMsg(m) {
+    if (!S.chat) return;
+    const first = S.chat.msgs.querySelector('.azs-empty-thread');
+    if (first) first.remove();
+    const mine = m.sender_id === S.me.id;
+    const bubble = h('div', { class: 'azs-msg' + (mine ? ' me' : '') });
+    if (m.type === 'location') {
+      bubble.append(h('div', {}, '\u{1F4CD} Live location started'),
+        h('button', { class: 'azs-link', onclick: () => showMap(m.lat, m.lng, 'Shared location') }, 'View start point'));
+    } else bubble.append(m.body);
+    bubble.append(h('time', {}, hhmm(m.created_at)));
+    S.chat.msgs.append(bubble);
+    S.chat.msgs.scrollTop = S.chat.msgs.scrollHeight;
+  }
+ 
+  // ---------- live location ----------
+  function updateShareBtn() {
+    if (!S.chat) return;
+    const on = S.watch != null && S.shareConv === S.chat.id;
+    S.chat.shareBtn.textContent = on ? '\u23F9 Stop' : '\u{1F4CD}';
+    S.chat.shareBtn.title = on ? 'Stop sharing location' : 'Share live location';
+  }
+  function toggleShare() {
+    if (S.watch != null) { stopShare(); return; }
+    if (!S.chat || !S.chat.id) { toast('Open a chat first'); return; }
+    if (!navigator.geolocation) { toast('Location is not supported on this device'); return; }
+    if (!window.confirm('Share your live location with this person for ' + LIVE_MINUTES + ' minutes? You can stop any time.')) return;
+    const cid = S.chat.id; let first = true; let last = 0;
+    S.shareConv = cid;
+    S.watch = navigator.geolocation.watchPosition((p) => {
+      const now = Date.now();
+      if (!first && now - last < 4000) return;
+      last = now;
+      S.socket.emit('chat:location', { conversation_id: cid, lat: p.coords.latitude, lng: p.coords.longitude,
+        accuracy: p.coords.accuracy, start: first });
+      first = false;
+    }, (err) => { toast(err.code === 1 ? 'Location permission denied' : 'Could not get your location'); stopShare(); },
+    { enableHighAccuracy: true, maximumAge: 5000, timeout: 20000 });
+    S.shareTimer = setTimeout(stopShare, LIVE_MINUTES * 60 * 1000);
+    updateShareBtn();
+    toast('Sharing live location');
+  }
+  function stopShare() {
+    if (S.watch == null) return;
+    navigator.geolocation.clearWatch(S.watch);
+    S.watch = null; clearTimeout(S.shareTimer);
+    if (S.socket && S.shareConv) S.socket.emit('chat:live-stop', { conversation_id: S.shareConv });
+    S.shareConv = 0;
+    updateShareBtn();
+  }
+  function showLive(d) {
+    if (!S.chat) return;
+    if (!S.liveBox) {
+      S.liveBox = { box: mapBox(180), cap: h('span', {}, '') };
+      S.chat.liveHolder.append(h('div', { class: 'azs-live' },
+        h('p', {}, S.liveBox.cap, h('button', { class: 'azs-link', onclick: () => hideLive() }, 'Hide')), S.liveBox.box.node));
+    }
+    S.liveBox.cap.textContent = '\u{1F4CD} Live location \u2022 updated ' + new Date(d.at).toLocaleTimeString();
+    S.liveBox.box.set(d.lat, d.lng).catch((e) => toast(e.message));
+    clearTimeout(S.liveTimeout);
+    S.liveTimeout = setTimeout(() => hideLive('Live location stopped updating'), 90000);
+  }
+  function hideLive(msg) {
+    clearTimeout(S.liveTimeout);
+    if (S.liveBox) { S.liveBox.box.destroy(); S.liveBox = null; }
+    if (S.chat) S.chat.liveHolder.textContent = '';
+    if (msg) toast(msg);
+  }
+ 
+  // ---------- start ----------
+  async function mountStore(root) {
+    buildPage(root);
+    drawTop();
+    if (!S.cats.length) { try { S.cats = await api('/api/categories'); } catch (e) { S.cats = []; } }
+    drawCats();
+    if (S.token && !S.me) await refreshMe();
+    drawTop();
+    loadListings(true);
+  }
+  function checkMount() {
+    const root = document.getElementById('shop-root');
+    if (root && root.dataset.azs !== '1') { root.dataset.azs = '1'; mountStore(root); }
+  }
+  new MutationObserver(checkMount).observe(document.documentElement, { childList: true, subtree: true });
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', checkMount); else checkMount();
 })();
