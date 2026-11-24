@@ -7,7 +7,13 @@
   const STORAGE_USER_KEY = "azmari_store_user_v2";
 
   const CATEGORIES = [
-    { id: "All", label: "All", icon: "🛍️" },
+    { id: "All", label: "All items", icon: "🛍️" },
+    { id: "Phones", label: "Phones", icon: "📱" },
+    { id: "Electronics", label: "Electronics", icon: "💻" },
+    { id: "Fashion", label: "Fashion", icon: "👟" },
+    { id: "Home & Furniture", label: "Home & Furniture", icon: "🛋️" },
+    { id: "Vehicles", label: "Vehicles", icon: "🚗" },
+    { id: "Property", label: "Property", icon: "🏠" },
     { id: "Keyboards", label: "Keyboards", icon: "🎹" },
     { id: "Strings", label: "Strings", icon: "🎸" },
     { id: "Traditional", label: "Traditional", icon: "🪕" },
@@ -502,48 +508,50 @@
     const style = document.createElement("style");
     style.id = "az-jiji-store-styles";
     style.textContent = `
-      #azmari-shop-marketplace { color-scheme: light !important; }
-      .az-st-shell { max-width: 780px; margin: 12px auto 84px; padding: 14px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #fbf9f2 !important; color: #111827 !important; border-radius: 18px; border: 1px solid #d97706; }
-      .az-st-topbar { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 12px; }
-      .az-st-h1 { margin: 0; font-size: 1.65rem; font-weight: 800; color: #1e3a8a; letter-spacing: -0.02em; }
-      .az-st-post-cta { background: #15803d; color: #ffffff; border: none; border-radius: 999px; padding: 9px 16px; font-weight: 700; font-size: 0.9rem; cursor: pointer; }
-      .az-st-live-cta { background: #1e3a8a; color: #fef3c7; border: 1px solid #d97706; border-radius: 999px; padding: 8px 13px; font-weight: 700; font-size: 0.82rem; cursor: pointer; }
-      .az-st-search { display: flex; align-items: center; gap: 8px; background: #ffffff !important; border: 1px solid #94a3b8; border-radius: 14px; padding: 10px 14px; margin-bottom: 12px; }
-      .az-st-search input { border: none; outline: none; width: 100%; font-size: 0.98rem; color: #111827 !important; -webkit-text-fill-color: #111827 !important; background: #ffffff !important; }
-      .az-st-cats { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 6px; margin-bottom: 14px; scrollbar-width: none; }
-      .az-st-cats::-webkit-scrollbar { display: none; }
-      .az-st-cat { flex: 0 0 auto; min-width: 76px; padding: 10px 12px; border-radius: 14px; border: 1px solid #cbd5e1; background: #ffffff !important; color: #1e293b !important; text-align: center; cursor: pointer; font-size: 0.82rem; font-weight: 600; }
-      .az-st-cat.active { background: #1e3a8a !important; color: #fef3c7 !important; border-color: #d97706; font-weight: 700; }
-      .az-st-cat-ico { display: block; font-size: 1.45rem; margin-bottom: 4px; }
-      .az-st-sub { margin: 0 0 12px; font-size: 1.05rem; font-weight: 800; color: #1e3a8a; }
-      .az-st-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+      #azmari-shop-marketplace { color-scheme: dark !important; }
+      .az-st-shell { max-width: 1180px; margin: 12px auto 84px; padding: 18px; font-family: inherit; background: #07123d !important; color: #ffffff !important; border-radius: 20px; border: 1px solid #3cc8ff; box-shadow: 0 16px 42px rgba(2, 8, 30, .28); }
+      .az-st-topbar { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
+      .az-st-h1 { margin: 0; font-size: 1.7rem; font-weight: 850; color: #ffffff; letter-spacing: -0.03em; }
+      .az-st-post-cta { background: #e8b23a; color: #07123d; border: 0; border-radius: 999px; padding: 10px 18px; font-weight: 800; font-size: .92rem; cursor: pointer; box-shadow: 0 5px 16px rgba(232,178,58,.22); }
+      .az-st-live-cta { background: #0a66ff; color: #ffffff; border: 1px solid #3cc8ff; border-radius: 999px; padding: 9px 14px; font-weight: 750; font-size: .84rem; cursor: pointer; }
+      .az-st-search { display: flex; align-items: center; gap: 10px; background: #0d1d50 !important; border: 1px solid #3cc8ff; border-radius: 14px; padding: 12px 15px; margin-bottom: 14px; }
+      .az-st-search input { border: 0; outline: 0; width: 100%; font-size: 1rem; color: #ffffff !important; -webkit-text-fill-color: #ffffff !important; background: transparent !important; }
+      .az-st-search input::placeholder { color: #a9c8e8 !important; -webkit-text-fill-color: #a9c8e8 !important; }
+      .az-st-cats { display: flex; gap: 10px; overflow-x: auto; padding: 2px 1px 10px; margin-bottom: 16px; scrollbar-width: thin; }
+      .az-st-cat { flex: 0 0 auto; min-width: 86px; padding: 11px 13px; border-radius: 14px; border: 1px solid #244b83; background: #0d1d50 !important; color: #e6efff !important; text-align: center; cursor: pointer; font-size: .82rem; font-weight: 650; }
+      .az-st-cat.active { background: #0a66ff !important; color: #ffffff !important; border-color: #3cc8ff; box-shadow: 0 5px 15px rgba(10,102,255,.24); }
+      .az-st-cat-ico { display: block; font-size: 1.5rem; margin-bottom: 5px; }
+      .az-st-sub { margin: 0 0 13px; font-size: 1.08rem; font-weight: 800; color: #ffffff; }
+      .az-st-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 13px; }
       @media (min-width: 680px) { .az-st-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
-      .az-st-card { background: #ffffff !important; border-radius: 16px; overflow: hidden; display: flex; flex-direction: column; border: 1px solid #dbe4f0; }
-      .az-st-hero { position: relative; height: 132px; background: linear-gradient(135deg, #1e3a8a 0%, #1d4ed8 65%, #b45309 100%); display: flex; align-items: center; justify-content: center; }
+      @media (min-width: 1000px) { .az-st-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+      .az-st-card { background: #0d1d50 !important; border-radius: 16px; overflow: hidden; display: flex; flex-direction: column; border: 1px solid #244b83; transition: transform .18s ease, border-color .18s ease; }
+      .az-st-card:hover { transform: translateY(-3px); border-color: #3cc8ff; }
+      .az-st-hero { position: relative; height: 158px; background: linear-gradient(135deg, #0a66ff 0%, #123b86 58%, #07123d 100%); display: flex; align-items: center; justify-content: center; }
       .az-st-hero img { width: 100%; height: 100%; object-fit: cover; }
-      .az-st-hero-emoji { font-size: 3.3rem; }
-      .az-st-fav { position: absolute; top: 9px; right: 9px; width: 32px; height: 32px; border-radius: 50%; border: 1px solid rgba(254,243,199,0.5); background: rgba(17,24,39,0.65); color: #fff; font-size: 1rem; cursor: pointer; }
-      .az-st-verified { position: absolute; left: 9px; bottom: 9px; background: #15803d; color: #ffffff; font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px; border: 1px solid #fef3c7; }
-      .az-st-body { padding: 10px 11px 11px; display: flex; flex-direction: column; gap: 4px; flex: 1; background: #ffffff !important; }
-      .az-st-price { color: #b45309; font-weight: 800; font-size: 1.05rem; }
-      .az-st-title { font-weight: 700; font-size: 0.96rem; color: #111827; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-      .az-st-meta { font-size: 0.77rem; color: #475569; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .az-st-hero-emoji { font-size: 3.4rem; }
+      .az-st-fav { position: absolute; top: 9px; right: 9px; width: 34px; height: 34px; border-radius: 50%; border: 1px solid rgba(60,200,255,.7); background: rgba(7,18,61,.82); color: #ffffff; font-size: 1rem; cursor: pointer; }
+      .az-st-verified { position: absolute; left: 9px; bottom: 9px; background: #e8b23a; color: #07123d; font-size: .72rem; font-weight: 800; padding: 4px 9px; border-radius: 999px; }
+      .az-st-body { padding: 11px 12px 12px; display: flex; flex-direction: column; gap: 5px; flex: 1; background: #0d1d50 !important; }
+      .az-st-price { color: #e8b23a; font-weight: 850; font-size: 1.08rem; }
+      .az-st-title { font-weight: 750; font-size: .96rem; color: #ffffff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .az-st-meta { font-size: .78rem; color: #b6cce8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
       .az-st-actions { display: flex; gap: 7px; margin-top: 8px; }
-      .az-st-contact { flex: 1; background: #1e3a8a; color: #fef3c7; border: none; border-radius: 10px; padding: 8px 10px; font-weight: 700; font-size: 0.88rem; cursor: pointer; }
-      .az-st-flag { width: 36px; border: 1px solid #cbd5e1; background: #fffbeb !important; color: #b91c1c; border-radius: 10px; cursor: pointer; font-size: 0.9rem; }
-      .az-st-overlay { position: fixed; inset: 0; background: rgba(15,23,42,0.62); z-index: 9999; display: flex; align-items: flex-end; justify-content: center; padding: 10px; }
+      .az-st-contact { flex: 1; background: #0a66ff; color: #ffffff; border: 1px solid #3cc8ff; border-radius: 10px; padding: 9px 10px; font-weight: 750; font-size: .88rem; cursor: pointer; }
+      .az-st-flag { width: 38px; border: 1px solid #31517e; background: #122650 !important; color: #e8b23a; border-radius: 10px; cursor: pointer; font-size: .9rem; }
+      .az-st-overlay { position: fixed; inset: 0; background: rgba(2,8,30,.78); z-index: 9999; display: flex; align-items: flex-end; justify-content: center; padding: 10px; }
       @media (min-width: 640px) { .az-st-overlay { align-items: center; } }
-      .az-st-sheet { width: 100%; max-width: 520px; max-height: 88vh; overflow-y: auto; background: #fbf9f2 !important; color: #111827 !important; border-radius: 20px; padding: 16px; border: 2px solid #d97706; }
-      .az-st-sheet input, .az-st-sheet select, .az-st-sheet textarea { background-color: #ffffff !important; color: #111827 !important; -webkit-text-fill-color: #111827 !important; border: 1px solid #64748b !important; opacity: 1 !important; }
-      .az-st-sheet input::placeholder, .az-st-sheet textarea::placeholder { color: #64748b !important; -webkit-text-fill-color: #64748b !important; opacity: 1 !important; }
-      .az-st-field { display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; font-size: 0.84rem; font-weight: 700; color: #1e3a8a; }
-      .az-st-field input, .az-st-field select, .az-st-field textarea { padding: 9px 11px; border-radius: 10px; font: inherit; }
-      .az-st-chat-stream { max-height: 250px; overflow-y: auto; background: #ffffff !important; border: 1px solid #cbd5e1; border-radius: 12px; padding: 10px; display: flex; flex-direction: column; gap: 8px; margin: 10px 0; }
-      .az-st-bubble { max-width: 82%; padding: 8px 11px; border-radius: 12px; font-size: 0.88rem; line-height: 1.35; color: #111827 !important; }
-      .az-st-bubble.buyer { align-self: flex-start; background: #eff6ff !important; border: 1px solid #93c5fd; }
-      .az-st-bubble.seller { align-self: flex-end; background: #fef3c7 !important; border: 1px solid #f59e0b; }
-      .az-st-banner { font-size: 0.82rem; color: #1e3a8a; background: #fef3c7 !important; border: 1px solid #f59e0b; padding: 6px 10px; border-radius: 10px; margin-bottom: 8px; font-weight: 700; }
-      .az-rt-pill { display: inline-block; font-size: 0.72rem; font-weight: 700; color: #15803d; background: #dcfce7; border: 1px solid #86efac; padding: 2px 8px; border-radius: 999px; margin-left: 6px; }
+      .az-st-sheet { width: 100%; max-width: 560px; max-height: 88vh; overflow-y: auto; background: #07123d !important; color: #ffffff !important; border-radius: 20px; padding: 17px; border: 1px solid #3cc8ff; box-shadow: 0 18px 60px rgba(0,0,0,.35); }
+      .az-st-sheet input, .az-st-sheet select, .az-st-sheet textarea { background: #0d1d50 !important; color: #ffffff !important; -webkit-text-fill-color: #ffffff !important; border: 1px solid #31517e !important; opacity: 1 !important; }
+      .az-st-sheet input::placeholder, .az-st-sheet textarea::placeholder { color: #a9c8e8 !important; -webkit-text-fill-color: #a9c8e8 !important; opacity: 1 !important; }
+      .az-st-field { display: flex; flex-direction: column; gap: 5px; margin-bottom: 11px; font-size: .85rem; font-weight: 700; color: #3cc8ff; }
+      .az-st-field input, .az-st-field select, .az-st-field textarea { padding: 10px 11px; border-radius: 10px; font: inherit; }
+      .az-st-chat-stream { max-height: 250px; overflow-y: auto; background: #0d1d50 !important; border: 1px solid #31517e; border-radius: 12px; padding: 10px; display: flex; flex-direction: column; gap: 8px; margin: 10px 0; }
+      .az-st-bubble { max-width: 82%; padding: 8px 11px; border-radius: 12px; font-size: .88rem; line-height: 1.35; color: #ffffff !important; }
+      .az-st-bubble.buyer { align-self: flex-start; background: #123b86 !important; border: 1px solid #3cc8ff; }
+      .az-st-bubble.seller { align-self: flex-end; background: #3a2f12 !important; border: 1px solid #e8b23a; }
+      .az-st-banner { font-size: .83rem; color: #ffffff; background: #123b86 !important; border: 1px solid #3cc8ff; padding: 8px 11px; border-radius: 10px; margin-bottom: 9px; font-weight: 700; }
+      .az-rt-pill { display: inline-block; font-size: .72rem; font-weight: 700; color: #3cc8ff; background: #0d1d50; border: 1px solid #3cc8ff; padding: 2px 8px; border-radius: 999px; margin-left: 6px; }
     `;
     document.head.appendChild(style);
   }
@@ -654,10 +662,16 @@
               <div class="az-st-field">
                 <label>Category *</label>
                 <select name="category">
+                  <option value="Phones">Phones & Accessories</option>
+                  <option value="Electronics">Electronics & Computers</option>
+                  <option value="Fashion">Fashion & Beauty</option>
+                  <option value="Home & Furniture">Home & Furniture</option>
+                  <option value="Vehicles">Vehicles</option>
+                  <option value="Property">Property</option>
                   <option value="Keyboards">Keyboards</option>
-                  <option value="Strings">Strings</option>
-                  <option value="Traditional">Traditional (Krar, Masinko, Washint, Begena)</option>
-                  <option value="Percussion">Percussion (Kebero, Drums)</option>
+                  <option value="Strings">Strings & Guitars</option>
+                  <option value="Traditional">Traditional Instruments</option>
+                  <option value="Percussion">Percussion</option>
                   <option value="Audio">Audio & Studio Gear</option>
                 </select>
               </div>
@@ -785,7 +799,7 @@
     mount.innerHTML = `
       <div class="az-st-shell">
         <div class="az-st-topbar">
-          <h2 class="az-st-h1">Store</h2>
+          <div><h2 class="az-st-h1">Azmari Bet Shop</h2><div style="color:#a9c8e8;font-size:.88rem;margin-top:3px;">Buy and sell across Ethiopia</div></div>
           <div style="display:flex;gap:8px;align-items:center;">
             <button type="button" class="az-st-live-cta" id="az-live-gps-btn">${liveWatchId !== null ? "🟢 Live GPS On" : "📍 Live GPS"}</button>
             <button type="button" class="az-st-post-cta" id="az-open-post-btn">+ Post Ad</button>
@@ -801,7 +815,7 @@
 
         <div class="az-st-cats">${catsHtml}</div>
 
-        <h3 class="az-st-sub">Fresh recommendations</h3>
+        <h3 class="az-st-sub">Discover products</h3>
         <div class="az-st-grid">${cardsHtml}</div>
       </div>
       ${postModalHtml}
