@@ -10,7 +10,7 @@ INSERT OR IGNORE INTO categories (id, slug, name, icon, sort) VALUES
   (7, 'rental',      'Rental',      char(128266), 7);  -- speaker
  
 -- SAMPLE SELLERS (approved, cannot log in: password hash '!' never matches).
--- SAMPLE ADS (is_sample = 1) copy your Store screenshot. Re-running setup.sh resets them.
+-- TWO SAMPLE ADS (is_sample = 1) from your Store screenshot. Re-running setup.sh resets them.
 -- Remove them later with:  DELETE FROM listings WHERE is_sample = 1;
 DELETE FROM listings WHERE is_sample = 1;
 INSERT INTO users (name, phone, password_hash, role, seller_status)
@@ -25,27 +25,3 @@ ON CONFLICT(phone) DO UPDATE SET name = excluded.name, seller_status = 'approved
 INSERT INTO listings (seller_id, category_id, title, description, price, item_condition, city, lat, lng, status, is_sample, created_at, approved_at)
 VALUES ((SELECT id FROM users WHERE phone = '+251900000012'), 2, 'Bass guitar', '4-string bass guitar, great tone, strap included.', 13200, 'used', 'Adama', 8.54, 39.27, 'approved', 1,
         strftime('%Y-%m-%dT%H:%M:%SZ','now','-1 day'), strftime('%Y-%m-%dT%H:%M:%SZ','now','-1 day'));
-INSERT INTO users (name, phone, password_hash, role, seller_status)
-VALUES ('Tigist Mulugeta', '+251900000013', '!', 'user', 'approved')
-ON CONFLICT(phone) DO UPDATE SET name = excluded.name, seller_status = 'approved';
-INSERT INTO listings (seller_id, category_id, title, description, price, item_condition, city, lat, lng, status, is_sample, created_at, approved_at)
-VALUES ((SELECT id FROM users WHERE phone = '+251900000013'), 2, 'Electric guitar', 'Electric guitar with cable and gig bag.', 15500, 'used', 'Bole, Addis Ababa', 8.9806, 38.7578, 'approved', 1,
-        strftime('%Y-%m-%dT%H:%M:%SZ','now','-1 day'), strftime('%Y-%m-%dT%H:%M:%SZ','now','-1 day'));
-INSERT INTO users (name, phone, password_hash, role, seller_status)
-VALUES ('Yonas Haile', '+251900000014', '!', 'user', 'approved')
-ON CONFLICT(phone) DO UPDATE SET name = excluded.name, seller_status = 'approved';
-INSERT INTO listings (seller_id, category_id, title, description, price, item_condition, city, lat, lng, status, is_sample, created_at, approved_at)
-VALUES ((SELECT id FROM users WHERE phone = '+251900000014'), 2, 'Acoustic guitar', 'Full-size acoustic guitar with soft case and extra strings.', 7800, 'used', 'Piassa, Addis Ababa', 9.0357, 38.7524, 'approved', 1,
-        strftime('%Y-%m-%dT%H:%M:%SZ','now','-5 hours'), strftime('%Y-%m-%dT%H:%M:%SZ','now','-5 hours'));
-INSERT INTO users (name, phone, password_hash, role, seller_status)
-VALUES ('Hana Getachew', '+251900000017', '!', 'user', 'approved')
-ON CONFLICT(phone) DO UPDATE SET name = excluded.name, seller_status = 'approved';
-INSERT INTO listings (seller_id, category_id, title, description, price, item_condition, city, lat, lng, status, is_sample, created_at, approved_at)
-VALUES ((SELECT id FROM users WHERE phone = '+251900000017'), 1, 'Digital piano', '88-key weighted digital piano with stand and pedal.', 42000, 'used', 'Kazanchis, Addis Ababa', 9.0192, 38.7678, 'approved', 1,
-        strftime('%Y-%m-%dT%H:%M:%SZ','now','-2 hours'), strftime('%Y-%m-%dT%H:%M:%SZ','now','-2 hours'));
-INSERT INTO users (name, phone, password_hash, role, seller_status)
-VALUES ('Dawit Alemu', '+251900000016', '!', 'user', 'approved')
-ON CONFLICT(phone) DO UPDATE SET name = excluded.name, seller_status = 'approved';
-INSERT INTO listings (seller_id, category_id, title, description, price, item_condition, city, lat, lng, status, is_sample, created_at, approved_at)
-VALUES ((SELECT id FROM users WHERE phone = '+251900000016'), 1, 'Electric keyboard', '61-key electric keyboard, comes with stand and adapter.', 18500, 'used', 'Bole, Addis Ababa', 8.9806, 38.7578, 'approved', 1,
-        strftime('%Y-%m-%dT%H:%M:%SZ','now','-12 minutes'), strftime('%Y-%m-%dT%H:%M:%SZ','now','-12 minutes'));
