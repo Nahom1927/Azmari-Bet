@@ -443,10 +443,24 @@
     let mount = document.getElementById("azmari-shop-marketplace");
     if (mount) return mount;
 
-    const existingStoreSection =
-      document.getElementById("store-section") ||
-      document.getElementById("shop-section") ||
-      document.querySelector('[data-tab="store"], [data-section="store"]');
+    // Mount only inside a real content panel. A [data-tab="store"] element
+    // may be the navigation button itself, so never use it as a content host.
+    const isContentPanel = (el) => {
+      if (!el || el.nodeType !== 1) return false;
+      const tag = el.tagName.toLowerCase();
+      if (["a", "button", "input", "label", "nav"].includes(tag)) return false;
+      if (el.getAttribute("role") === "tab" || el.getAttribute("role") === "button") return false;
+      return true;
+    };
+
+    const candidates = [
+      document.getElementById("store-section"),
+      document.getElementById("shop-section"),
+      document.querySelector('[data-section="store"]'),
+      document.querySelector('[data-tab-panel="store"]'),
+      document.querySelector("#store, #shop")
+    ];
+    const existingStoreSection = candidates.find(isContentPanel);
 
     if (existingStoreSection) {
       mount = document.createElement("div");
@@ -455,10 +469,19 @@
       return mount;
     }
 
+    // Fallback: create a dedicated Store panel under the shared page layout.
+    // This keeps the marketplace out of the navigation bar and leaves other
+    // sections untouched.
     const parent = document.querySelector("main") || document.body;
-    mount = document.createElement("section");
+    const storePanel = document.createElement("section");
+    storePanel.id = "store-section";
+    storePanel.setAttribute("data-section", "store");
+    storePanel.className = "azmari-section azmari-store-section";
+    storePanel.setAttribute("aria-label", "Azmari Bet Store");
+    mount = document.createElement("div");
     mount.id = "azmari-shop-marketplace";
-    parent.appendChild(mount);
+    storePanel.appendChild(mount);
+    parent.appendChild(storePanel);
     return mount;
   }
 
