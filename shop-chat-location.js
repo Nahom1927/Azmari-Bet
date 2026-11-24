@@ -558,15 +558,40 @@
 
   function findStoreMountPoint() {
     let mount = document.getElementById("azmari-shop-marketplace");
-    if (!mount) {
-      const parent = document.querySelector("main") || document.body;
-      mount = document.createElement("section");
+    if (mount) return mount;
+
+    const isContentPanel = (el) => {
+      if (!el || el.nodeType !== 1) return false;
+      const tag = el.tagName.toLowerCase();
+      if (["a", "button", "input", "label", "nav"].includes(tag)) return false;
+      if (el.getAttribute("role") === "tab" || el.getAttribute("role") === "button") return false;
+      return true;
+    };
+    const candidates = [
+      document.getElementById("store-section"),
+      document.getElementById("shop-section"),
+      document.querySelector('[data-section="store"]'),
+      document.querySelector('[data-tab-panel="store"]'),
+      document.querySelector("#store, #shop")
+    ];
+    const panel = candidates.find(isContentPanel);
+    if (panel) {
+      mount = document.createElement("div");
       mount.id = "azmari-shop-marketplace";
-      parent.appendChild(mount);
+      panel.prepend(mount);
+      return mount;
     }
-    mount.style.display = "block";
-    mount.style.visibility = "visible";
-    mount.style.opacity = "1";
+
+    const parent = document.querySelector("main") || document.body;
+    const storePanel = document.createElement("section");
+    storePanel.id = "store-section";
+    storePanel.setAttribute("data-section", "store");
+    storePanel.className = "azmari-section azmari-store-section";
+    storePanel.setAttribute("aria-label", "Azmari Bet Store");
+    mount = document.createElement("div");
+    mount.id = "azmari-shop-marketplace";
+    storePanel.appendChild(mount);
+    parent.appendChild(storePanel);
     return mount;
   }
 
