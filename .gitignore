@@ -12,8 +12,4 @@ android/**/build/
 index.backup.html
 android/local.properties
 **/build/
-<<<<<<< HEAD
 node_modules
-www/
-=======
->>>>>>> store-backend
