@@ -526,10 +526,10 @@ const AZ_FRAMES=[
 {k:"expo",n:"Business / Expo",f:[["company","Company"],["date","Date"],["price","Ticket price (birr)"],["schedule","Schedule"]]}];
 function azFramePicker(){
   const cur=AZ_FRAMES.find(x=>x.k===S.ev.frame);
-  const chips=AZ_FRAMES.map(x=>'<button type="button" class="chip'+(cur&&cur.k===x.k?' on':'')+'" data-act="frame" data-v="'+x.k+'">'+esc(x.n)+'</button>').join("");
+  const chips=AZ_FRAMES.map(x=>'<button type="button" class="chip'+(cur&&cur.k===x.k?' on':'')+'" data-act="frame" data-v="'+x.k+'">'+esc(t("fr_"+x.k))+'</button>').join("");
   let fields="";
   if(cur){const v=D.evf||{};fields=cur.f.map(p=>'<label>'+esc(p[1])+'</label><input class="fi" data-d="evf|'+p[0]+'" value="'+esc(v[p[0]]||"")+'" autocomplete="off">').join("");}
-  return '<div class="card"><h3>Event template</h3><div class="chips">'+chips+'</div>'+fields+'<p><button type="button" class="chip" data-act="evpolicy">Payment policy</button></p></div>';
+  return '<div class="card"><h3>'+esc(t("tpl"))+'</h3><div class="chips">'+chips+'</div>'+fields+'<p><button type="button" class="chip" data-act="evpolicy">'+esc(t("pol"))+'</button></p></div>';
 }
 function azPolicy(){
   const tiers=TIERS.map(x=>x.n+": "+fmt(x.p)+" birr for "+x.d+" days ("+x.x+")").join("; ");
@@ -546,10 +546,69 @@ function azPolicy(){
     "Wrong or duplicate payment. Contact +251911898184 within 7 days with your transaction ID."
   ];
   const m=document.createElement("div");m.className="sheet";
-  m.innerHTML='<div role="dialog" aria-label="Payment policy"><h3>Event posting payment policy</h3><div style="max-height:60vh;overflow:auto"><ol>'+items.map(x=>'<li>'+esc(x)+'</li>').join("")+'</ol></div><button type="button" class="btn" id="plx">Close</button></div>';
+  m.innerHTML='<div role="dialog" aria-label="'+esc(t("pol"))+'"><h3>'+esc(t("pol"))+'</h3><div style="max-height:60vh;overflow:auto"><ol>'+items.map(x=>'<li>'+esc(x)+'</li>').join("")+'</ol></div><button type="button" class="btn" id="plx">'+esc(t("close"))+'</button></div>';
   document.body.appendChild(m);
   m.querySelector("#plx").onclick=()=>m.remove();
 }
+
+/* AZ-SLIDER */
+Object.assign(L.en,{fr_concert:"Concert / Music",fr_party:"Wedding / Party",fr_sports:"Sports",fr_workshop:"Workshop / Training",fr_cultural:"Religious / Cultural",fr_expo:"Business / Expo",tpl:"Event template",pol:"Payment policy",close:"Close",crop:"Crop photo (8:9)",cropUse:"Use photo",cropCancel:"Cancel",cropHint:"Drag to move, slide to zoom",call:"Call",share:"Share",map:"Map"});
+Object.assign(L.am,{fr_concert:"ኮንሰርት / ሙዚቃ",fr_party:"ሠርግ / ድግስ",fr_sports:"ስፖርት",fr_workshop:"ወርክሾፕ / ስልጠና",fr_cultural:"ሃይማኖታዊ / ባህላዊ",fr_expo:"ንግድ / ኤክስፖ",tpl:"የዝግጅት ቅጽ",pol:"የክፍያ ፖሊሲ",close:"ዝጋ",crop:"ፎቶ ቁረጥ (8:9)",cropUse:"ፎቶውን ተጠቀም",cropCancel:"ሰርዝ",cropHint:"ለማንቀሳቀስ ጎትት፣ ለማጉላት ስላይድ አድርግ",call:"ደውል",share:"አጋራ",map:"ካርታ"});
+Object.assign(L.om,{fr_concert:"Sagantaa / Muuziqaa",fr_party:"Cidha / Ayyaana",fr_sports:"Ispoortii",fr_workshop:"Mara baruumsaa / Leenjii",fr_cultural:"Amantii / Aadaa",fr_expo:"Daldala / Ekispoo",tpl:"Bifa taateewwanii",pol:"Imaammata kaffaltii",close:"Cufi",crop:"Suuraa muddi (8:9)",cropUse:"Suuraa fayyadami",cropCancel:"Haqi",cropHint:"Harkisuun sosocho'i, suutuun guddisi",call:"Bilbili",share:"Qoodi",map:"Kaartaa"});
+Object.assign(L.so,{fr_concert:"Riwaayad / Muusik",fr_party:"Aroos / Xaflad",fr_sports:"Isboorti",fr_workshop:"Aqoon-isweydaarsi / Tababar",fr_cultural:"Diini / Dhaqan",fr_expo:"Ganacsi / Bandhig",tpl:"Qaabka dhacdada",pol:"Siyaasadda lacag-bixinta",close:"Xidh",crop:"Gooy sawirka (8:9)",cropUse:"Isticmaal sawirka",cropCancel:"Jooji",cropHint:"Jiid si aad u dhaqaajiso, sliide si aad u weyso",call:"Wac",share:"La wadaag",map:"Khariidad"});
+Object.assign(L.ti,{fr_concert:"ኮንሰርት / ሙዚቃ",fr_party:"መርዓ / ፓርቲ",fr_sports:"ስፖርት",fr_workshop:"ወርክሾፕ / ስልጠና",fr_cultural:"ሃይማኖታዊ / ባህላዊ",fr_expo:"ንግዲ / ኤክስፖ",tpl:"ቅጥዒ ፍጻሜ",pol:"ፖሊሲ ክፍሊት",close:"ዕጸው",crop:"ስእሊ ቖርጽ (8:9)",cropUse:"ስእሊ ተጠቐም",cropCancel:"ስረዝ",cropHint:"ንምንቅስቓስ ስሓብ፣ ንምዕባይ ስላይድ ግበር",call:"ደውል",share:"ኣካፍል",map:"ካርታ"});
+Object.assign(L.ar,{fr_concert:"حفلة موسيقية",fr_party:"زفاف / حفل",fr_sports:"رياضة",fr_workshop:"ورشة / تدريب",fr_cultural:"ديني / ثقافي",fr_expo:"أعمال / معرض",tpl:"قالب الفعالية",pol:"سياسة الدفع",close:"إغلاق",crop:"اقتصاص الصورة (8:9)",cropUse:"استخدام الصورة",cropCancel:"إلغاء",cropHint:"اسحب للتحريك وحرّك الشريط للتكبير",call:"اتصل",share:"مشاركة",map:"خريطة"});
+(function(){var st=document.createElement("style");st.textContent=".azsl{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;aspect-ratio:8/9;max-width:420px;border-radius:12px;margin:8px 0;scrollbar-width:none;border:1px solid var(--ln)}.azsl::-webkit-scrollbar{display:none}.azsl-i{flex:0 0 100%;scroll-snap-align:center}.azsl-i img{width:100%;height:100%;object-fit:cover;display:block}";document.head.appendChild(st);
+setInterval(function(){document.querySelectorAll(".azsl").forEach(function(el){var n=+el.dataset.n;if(n<2)return;var w=el.clientWidth,i=Math.round(Math.abs(el.scrollLeft)/w),nx=(i+1)%n,rtl=document.documentElement.dir==="rtl";el.scrollTo({left:(rtl?-1:1)*nx*w,behavior:"smooth"})})},4500);})();
+function azSlider(p){if(!p.length)return "";return '<div class="azsl" data-n="'+p.length+'">'+p.map(function(u,i){return '<div class="azsl-i"><img src="'+esc(u)+'" alt="Photo '+(i+1)+'" loading="lazy"></div>'}).join("")+'</div>'}
+function azTier(row){var d=row&&row.data&&typeof row.data==="object"?row.data:{};return Number(d.tier)||0}
+function azShare(b){var s=b.getAttribute("data-s")||"Azmari Bet",u=location.href.split("#")[0];if(navigator.share){navigator.share({title:s,url:u}).catch(function(){})}else if(navigator.clipboard){navigator.clipboard.writeText(u).then(function(){toast("\u2713")})}}
+function azEvExtra(kind,row,d){
+  if(kind!=="event")return "";
+  var h="";
+  if(d.tier_name)h+='<span class="badge">'+esc(d.tier_name)+'</span> ';
+  var fr=AZ_FRAMES.find(function(x){return x.k===d.frame});
+  if(fr&&d.fields){h+='<div class="mu">'+fr.f.filter(function(p){return d.fields[p[0]]}).map(function(p){return esc(p[1])+": "+esc(d.fields[p[0]])}).join(" \u00B7 ")+'</div>';}
+  var con=String(d.con||row.author_phone||"").replace(/[^\d+]/g,"");
+  var b="";
+  if(con.length>=7)b+='<a class="chip" href="tel:'+con+'">\u{1F4DE} '+esc(t("call"))+'</a> ';
+  b+='<button type="button" class="chip" onclick="azShare(this)" data-s="'+esc(d.title||d.desc||"Azmari Bet")+'">\u2197 '+esc(t("share"))+'</button> ';
+  if(d.loc)b+='<a class="chip" target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(d.loc)+'">\u{1F4CD} '+esc(t("map"))+'</a>';
+  return h+'<div class="chips" style="margin:8px 0">'+b+'</div>';
+}
+function azCrop(file,cb){
+  var url=URL.createObjectURL(file),im=new Image();
+  im.onerror=function(){URL.revokeObjectURL(url);cb(file)};
+  im.onload=function(){
+    var W=288,H=324,OW=720,OH=810,z=1,ox=0,oy=0,base=Math.max(W/im.width,H/im.height);
+    var m=document.createElement("div");m.className="sheet";
+    m.innerHTML='<div role="dialog" aria-label="'+esc(t("crop"))+'"><h3>'+esc(t("crop"))+'</h3><canvas width="'+W+'" height="'+H+'" style="width:'+W+'px;max-width:100%;touch-action:none;border-radius:12px;border:1px solid var(--ln)"></canvas><input type="range" min="1" max="3" step="0.01" value="1" style="width:100%" aria-label="Zoom"><p class="tt">'+esc(t("cropHint"))+'</p><div class="row"><button type="button" class="chip" id="azcx">'+esc(t("cropCancel"))+'</button><button type="button" class="btn" id="azcu">'+esc(t("cropUse"))+'</button></div></div>';
+    document.body.appendChild(m);
+    var cv=m.querySelector("canvas"),rg=m.querySelector("input");
+    function clamp(){var s=base*z,mx=Math.max(0,(im.width*s-W)/2),my=Math.max(0,(im.height*s-H)/2);ox=Math.max(-mx,Math.min(mx,ox));oy=Math.max(-my,Math.min(my,oy))}
+    function paint(c,k){var s=base*z,dw=im.width*s,dh=im.height*s,x=c.getContext("2d");x.fillStyle="#000";x.fillRect(0,0,c.width,c.height);x.drawImage(im,k*(W/2+ox-dw/2),k*(H/2+oy-dh/2),k*dw,k*dh)}
+    paint(cv,1);
+    var dr=null;
+    cv.onpointerdown=function(e){dr={x:e.clientX,y:e.clientY};cv.setPointerCapture(e.pointerId)};
+    cv.onpointermove=function(e){if(!dr)return;ox+=e.clientX-dr.x;oy+=e.clientY-dr.y;dr={x:e.clientX,y:e.clientY};clamp();paint(cv,1)};
+    cv.onpointerup=cv.onpointercancel=function(){dr=null};
+    rg.oninput=function(){z=+rg.value;clamp();paint(cv,1)};
+    function end(){m.remove();URL.revokeObjectURL(url)}
+    m.querySelector("#azcx").onclick=function(){end();cb(null)};
+    m.querySelector("#azcu").onclick=function(){var oc=document.createElement("canvas");oc.width=OW;oc.height=OH;paint(oc,OW/W);oc.toBlob(function(b){end();cb(b)},"image/jpeg",0.85)};
+  };
+  im.src=url;
+}
+document.addEventListener("change",function(e){
+  var inp=e.target;if(!inp||inp.id!=="pg")return;
+  if(inp.__azok){inp.__azok=false;return}
+  var fl=inp.files&&inp.files[0];if(!fl)return;
+  e.stopImmediatePropagation();
+  azCrop(fl,function(blob){
+    if(!blob){inp.value="";return}
+    try{var f=new File([blob],"crop.jpg",{type:"image/jpeg"}),dt=new DataTransfer();dt.items.add(f);inp.files=dt.files;inp.__azok=true;inp.dispatchEvent(new Event("change",{bubbles:true}))}catch(x){inp.value=""}
+  });
+},true);
 
 function azEventCode(tierNum) {
   const map = {1:"event_basic",2:"event_bronze",3:"event_silver",4:"event_gold",5:"event_platinum"};
@@ -573,7 +632,7 @@ function azRenderMediaCard(item) {
   const vid = item.video || "";
   let html = "";
   if (photos.length) {
-    html += '<div class="mgrid" style="margin:8px 0">' + photos.map((u, i) => '<div class="mth"><img src="' + esc(u) + '" alt="Photo ' + (i+1) + '"></div>').join("") + '</div>';
+    html += azSlider(photos);
   }
   if (vid) {
     html += '<div class="mth vid" style="margin:8px 0"><video src="' + esc(vid) + '" controls playsinline preload="metadata"></video></div>';
@@ -601,7 +660,7 @@ function azRenderPublicCards(kind, filterFn) {
       video: rawData.video || ""
     }, rawData);
     return typeof filterFn === "function" ? filterFn(item, row) : true;
-  }).map(row => {
+  }).sort(function(a,b){return kind==="event"?azTier(b)-azTier(a):0}).map(row => {
     const rawData = row.data && typeof row.data === "object" ? row.data : {};
     const title = rawData.title || rawData.desc || (kind === "store" ? t("store") : kind === "seek" ? "Job seeker" : kind === "band" ? "Band" : kind === "event" ? "Event" : "Job offer");
     const desc = rawData.desc || "";
@@ -611,7 +670,7 @@ function azRenderPublicCards(kind, filterFn) {
     return '<div class="card"><b>' + esc(title) + '</b>' +
       (loc ? '<div class="mu">' + esc(loc) + (dt ? " · " + new Date(dt).toLocaleDateString() : "") + '</div>' : "") +
       (desc && desc !== title ? '<p class="mu">' + esc(desc) + '</p>' : "") +
-      azRenderMediaCard(rawData) +
+      azRenderMediaCard(rawData) + azEvExtra(kind, row, rawData) +
       who(row.author_name || "Member", "Approved post") +
       (con ? jobLink(con) : "") + '</div>';
   }).join("");
