@@ -36,25 +36,6 @@
       created_at: new Date(Date.now() - 2 * 3600 * 1000).toISOString()
     },
     {
-      id: "seed-2",
-      seller_name: "Hana Getachew",
-      seller_phone: "+251 912 345678",
-      title: "Digital piano",
-      category: "Keyboards",
-      price_etb: 42000,
-      condition: "New",
-      city: "Addis Ababa",
-      location_label: "Kazanchis, Addis Ababa",
-      lat: 9.0157,
-      lng: 38.7654,
-      verified: true,
-      icon: "🎹",
-      image_url: "",
-      description: "88-key weighted digital piano with sustain pedal.",
-      live_location_active: true,
-      created_at: new Date(Date.now() - 5 * 3600 * 1000).toISOString()
-    },
-    {
       id: "seed-3",
       seller_name: "Yonas Tadesse",
       seller_phone: "+251 913 456789",
@@ -73,25 +54,6 @@
       live_location_active: false,
       created_at: new Date(Date.now() - 8 * 3600 * 1000).toISOString()
     },
-    {
-      id: "seed-4",
-      seller_name: "Meron Bekele",
-      seller_phone: "+251 914 567890",
-      title: "Electric guitar",
-      category: "Strings",
-      price_etb: 15500,
-      condition: "Like New",
-      city: "Addis Ababa",
-      location_label: "CMC, Addis Ababa",
-      lat: 9.0211,
-      lng: 38.8286,
-      verified: true,
-      icon: "🎸",
-      image_url: "",
-      description: "Clean strat-style electric guitar, ready for studio or stage.",
-      live_location_active: true,
-      created_at: new Date(Date.now() - 12 * 3600 * 1000).toISOString()
-    }
   ];
 
   let selectedCategory = "All";
