@@ -1,80 +1,95 @@
-<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Shop approvals</title>
-<style>body{font:15px system-ui;background:#0b1020;color:#eef;max-width:760px;margin:auto;padding:16px}
-input,button{font:inherit;padding:8px 10px;border-radius:8px;border:1px solid #445;background:#141b33;color:#eef}
-button{cursor:pointer}.card{border:1px solid #445;border-radius:10px;padding:12px;margin:10px 0;background:#141b33}
-.row{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}</style>
-<div id="app"></div>
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Shop admin</title>
+<style>
+body{margin:0;background:#0a0f1c;color:#e8ecf4;font:16px system-ui,sans-serif}
+#app{max-width:760px;margin:0 auto;padding:18px}
+h1{font-size:1.4rem}input{width:100%;box-sizing:border-box;margin:6px 0;padding:12px;border-radius:10px;border:1px solid #2a3350;background:#141b30;color:#fff;font-size:1rem}
+button{padding:10px 16px;border:0;border-radius:10px;background:#22d3ee;color:#04121f;font-weight:700;cursor:pointer;font-size:.95rem}
+button.alt{background:#2a3350;color:#e8ecf4}button.bad{background:#e5484d;color:#fff}button:disabled{opacity:.5}
+.tabs{display:flex;gap:8px;margin:14px 0;flex-wrap:wrap}.tabs button{background:#141b30;color:#e8ecf4}.tabs button.on{background:#22d3ee;color:#04121f}
+.card{background:#141b30;border:1px solid #2a3350;border-radius:14px;padding:14px;margin:12px 0}
+.card h3{margin:0 0 4px}.meta{opacity:.75;font-size:.9em;line-height:1.6}
+.imgs{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}.imgs img{width:84px;height:84px;object-fit:cover;border-radius:8px}
+.row{display:flex;gap:10px;margin-top:10px}.err{color:#ff7b7b;margin:8px 0}
+</style></head><body><div id="app"></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script>
-var API = location.hostname.endsWith('github.io') ? 'https://YOUR-BACKEND-URL' : location.origin;
-var app = document.getElementById('app'), token = null;
-try { token = sessionStorage.getItem('shop_admin_token'); } catch (e) {}
+(function () {
+  var SB_URL = 'https://rnqizccrzbolsynfsxbu.supabase.co', SB_KEY = 'sb_publishable_1pbzO1FOGTjIjjE-yF7d1A__OFPESB2';
+  var sb = supabase.createClient(SB_URL, SB_KEY, { auth: { storageKey: 'azs-auth', persistSession: true, autoRefreshToken: true } });
+  var app = document.getElementById('app'), tab = 'pending';
+  function h(tag, attrs) {
+    var e = document.createElement(tag);
+    Object.keys(attrs || {}).forEach(function (k) { if (k === 'onclick') e.onclick = attrs[k]; else e.setAttribute(k, attrs[k]); });
+    for (var i = 2; i < arguments.length; i++) { var c = arguments[i]; if (c == null) continue; e.append(c.nodeType ? c : document.createTextNode(c)); }
+    return e;
+  }
+  function show() { app.replaceChildren.apply(app, arguments); }
 
-function el(tag, text, parent) { var n = document.createElement(tag); if (text) n.textContent = text; if (parent) parent.appendChild(n); return n; }
-function btn(label, fn, parent) { var b = el('button', label, parent); b.onclick = fn; return b; }
-async function api(path, method, body) {
-  var r = await fetch(API + path, { method: method || 'GET',
-    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
-    body: body ? JSON.stringify(body) : undefined });
-  var d = await r.json().catch(function () { return {}; });
-  if (!r.ok) throw new Error(d.error || ('HTTP ' + r.status));
-  return d;
-}
-function loginView() {
-  app.textContent = ''; el('h2', 'Shop admin login', app);
-  var p = el('input', '', app); p.placeholder = 'Phone (+251...)';
-  var w = el('input', '', app); w.type = 'password'; w.placeholder = 'Password';
-  var msg = el('p', '', app);
-  btn('Log in', async function () {
-    try {
-      var r = await fetch(API + '/api/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone: p.value.trim(), password: w.value }) });
-      var d = await r.json();
-      if (!r.ok || !d.token) throw new Error(d.error || 'Login failed');
-      token = d.token; try { sessionStorage.setItem('shop_admin_token', token); } catch (e) {}
-      load();
-    } catch (e) { msg.textContent = e.message; }
-  }, app);
-}
-async function act(path, body) {
-  try { await api(path, 'PATCH', body); load(); } catch (e) { alert(e.message); }
-}
-async function load() {
-  var d;
-  try { d = await api('/api/admin/overview'); } catch (e) { return loginView(); }
-  app.textContent = '';
-  var top = el('div', '', app); el('h2', 'Shop approvals', top);
-  btn('Refresh', load, top);
-  btn('Log out', function () { try { sessionStorage.removeItem('shop_admin_token'); } catch (e) {} token = null; loginView(); }, top);
+  function loginView(msg) {
+    var em = h('input', { type: 'email', placeholder: 'Admin email', autocomplete: 'email' });
+    var pw = h('input', { type: 'password', placeholder: 'Password', autocomplete: 'current-password' });
+    var err = h('div', { class: 'err' }, msg || '');
+    var go = h('button', { onclick: async function () {
+      go.disabled = true; err.textContent = '';
+      var r = await sb.auth.signInWithPassword({ email: em.value.trim().toLowerCase(), password: pw.value });
+      go.disabled = false;
+      if (r.error) { err.textContent = /invalid login/i.test(r.error.message) ? 'Wrong email or password' : r.error.message; return; }
+      start();
+    } }, 'Log in');
+    show(h('h1', {}, 'Shop admin login'), em, pw, err, go);
+  }
 
-  el('h3', 'Pending ads (' + d.listings.length + ')', app);
-  if (!d.listings.length) el('p', 'Nothing waiting.', app);
-  d.listings.forEach(function (l) {
-    var c = el('div', '', app); c.className = 'card';
-    el('b', l.title, c);
-    el('div', l.price + ' ETB · ' + l.city, c);
-    el('div', 'Seller: ' + l.seller_name + ' ' + l.phone + ' (' + l.seller_status + ')', c);
-    var r = el('div', '', c); r.className = 'row';
-    btn('Approve', function () { act('/api/admin/listings/' + l.id, { status: 'approved' }); }, r);
-    btn('Reject', function () { act('/api/admin/listings/' + l.id, { status: 'rejected' }); }, r);
-  });
+  async function start() {
+    var s = await sb.auth.getSession();
+    if (!s.data.session) return loginView();
+    var p = await sb.from('azs_profiles').select('role,name').eq('id', s.data.session.user.id).maybeSingle();
+    if (p.error || !p.data || p.data.role !== 'admin') {
+      await sb.auth.signOut();
+      return loginView('This account is not an admin.');
+    }
+    listView();
+  }
 
-  el('h3', 'Sellers (limit: 10 free ads)', app);
-  d.sellers.forEach(function (s) {
-    var c = el('div', '', app); c.className = 'card';
-    el('b', s.name + ' ' + s.phone + ' — ' + s.seller_status, c);
-    var r = el('div', '', c); r.className = 'row';
-    btn('Approve seller (unlimited)', function () { act('/api/admin/users/' + s.id, { seller_status: 'approved' }); }, r);
-    btn('Block', function () { act('/api/admin/users/' + s.id, { seller_status: 'blocked' }); }, r);
-  });
+  async function listView() {
+    var tabs = h('div', { class: 'tabs' });
+    ['pending', 'approved', 'rejected'].forEach(function (t) {
+      tabs.append(h('button', { class: t === tab ? 'on' : '', onclick: function () { tab = t; listView(); } }, t[0].toUpperCase() + t.slice(1)));
+    });
+    var out = h('div', {}, 'Loading...');
+    show(h('h1', {}, 'Shop admin'), h('button', { class: 'alt', onclick: async function () { await sb.auth.signOut(); loginView(); } }, 'Log out'), tabs, out);
+    var r = await sb.from('azs_listings').select('*').eq('status', tab).order('created_at', { ascending: false }).limit(100);
+    if (r.error) { out.replaceChildren(h('div', { class: 'err' }, r.error.message)); return; }
+    if (!r.data.length) { out.replaceChildren(h('p', { class: 'meta' }, 'No ' + tab + ' ads.')); return; }
+    out.replaceChildren.apply(out, r.data.map(card));
+  }
 
-  el('h3', 'Reports', app);
-  d.reports.forEach(function (x) {
-    var c = el('div', '', app); c.className = 'card';
-    el('b', x.title, c); el('div', x.reason, c);
-    var r = el('div', '', c); r.className = 'row';
-    btn('Remove ad', function () { act('/api/admin/listings/' + x.listing_id, { status: 'removed' }); }, r);
-  });
-}
-token ? load() : loginView();
-</script>
+  function card(l) {
+    var imgs = h('div', { class: 'imgs' });
+    (l.images || []).forEach(function (u) {
+      if (/^https:\/\//.test(u)) imgs.append(h('a', { href: u, target: '_blank', rel: 'noopener' }, h('img', { src: u, alt: '' })));
+    });
+    var err = h('div', { class: 'err' });
+    function setStatus(v) {
+      return async function () {
+        err.textContent = '';
+        var r = await sb.from('azs_listings').update({ status: v, verified: v === 'approved' }).eq('id', l.id).select();
+        if (r.error) { err.textContent = r.error.message; return; }
+        if (!r.data.length) { err.textContent = 'Not allowed. Run the admin policy SQL.'; return; }
+        listView();
+      };
+    }
+    var btns = h('div', { class: 'row' });
+    if (l.status !== 'approved') btns.append(h('button', { onclick: setStatus('approved') }, 'Approve'));
+    if (l.status !== 'rejected') btns.append(h('button', { class: 'bad', onclick: setStatus('rejected') }, 'Reject'));
+    return h('div', { class: 'card' },
+      h('h3', {}, l.title + ' - ' + l.price + ' birr'),
+      h('div', { class: 'meta' }, 'Seller: ' + l.seller_name + ' | ' + l.category + ' | ' + (l.city || '')),
+      h('div', { class: 'meta' }, 'Fee: ' + (l.fee || 0) + ' birr' + (l.pay_ref ? ' | Payment ref: ' + l.pay_ref : '')),
+      h('p', {}, l.description || ''), imgs, btns, err);
+  }
+  start();
+})();
+</script></body></html>
