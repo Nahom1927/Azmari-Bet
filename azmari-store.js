@@ -31,6 +31,10 @@ const CSS = `
 .azs-prow{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px}
 .azs-like{border:0;background:transparent;color:inherit;font-size:14px;cursor:pointer;padding:2px 6px;border-radius:8px}
 .azs-like.on{color:#ef4444}
+/* AZ-GAP2 */
+.azs-card .azs-body .azs-prow,.azs-prow{margin:0 0 32px !important}
+.azs-card .azs-body .azs-price,.azs-prow .azs-price{margin:0 !important;line-height:1.3}
+.azs-card .azs-body .azs-title{margin:0 0 10px !important;padding-top:0 !important}
 /* AZ-GAP */
 .azs-body .azs-prow{margin:0 0 21px !important}
 .azs-body .azs-price{margin:0 !important;line-height:1.3}
