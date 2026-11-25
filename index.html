@@ -499,9 +499,9 @@ events(){const e=S.ev,cur=TIERS.find(x=>x.k===e.tier);
 const sample=[{n:"Music night",k:5,o:"Tigist Mulugeta"},{n:"Azmari evening",k:4,o:"Meron Bekele"},{n:"Student concert",k:2,o:"Abel Girma"},{n:"Open mic",k:1,o:"Dawit Alemu"}];
 if(e.title)sample.push({n:e.title,k:e.tier,me:1});sample.sort((a,b)=>b.k-a.k);
 return `<h2>${t("events")}</h2><p class="mu">Choose a tier. Higher tiers show first on the home page and in search.</p>
-${TIERS.map(x=>`<button type="button" class="tier k${x.k} ${x.k===e.tier?"on":""}" data-act="tier" data-v="${x.k}"><div><b>${x.n}</b><div class="tt">${x.d} days · ${x.x}</div></div><span class="p">${fmt(x.p)}</span></button>`).join("")}
-${azFramePicker()}<label for="et">Event name</label><input id="et" data-f="evtitle" value="${esc(e.title)}" placeholder="Music night">
-${mediaUI("event")}<button class="btn" data-act="evpay">${t("paynow")} · ${fmt(cur.p)} birr</button>
+<div style="display:flex;flex-wrap:wrap;gap:12px;align-items:flex-start;margin-bottom:8px"><div style="flex:1 1 220px;min-width:0">${azEvTop()}</div><div style="flex:1 1 240px;min-width:0">${TIERS.map(x=>`<button type="button" class="tier k${x.k} ${x.k===e.tier?"on":""}" data-act="tier" data-v="${x.k}"><div><b>${x.n}</b><div class="tt">${x.d} days · ${x.x}</div></div><span class="p">${fmt(x.p)}</span></button>`).join("")}
+</div></div>${azFramePicker()}<label for="et">Event name</label><input id="et" data-f="evtitle" value="${esc(e.title)}" placeholder="Music night">
+${azMediaEvent("event")}<button class="btn" data-act="evpay">${t("paynow")} · ${fmt(cur.p)} birr</button>
 ${azRenderPublicCards("event")}
 <h3 style="margin-top:18px">Preview order</h3>${sample.map(x=>`<div class="card row" style="${x.me?"border-color:var(--gr)":""}"><div><b>${esc(x.n)}</b><div class="mu">${x.me?"You":"by "+x.o}</div></div><span class="badge">${TIERS.find(y=>y.k===x.k).n}</span></div>`).join("")}`},
 tuner(){return `<h2>Tuner</h2>${setKrar()||""}${chips(Object.keys(TUN),T.inst,"tn_inst")}<div class="card"><div class="big" id="tn">–</div><div class="mu" style="text-align:center" id="th">Tap Listen, then play one string</div><div class="meterT"><i id="nd"></i></div><div class="row"><span class="mu">♭ flat</span><span class="mu" style="text-align:center" id="tc">0 cents</span><span class="mu" style="text-align:right">sharp ♯</span></div><button class="btn ${T.on?"is-listening":""}" data-act="tn_mic" aria-pressed="${T.on?"true":"false"}">${T.on?"🔴 "+t("stopListening"):"🎙️ "+t("listenMic")}</button><p class="mic-status ${T.on?"active":""}" role="status">${T.on?"● "+t("stopListening"):t("micHelp")}</p></div><h3>Reference tones</h3><div class="grid">${TUN[T.inst].map(s=>`<button class="tile" data-act="tn_play" data-v="${s[1]}" style="min-height:64px"><b style="font-size:20px">${s[0]}</b><span class="mu">${s[1]} Hz</span></button>`).join("")}</div><p class="tt">Strings go from lowest to highest. Tune until the needle is in the middle. Use a quiet room and hold the phone close to the instrument. Low-frequency instruments may produce overtones; the tuner estimates the fundamental note.</p>${T.inst==="Begena (10-string)"?`<p class="tt">Begena reference set: these ten low-to-high pitches are a starting reference only, not a claim of one universal Orthodox Begena tuning. Confirm the tuning with your teacher or instrument tradition.</p>`:T.inst.startsWith("Krar")?`<p class="tt">Krar: traditional tuning is done by ear and is not exactly equal-tempered. "Krar (Tizita)" is C D E, G A, then the octave C, starting from middle C (no F). "Krar (Tizita minor)" is C D D♯, G G♯, then the octave C.  "Krar (free)" simply shows any note you play. Bati, Ambassel and Anchihoye are written differently by different teachers, so confirm them with a krar teacher before they are added.</p>`:""}`},
@@ -638,6 +638,36 @@ Object.assign(L.so,{fl_artist:"Fanaan",fl_date:"Taariikh",fl_time:"Waqti",fl_ven
 Object.assign(L.ti,{fl_artist:"ኣርቲስት",fl_date:"ዕለት",fl_time:"ሰዓት",fl_venue:"ቦታ",fl_price:"ዋጋ ትኬት (ብር)",fl_vip:"ዋጋ ቪኣይፒ (ብር)",fl_host:"ኣዳላዊ",fl_dress:"ሕጊ ክዳን",fl_rsvp:"ተሌፎን RSVP",fl_teams:"ጉጅለታት",fl_stadium:"ስታድዩም",fl_gate:"ሰዓት ኣፍደገ",fl_topic:"ኣርእስቲ",fl_speaker:"ተዛራቢ",fl_seats:"መቐመጢታት",fl_fee:"ክፍሊት (ብር)",fl_incl:"እንታይ ይሕዝ",fl_occasion:"ኣጋጣሚ",fl_place:"ቦታ",fl_free:"ነጻ ወይ ወፈያ",fl_contact:"ርክብ",fl_company:"ትካል",fl_schedule:"መደብ"});
 Object.assign(L.ar,{fl_artist:"الفنان",fl_date:"التاريخ",fl_time:"الوقت",fl_venue:"المكان",fl_price:"سعر التذكرة (بر)",fl_vip:"سعر VIP (بر)",fl_host:"المضيف",fl_dress:"الزي",fl_rsvp:"هاتف تأكيد الحضور",fl_teams:"الفرق",fl_stadium:"الملعب",fl_gate:"وقت فتح الأبواب",fl_topic:"الموضوع",fl_speaker:"المتحدث",fl_seats:"المقاعد",fl_fee:"الرسوم (بر)",fl_incl:"ما هو مشمول",fl_occasion:"المناسبة",fl_place:"المكان",fl_free:"مجاني أو تبرع",fl_contact:"التواصل",fl_company:"الشركة",fl_schedule:"الجدول"});
 function azFL(fk,p){var k=(fk==="cultural"&&p[0]==="fee")?"fl_free":"fl_"+p[0];var v=t(k);return v===k?p[1]:v}
+
+/* AZ-EVTOP */
+Object.assign(L.en,{ev_photos:"Photos (8:9, up to 3)",ev_add:"Add photo",ev_rm:"Remove",ev_here:"Public events appear here",ev_rules:"I confirm my content follows the community rules."});
+Object.assign(L.am,{ev_photos:"ፎቶዎች (8:9፣ እስከ 3)",ev_add:"ፎቶ ጨምር",ev_rm:"አስወግድ",ev_here:"ይፋዊ ዝግጅቶች እዚህ ይታያሉ",ev_rules:"ይዘቴ የማኅበረሰብ ደንቦችን እንደሚከተል አረጋግጣለሁ።"});
+Object.assign(L.om,{ev_photos:"Suuraawwan (8:9, hanga 3)",ev_add:"Suuraa dabali",ev_rm:"Haqi",ev_here:"Taateewwan ifaa as mul'atu",ev_rules:"Qabiyyeen koo seera hawaasaa akka hordofu nan mirkaneessa."});
+Object.assign(L.so,{ev_photos:"Sawirro (8:9, ilaa 3)",ev_add:"Ku dar sawir",ev_rm:"Ka saar",ev_here:"Dhacdooyinka dadweynaha halkan ayay ka muuqdaan",ev_rules:"Waxaan xaqiijinayaa in nuxurkaygu raacayo xeerarka bulshada."});
+Object.assign(L.ti,{ev_photos:"ስእልታት (8:9፣ ክሳብ 3)",ev_add:"ስእሊ ወስኽ",ev_rm:"ኣውጽእ",ev_here:"ህዝባዊ ፍጻሜታት ኣብዚ ይርከቡ",ev_rules:"ትሕዝቶይ ሕጊ ሕብረተሰብ ከም ዝኽተል የረጋግጽ።"});
+Object.assign(L.ar,{ev_photos:"الصور (8:9، حتى 3)",ev_add:"أضف صورة",ev_rm:"إزالة",ev_here:"تظهر الفعاليات العامة هنا",ev_rules:"أؤكد أن محتواي يتبع قواعد المجتمع."});
+function azEvTop(){
+  var all=Array.isArray(AZ_PUBLIC_POSTS)?AZ_PUBLIC_POSTS:[];
+  var rows=all.filter(function(r){var d=r&&r.data&&typeof r.data==="object"?r.data:null;return d&&Array.isArray(d.photos)&&d.photos.filter(Boolean).length}).sort(function(a,b){return azTier(b)-azTier(a)}).slice(0,8);
+  if(!rows.length)return '<div class="azsl" data-n="1" style="align-items:center;justify-content:center;max-width:100%"><span class="mu" style="padding:12px;text-align:center">'+esc(t("ev_here"))+'</span></div>';
+  return '<div class="azsl" data-n="'+rows.length+'" style="max-width:100%">'+rows.map(function(r){
+    var d=r.data,u=d.photos.filter(Boolean)[0],ti=d.title||d.desc||"";
+    return '<div class="azsl-i" style="position:relative"><img src="'+esc(u)+'" alt="'+esc(ti)+'" loading="lazy"><div style="position:absolute;left:0;right:0;bottom:0;padding:8px 10px;background:rgba(0,0,0,.55);color:#fff;font-size:14px;font-weight:600">'+esc(ti)+'</div></div>';
+  }).join("")+'</div>';
+}
+function azMediaEvent(k){
+  var m=M[k]||(M[k]={p:[],v:null}),d=D[k]||{},h=infoUI(k)+'<div class="card"><h3>'+esc(t("ev_photos"))+'</h3>';
+  if(m.p.length){
+    h+=azSlider(m.p)+'<div class="chips" style="margin:8px 0">';
+    m.p.forEach(function(u,i){h+='<button type="button" class="chip" data-act="mdel" data-v="'+k+'|p|'+i+'">\u2715 '+esc(t("ev_rm"))+' '+(i+1)+'</button>'});
+    if(m.p.length<3)h+='<button type="button" class="chip" data-act="mp" data-v="'+k+'">\uFF0B '+esc(t("ev_add"))+'</button>';
+    h+='</div>';
+  }else{
+    h+='<button type="button" class="azsl" data-act="mp" data-v="'+k+'" data-n="1" style="align-items:center;justify-content:center;width:100%;background:var(--sf);color:var(--ink);font-size:15px;cursor:pointer">\uFF0B '+esc(t("ev_add"))+'</button>';
+  }
+  h+='<label class="ck"><input type="checkbox" data-d="'+k+'|ok" '+(d.ok?"checked":"")+'> <span>'+esc(t("ev_rules"))+'</span></label></div>';
+  return h;
+}
 
 function azEventCode(tierNum) {
   const map = {1:"event_basic",2:"event_bronze",3:"event_silver",4:"event_gold",5:"event_platinum"};
