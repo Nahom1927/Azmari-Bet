@@ -149,7 +149,7 @@ function login(after) {
     if (reg && !name.value.trim()) { err.textContent = 'Enter your name'; return; }
     go.disabled = true;
     try {
-      const email = d + '@azmari.shop'; let r;
+      const email = d + '@example.com'; let r;
       if (reg) { r = await S.sb.auth.signUp({ email, password: pw.value, options: { data: { name: name.value.trim() } } });
         if (!r.error && !r.data.session) throw new Error('Account created, but "Confirm email" is still on in Supabase. Turn it off, then log in.'); }
       else r = await S.sb.auth.signInWithPassword({ email, password: pw.value });
