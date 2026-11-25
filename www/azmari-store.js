@@ -228,9 +228,87 @@ function drawCats() {
   const chip = (v, i, l) => h('button', { class: 'azs-chip' + (S.cat === v ? ' on' : ''), onclick: () => { S.cat = v; drawCats(); load(); } }, h('b', {}, i), l);
   S.ui.cats.append(chip('', '\u2728', 'All'), ...CATS.map((c) => chip(c[0], c[1], c[0])));
 }
+/* AZ-PICS-START */
+function azPics(l) {
+  return (Array.isArray(l.images) ? l.images : []).filter((u) => typeof u === 'string' && /^https:\/\//.test(u));
+}
+function azEmoji(l, cls) {
+  return h('span', { class: cls }, l.icon || ICON[l.category] || '\u{1F3B5}');
+}
+function azThumb(l) {
+  const p = azPics(l);
+  if (!p.length) return azEmoji(l, 'azs-emoji');
+  const im = document.createElement('img');
+  im.src = p[0]; im.alt = l.title || ''; im.loading = 'lazy';
+  im.style.cssText = 'width:100%;height:100%;min-height:140px;object-fit:cover;display:block';
+  im.onerror = () => im.replaceWith(azEmoji(l, 'azs-emoji'));
+  return im;
+}
+function azLightbox(p, start) {
+  let i = start;
+  const ov = document.createElement('div');
+  ov.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.93);display:flex;align-items:center;justify-content:center;touch-action:pan-y';
+  const im = document.createElement('img');
+  im.style.cssText = 'max-width:94vw;max-height:82vh;object-fit:contain;border-radius:8px;user-select:none';
+  const cnt = document.createElement('div');
+  cnt.style.cssText = 'position:absolute;bottom:18px;left:0;right:0;text-align:center;color:#fff;font:600 15px system-ui';
+  function show() { im.src = p[i]; cnt.textContent = p.length > 1 ? (i + 1) + ' / ' + p.length : ''; }
+  function go(d) { i = (i + d + p.length) % p.length; show(); }
+  function close() { document.removeEventListener('keydown', key); ov.remove(); }
+  function key(e) { if (e.key === 'Escape') close(); else if (e.key === 'ArrowLeft' && p.length > 1) go(-1); else if (e.key === 'ArrowRight' && p.length > 1) go(1); }
+  function btn(txt, css, fn) {
+    const b = document.createElement('button');
+    b.type = 'button'; b.textContent = txt;
+    b.style.cssText = 'position:absolute;border:0;border-radius:50%;width:44px;height:44px;font-size:24px;line-height:44px;padding:0;cursor:pointer;background:rgba(255,255,255,.18);color:#fff;' + css;
+    b.onclick = (e) => { e.stopPropagation(); fn(); };
+    return b;
+  }
+  ov.append(im, cnt, btn('\u00d7', 'top:14px;right:14px', close));
+  if (p.length > 1) ov.append(btn('\u2039', 'left:10px;top:50%;margin-top:-22px', () => go(-1)), btn('\u203a', 'right:10px;top:50%;margin-top:-22px', () => go(1)));
+  im.onclick = (e) => e.stopPropagation();
+  ov.onclick = close;
+  let x0 = null;
+  ov.addEventListener('touchstart', (e) => { x0 = e.touches[0].clientX; }, { passive: true });
+  ov.addEventListener('touchend', (e) => {
+    if (x0 === null || p.length < 2) return;
+    const dx = e.changedTouches[0].clientX - x0; x0 = null;
+    if (Math.abs(dx) > 50) go(dx < 0 ? 1 : -1);
+  });
+  document.addEventListener('keydown', key);
+  show();
+  document.body.append(ov);
+}
+function azBig(l) {
+  const p = azPics(l);
+  if (!p.length) return h('div', { class: 'azs-big' }, l.icon || ICON[l.category] || '\u{1F3B5}');
+  let cur = 0;
+  const wrap = document.createElement('div');
+  const main = document.createElement('img');
+  main.src = p[0]; main.alt = l.title || '';
+  main.style.cssText = 'width:100%;max-height:340px;object-fit:contain;border-radius:12px;display:block;cursor:zoom-in;background:rgba(255,255,255,.04)';
+  main.onclick = () => azLightbox(p, cur);
+  wrap.append(main);
+  if (p.length > 1) {
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;gap:8px;margin-top:8px;overflow-x:auto;padding-bottom:4px';
+    p.forEach((u, i) => {
+      const t = document.createElement('img');
+      t.src = u; t.alt = '';
+      t.style.cssText = 'width:58px;height:58px;object-fit:cover;border-radius:8px;cursor:pointer;flex:none;border:2px solid transparent;opacity:' + (i ? 0.6 : 1);
+      t.onclick = () => { cur = i; main.src = u; Array.from(row.children).forEach((c) => { c.style.opacity = 0.6; }); t.style.opacity = 1; };
+      row.append(t);
+    });
+    const hint = document.createElement('div');
+    hint.textContent = p.length + ' photos \u00b7 tap the big photo to enlarge';
+    hint.style.cssText = 'font-size:.8em;opacity:.7;margin-top:4px';
+    wrap.append(row, hint);
+  }
+  return wrap;
+}
+/* AZ-PICS-END */
 function card(l) {
   return h('article', { class: 'azs-card', onclick: () => detail(l) },
-    h('div', { class: 'azs-media' }, h('span', { class: 'azs-emoji' }, l.icon || ICON[l.category] || '\u{1F3B5}'), l.verified ? h('span', { class: 'azs-badge' }, '\u2714 Verified') : null),
+    h('div', { class: 'azs-media' }, azThumb(l), l.verified ? h('span', { class: 'azs-badge' }, '\u2714 Verified') : null),
     h('div', { class: 'azs-body' }, h('div', { class: 'azs-price' }, money(l.price)), h('div', { class: 'azs-title' }, l.title),
       h('div', { class: 'azs-meta' }, '\u{1F4CD} ' + (l.city || '')), h('div', { class: 'azs-meta' }, '\u{1F552} ' + ago(l.created_at)), h('div', { class: 'azs-meta' }, '\u{1F464} ' + l.seller_name),
       h('div', { class: 'azs-row' }, h('button', { class: 'azs-btn azs-contact', onclick: (e) => { e.stopPropagation(); contact(l); } }, 'Contact'),
@@ -249,7 +327,7 @@ async function load() {
 }
 function detail(l) {
   const acts = h('div', { class: 'azs-row' });
-  const m = modal(l.title, h('div', { class: 'azs-big' }, l.icon || ICON[l.category] || '\u{1F3B5}'), h('div', { class: 'azs-price' }, money(l.price)),
+  const m = modal(l.title, azBig(l), h('div', { class: 'azs-price' }, money(l.price)),
     h('p', { class: 'azs-meta' }, [l.category, l.condition, l.city, ago(l.created_at), l.seller_name].filter(Boolean).join(' \u2022 ')),
     h('p', { style: 'white-space:pre-wrap;word-break:break-word' }, l.description || 'No description.'), acts);
   acts.append(h('button', { class: 'azs-btn azs-contact', onclick: () => { m.close(); contact(l); } }, 'Chat with seller'));
