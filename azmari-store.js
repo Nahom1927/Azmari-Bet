@@ -32,7 +32,7 @@ const CSS = `
 .azs-like{border:0;background:transparent;color:inherit;font-size:14px;cursor:pointer;padding:2px 6px;border-radius:8px}
 .azs-like.on{color:#ef4444}
 /* AZ-GAP */
-.azs-body .azs-prow{margin:0 0 14px !important}
+.azs-body .azs-prow{margin:0 0 21px !important}
 .azs-body .azs-price{margin:0 !important;line-height:1.3}
 .azs-body .azs-title{margin:0 0 10px !important;line-height:1.35}
 .azs-prow+.azs-title{margin-top:0 !important}
