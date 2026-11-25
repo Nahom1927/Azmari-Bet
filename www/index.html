@@ -467,7 +467,7 @@ document.addEventListener("click",e=>{const im=e.target.closest(".ads img");if(i
 document.addEventListener("keydown",e=>{if(e.key==="Escape"){const o=document.querySelector(".lb");o&&o.remove()}});
 function academyCoursesHTML(){return `<section class="academy-courses"><h2>🎓 ${t("coursesTitle")}</h2><p class="mu">The AZMARI MUSIC ACADEMY follows a 48-week curriculum across Foundation, Intermediate and Advanced levels. Your instructor records lesson progress; students can view their progress in the secure Student Portal. Progress is read-only for students.</p><div class="card"><b>Four learning pillars</b><p class="mu">Melody · Harmony · Rhythm · Solfège</p><b>Three levels</b><p class="mu">Level 1: Weeks 1–12 · Level 2: Weeks 13–24 · Level 3: Weeks 25–48</p><a class="btn" href="portal/" style="display:inline-block;text-decoration:none">Open Student / Instructor Portal</a></div></section>`}
 const V={
-home(){return `<div class="card hero"><div class="notes" aria-hidden="true">${["♪","♫","♬","♩","♪","♫","♬"].map((n,i)=>`<span style="--x:${8+i*13}%;--d:${(i*1.1).toFixed(1)}s;--t:${6+(i%3)*1.5}s;--s:${14+(i%4)*5}px">${n}</span>`).join("")}</div><div class="wrow"><h2 aria-label="${esc(t("welcome"))}">${wl(t("welcome"))}</h2><span class="wbadge"><svg class="wlg" aria-hidden="true"><use href="#logo"/></svg></span></div><p>አዝማሪ ቤት · Music for Ethiopia</p><div class="eq" aria-hidden="true">${[0,1,2,3,4,5,6,7,8].map(i=>`<i style="--d:${(i*.13).toFixed(2)}s;--h:${[.5,.9,.6,1,.7,.95,.55,.85,.65][i]}"></i>`).join("")}</div><span class="date">📅 ${ethDate()}</span><button type="button" class="snd" id="snd" aria-pressed="true">🎹 Tap to play music</button></div>${adHTML()}${acct?"":`<div class="card"><b>Create your account</b><p class="mu">Confirm your location to upload, post or pay.</p><button class="btn" data-act="acct">Create account</button></div>`}
+home(){return `${azLive()}<div class="card hero"><div class="notes" aria-hidden="true">${["♪","♫","♬","♩","♪","♫","♬"].map((n,i)=>`<span style="--x:${8+i*13}%;--d:${(i*1.1).toFixed(1)}s;--t:${6+(i%3)*1.5}s;--s:${14+(i%4)*5}px">${n}</span>`).join("")}</div><div class="wrow"><h2 aria-label="${esc(t("welcome"))}">${wl(t("welcome"))}</h2><span class="wbadge"><svg class="wlg" aria-hidden="true"><use href="#logo"/></svg></span></div><p>አዝማሪ ቤት · Music for Ethiopia</p><div class="eq" aria-hidden="true">${[0,1,2,3,4,5,6,7,8].map(i=>`<i style="--d:${(i*.13).toFixed(2)}s;--h:${[.5,.9,.6,1,.7,.95,.55,.85,.65][i]}"></i>`).join("")}</div><span class="date">📅 ${ethDate()}</span><button type="button" class="snd" id="snd" aria-pressed="true">🎹 Tap to play music</button></div>${adHTML()}${acct?"":`<div class="card"><b>Create your account</b><p class="mu">Confirm your location to upload, post or pay.</p><button class="btn" data-act="acct">Create account</button></div>`}
 <div class="grid"><button class="tile" data-go="academy"><b>🎓</b>${t("academy")}</button><button class="tile" data-go="store"><b>🛒</b>${t("store")}</button><button class="tile" data-go="jobs"><b>💼</b>${t("jobs")}</button><button class="tile" data-go="events"><b>🎫</b>${t("events")}</button><button class="tile" data-go="bands"><b>🥁</b>Bands</button><button class="tile" data-go="legends"><b>👑</b>Legends</button><button class="tile" data-go="tuner" style="grid-column:1/-1"><b>🎸</b>Tuner · Guitar and Bass</button></div>
 <div class="card" style="margin-top:12px">${vow()}</div><div class="card"><h3>New members</h3>${who("Selam Tadesse","Singer · Addis Ababa")}${who("Chala Gemechu","Kebero player · Adama")}${who("Amina Yusuf","Vocal student · Jigjiga")}</div>`},
 academy(){const r=S.reg;
@@ -609,6 +609,26 @@ document.addEventListener("change",function(e){
     try{var f=new File([blob],"crop.jpg",{type:"image/jpeg"}),dt=new DataTransfer();dt.items.add(f);inp.files=dt.files;inp.__azok=true;inp.dispatchEvent(new Event("change",{bubbles:true}))}catch(x){inp.value=""}
   });
 },true);
+
+/* AZ-LIVE */
+Object.assign(L.en,{liveEv:"Live events",seeAll:"See all"});
+Object.assign(L.am,{liveEv:"ቀጥታ ዝግጅቶች",seeAll:"ሁሉንም ይመልከቱ"});
+Object.assign(L.om,{liveEv:"Taateewwan amma jiran",seeAll:"Hunda ilaali"});
+Object.assign(L.so,{liveEv:"Dhacdooyinka hadda socda",seeAll:"Dhammaan arag"});
+Object.assign(L.ti,{liveEv:"ህያው ፍጻሜታት",seeAll:"ኩሉ ርአ"});
+Object.assign(L.ar,{liveEv:"فعاليات مباشرة",seeAll:"عرض الكل"});
+function azLive(){
+  try{
+    if(typeof azLoadPublicPosts==="function")azLoadPublicPosts();
+    var all=Array.isArray(AZ_PUBLIC_POSTS)?AZ_PUBLIC_POSTS:[];
+    var ev=all.filter(function(r){return r&&String(r.kind||r.post_kind||"")==="event"}).sort(function(a,b){return azTier(b)-azTier(a)}).slice(0,3);
+    if(!ev.length)return "";
+    var ids={};ev.forEach(function(r){ids[r.id]=1});
+    var h=azRenderPublicCards("event",function(it,row){return !!ids[row.id]});
+    if(!h)return "";
+    return '<div class="row" style="margin:6px 0"><h3 style="margin:0">\u{1F3AB} '+esc(t("liveEv"))+'</h3><button type="button" class="chip" data-go="events">'+esc(t("seeAll"))+'</button></div>'+h;
+  }catch(e){return ""}
+}
 
 function azEventCode(tierNum) {
   const map = {1:"event_basic",2:"event_bronze",3:"event_silver",4:"event_gold",5:"event_platinum"};
