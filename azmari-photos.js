@@ -1,7 +1,7 @@
 (function () {
   'use strict';
   var MAX = 10;
-  var PAY = 'Telebirr: 09XXXXXXXX   CBE: 1000XXXXXXXXX';
+  var PAY = '<b>Telebirr / CBE Birr:</b> 0911898184<br><b>CBE account:</b> 1000037200534';
   var items = [];
   var realFetch = window.fetch.bind(window);
 
@@ -95,7 +95,7 @@
       '<input class="azp-file" type="file" accept="image/*" multiple>' +
       '<div class="azp-prev" style="display:flex;flex-wrap:wrap;gap:10px;margin-top:10px"></div>' +
       '<div style="margin-top:12px">Payment reference <span style="opacity:.7">(only needed after your 10 free ads, 100 birr per ad)</span></div>' +
-      '<div style="font-size:.85em;opacity:.8;margin:4px 0">' + PAY + '</div>' +
+      '<div class="azp-pay">' + PAY + '</div>' +
       '<input id="azp-ref" class="azs-input" maxlength="80" placeholder="Telebirr / CBE transaction number">';
     p.querySelector('.azp-file').onchange = function (e) {
       var list = Array.prototype.slice.call(e.target.files);
@@ -117,6 +117,17 @@
       b.parentNode.insertBefore(build(), b);
     });
   }
+  var st = document.createElement('style');
+  st.textContent =
+    '.azp-pay{margin:8px 0 10px;padding:12px 14px;border-radius:12px;border:1px dashed rgba(34,211,238,.5);background:rgba(34,211,238,.08);font-size:.9em;line-height:1.7}' +
+    'button[data-azp="1"]{display:block;width:100%;min-height:52px;margin-top:14px;padding:0 24px;border:0;border-radius:14px;' +
+    'background:linear-gradient(135deg,#22d3ee,#0ea5e9);color:#04121f;font-size:1.05rem;font-weight:700;letter-spacing:.3px;cursor:pointer;' +
+    'box-shadow:0 8px 20px rgba(14,165,233,.35);transition:transform .15s ease,box-shadow .15s ease,filter .15s ease}' +
+    'button[data-azp="1"]:hover{transform:translateY(-2px);box-shadow:0 12px 26px rgba(14,165,233,.5);filter:brightness(1.05)}' +
+    'button[data-azp="1"]:active{transform:translateY(0) scale(.98);box-shadow:0 4px 12px rgba(14,165,233,.3)}' +
+    'button[data-azp="1"]:focus-visible{outline:3px solid rgba(255,255,255,.6);outline-offset:2px}' +
+    'button[data-azp="1"]:disabled{opacity:.6;cursor:wait;transform:none;filter:grayscale(.3)}';
+  document.head.appendChild(st);
   new MutationObserver(scan).observe(document.documentElement, { childList: true, subtree: true });
   scan();
 })();
