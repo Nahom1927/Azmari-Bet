@@ -7,9 +7,9 @@
   const API = (window.AZ_SHOP_API || ((location.port === '4000' || location.port === '8080') ? location.origin : 'http://localhost:4000')).replace(/\/$/, '');
   const LIVE_MINUTES = 15;
   const S = { token: '', me: null, quota: null, cats: [], cat: '', q: '', page: 1,
-              socket: null, chat: null, convs: [], watch: null, shareConv: 0, liveBox: null };
+              unread: {}, socket: null, chat: null, convs: [], watch: null, shareConv: 0, liveBox: null };
   try { S.token = localStorage.getItem('azshop_token') || ''; } catch (e) { /* private mode */ }
- 
+
   // ---------- tiny helpers (DOM is built with textContent, never innerHTML => no XSS) ----------
   function h(tag, props, ...kids) {
     const e = document.createElement(tag);
@@ -19,9 +19,11 @@
       else if (k.slice(0, 2) === 'on') e.addEventListener(k.slice(2), v);
       else if (v !== false && v != null) e.setAttribute(k, v);
     }
-    kids.flat().forEach((c) => { if (c != null && c !== false) e.append(c); });
+    kids.flat(Infinity).forEach((c) => { if (c != null && c !== false) e.append(c); });
     return e;
   }
+  const put = (parent, ...kids) => parent.append(...kids.flat(Infinity).filter((c) => c != null && c !== false));
+  const mapsUrl = (lat, lng) => 'https://www.openstreetmap.org/?mlat=' + lat + '&mlon=' + lng + '#map=17/' + lat + '/' + lng;
   const money = (n, cur) => (cur || 'ETB') + ' ' + Number(n).toLocaleString('en-US');
   const when = (iso) => new Date(iso);
   function ago(iso) {
@@ -31,10 +33,33 @@
     return s < 172800 ? 'Yesterday' : Math.floor(s / 86400) + ' days ago';
   }
   const hhmm = (iso) => when(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  function toast(msg) {
-    const t = h('div', { class: 'azs azs-toast', role: 'status' }, msg);
-    document.body.append(t);
-    setTimeout(() => t.remove(), 3200);
+  function toast(msg, kind, onTap) {
+    let stack = document.querySelector('.azs-toasts');
+    if (!stack) { stack = h('div', { class: 'azs-toasts', 'aria-live': 'polite' }); document.body.append(stack); }
+    const t = h('div', { class: 'azs-tt' + (kind ? ' ' + kind : ''), role: 'status' }, msg);
+    if (onTap) t.addEventListener('click', () => { t.remove(); onTap(); });
+    stack.append(t);
+    setTimeout(() => { t.remove(); if (!stack.children.length) stack.remove(); }, kind === 'msg' ? 5000 : 3600);
+  }
+  // In-app replacement for window.confirm / window.prompt (styled, centred, keyboard friendly)
+  function ask(o) {
+    return new Promise((resolve) => {
+      const field = o.input ? h('textarea', { class: 'azs-input', maxlength: 200, placeholder: o.placeholder || '', rows: 3 }) : null;
+      const err = h('div', { class: 'azs-err' });
+      let done = false;
+      const finish = (v) => { if (done) return; done = true; ov.remove(); document.removeEventListener('keydown', onKey, true); resolve(v); };
+      const onKey = (e) => { if (e.key === 'Escape') { e.stopPropagation(); finish(o.input ? null : false); } };
+      const okBtn = h('button', { class: 'azs-btn' + (o.danger ? ' azs-danger' : ''), onclick: () => {
+        if (field) { const v = field.value.trim(); if (!v) { err.textContent = 'Please write a short reason'; return; } finish(v); } else finish(true);
+      } }, o.ok || 'OK');
+      const box = h('div', { class: 'azs-sheet azs-dialog', role: 'alertdialog', 'aria-modal': 'true', 'aria-label': o.title },
+        h('h3', {}, o.title), h('p', { class: 'azs-dtext' }, o.text || ''), field, err,
+        h('div', { class: 'azs-row azs-dbtns' }, h('button', { class: 'azs-btn azs-ghost', onclick: () => finish(o.input ? null : false) }, o.cancel || 'Cancel'), okBtn));
+      const ov = h('div', { class: 'azs-overlay azs-dialog-ov', onclick: (e) => { if (e.target === ov) finish(o.input ? null : false); } }, box);
+      document.body.append(ov);
+      document.addEventListener('keydown', onKey, true);
+      setTimeout(() => (field || okBtn).focus(), 30);
+    });
   }
   async function api(path, opt) {
     opt = opt || {};
@@ -51,11 +76,11 @@
     const sheet = h('div', { class: 'azs-sheet', role: 'dialog', 'aria-label': title });
     const ov = h('div', { class: 'azs-overlay', onclick: (e) => { if (e.target === ov) close(); } }, sheet);
     const close = () => { ov.remove(); };
-    sheet.append(h('h3', {}, title, h('button', { class: 'azs-x', 'aria-label': 'Close', onclick: close }, '\u00D7')), ...content);
+    put(sheet, h('h3', {}, title, h('button', { class: 'azs-x', 'aria-label': 'Close', onclick: close }, '\u00D7')), content);
     document.body.append(ov);
     return { sheet, close };
   }
- 
+
   // ---------- map (Leaflet, loaded only when needed) ----------
   function loadLeaflet() {
     if (window.L) return Promise.resolve();
@@ -92,17 +117,47 @@
   function showMap(lat, lng, title) {
     const box = mapBox(300);
     const m = modal(title || 'Location', box.node,
-      h('p', { class: 'azs-note' }, 'Lat ' + Number(lat).toFixed(5) + ', Lng ' + Number(lng).toFixed(5)));
-    box.set(lat, lng).catch((e) => toast(e.message));
+      h('p', { class: 'azs-note' }, 'Lat ' + Number(lat).toFixed(5) + ', Lng ' + Number(lng).toFixed(5) + ' \u2022 ',
+        h('a', { class: 'azs-link', href: mapsUrl(lat, lng), target: '_blank', rel: 'noopener' }, 'Open in maps')));
+    box.set(lat, lng).catch((e) => toast(e.message, 'bad'));
     const old = m.close; m.close = () => { box.destroy(); old(); };
   }
- 
+
+  // ---------- chat notifications (unread badge + toast + browser notification) ----------
+  const unreadKey = () => 'azshop_unread_' + (S.me ? S.me.id : '');
+  function loadUnread() { try { S.unread = JSON.parse(localStorage.getItem(unreadKey()) || '{}') || {}; } catch (e) { S.unread = {}; } }
+  function saveUnread() { try { localStorage.setItem(unreadKey(), JSON.stringify(S.unread)); } catch (e) { /* ignore */ } }
+  const totalUnread = () => Object.keys(S.unread).reduce((a, k) => a + (S.unread[k] || 0), 0);
+  function paintBadges() {
+    const n = totalUnread();
+    document.querySelectorAll('.azs-chats-badge').forEach((b) => { b.textContent = n > 99 ? '99+' : String(n); b.style.display = n ? 'inline-flex' : 'none'; });
+  }
+  function markRead(id) { if (S.unread[id]) { delete S.unread[id]; saveUnread(); paintBadges(); } }
+  function askNotifyPermission() {
+    try { if ('Notification' in window && Notification.permission === 'default') { const p = Notification.requestPermission(); if (p && p.catch) p.catch(function () {}); } } catch (e) { /* ignore */ }
+  }
+  async function notifyMessage(m) {
+    let c = S.convs.find((x) => x.id === m.conversation_id);
+    if (!c) { try { S.convs = await api('/api/conversations'); c = S.convs.find((x) => x.id === m.conversation_id); } catch (e) { /* ignore */ } }
+    const who = c ? c.other_name : 'New message';
+    const text = m.type === 'location' ? '\u{1F4CD} Shared a live location' : String(m.body || '').slice(0, 80);
+    toast(h('div', {}, h('b', {}, who), text), 'msg', () => openChats(m.conversation_id));
+    try { if (navigator.vibrate) navigator.vibrate(80); } catch (e) { /* ignore */ }
+    try {
+      if (document.hidden && 'Notification' in window && Notification.permission === 'granted') {
+        const n = new Notification(who, { body: text, tag: 'azshop-' + m.conversation_id });
+        n.onclick = () => { window.focus(); openChats(m.conversation_id); n.close(); };
+      }
+    } catch (e) { /* ignore */ }
+  }
+
   // ---------- auth ----------
   async function refreshMe() {
     if (!S.token) { S.me = null; S.quota = null; return; }
     try {
       const d = await api('/api/me');
       S.me = d.user; S.quota = { used: d.posts_used, limit: d.post_limit };
+      loadUnread(); paintBadges();
       connectSocket();
     } catch (e) { S.token = ''; S.me = null; try { localStorage.removeItem('azshop_token'); } catch (x) { /* ignore */ } }
   }
@@ -139,11 +194,11 @@
   function logout() {
     stopShare();
     if (S.socket) { S.socket.disconnect(); S.socket = null; }
-    S.token = ''; S.me = null; S.quota = null;
+    S.token = ''; S.me = null; S.quota = null; S.unread = {};
     try { localStorage.removeItem('azshop_token'); } catch (e) { /* ignore */ }
-    drawTop();
+    drawTop(); paintBadges();
   }
- 
+
   // ---------- page ----------
   let ui = null;
   let timer;
@@ -166,14 +221,14 @@
       timer = setTimeout(() => { if (mine !== ui) return; S.q = mine.search.value.trim(); loadListings(true); }, 300);
     });
   }
- 
+
   function drawTop() {
     if (!ui) return;
     ui.actions.textContent = '';
     ui.actions.append(h('button', { class: 'azs-btn', onclick: openPost }, '+ Sell'));
     if (S.me) {
       ui.actions.append(
-        h('button', { class: 'azs-btn azs-ghost', onclick: openChats }, 'Chats'),
+        h('button', { class: 'azs-btn azs-ghost', onclick: () => openChats() }, 'Chats', h('span', { class: 'azs-nbadge azs-chats-badge', style: 'display:none' })),
         h('button', { class: 'azs-btn azs-ghost', onclick: openMine }, 'My ads'));
       if (S.me.role === 'admin') ui.actions.append(h('button', { class: 'azs-btn azs-ghost', onclick: openAdmin }, 'Admin'));
       ui.actions.append(h('button', { class: 'azs-btn azs-ghost', onclick: logout }, 'Log out'));
@@ -220,7 +275,7 @@
       if (mine === ui) ui.grid.append(h('p', { class: 'azs-empty' }, 'Could not load ads. Is the shop server running?'));
     }
   }
- 
+
   // ---------- ad detail / contact / report ----------
   async function openDetail(id) {
     try {
@@ -237,23 +292,24 @@
       if (l.lat != null && l.lng != null) {
         acts.append(h('button', { class: 'azs-btn azs-ghost', onclick: () => showMap(l.lat, l.lng, l.city) }, '\u{1F4CD} Map'));
       }
-    } catch (e) { toast(e.message); }
+    } catch (e) { toast(e.message, 'bad'); }
   }
   async function contact(listingId) {
     if (!S.me) return needLogin(() => contact(listingId));
     try {
       const c = await api('/api/conversations', { method: 'POST', body: { listing_id: listingId } });
       openChats(c.id);
-    } catch (e) { toast(e.message); }
+    } catch (e) { toast(e.message, 'bad'); }
   }
   async function report(id) {
     if (!S.me) return needLogin(() => report(id));
-    const reason = window.prompt('What is wrong with this ad?');
+    const reason = await ask({ title: 'Report this ad', text: 'What is wrong with this ad? The admin will review it.', input: true,
+      placeholder: 'Short reason', ok: 'Send report', danger: true });
     if (!reason) return;
     try { await api('/api/listings/' + id + '/report', { method: 'POST', body: { reason } }); toast('Thanks, the admin will review it'); }
-    catch (e) { toast(e.message); }
+    catch (e) { toast(e.message, 'bad'); }
   }
- 
+
   // ---------- post an ad (Jiji style: pick a category, then fill the form) ----------
   function openPost() {
     if (!S.me) return needLogin(openPost);
@@ -265,7 +321,7 @@
     body.append(h('p', { class: 'azs-note' }, quota), h('p', { class: 'azs-sub' }, 'Choose a category'),
       h('div', { class: 'azs-tiles' }, S.cats.map((c) =>
         h('button', { class: 'azs-tile', onclick: () => form(c) }, h('b', {}, c.icon), c.name))));
- 
+
     function form(cat) {
       const err = h('div', { class: 'azs-err' });
       const f = {
@@ -287,9 +343,9 @@
         h('label', { class: 'azs-field' }, 'Photos (up to 5, 3 MB each)', f.imgs),
         h('button', { class: 'azs-btn azs-ghost', onclick: () => {
           navigator.geolocation.getCurrentPosition((p) => { pos = p.coords; where.textContent = ' Location added'; },
-            () => toast('Location permission denied'), { enableHighAccuracy: true, timeout: 15000 });
+            () => toast('Location permission denied', 'bad'), { enableHighAccuracy: true, timeout: 15000 });
         } }, '\u{1F4CD} Add my location'), where, err, h('div', { class: 'azs-row' }, send));
- 
+
       async function submit() {
         err.textContent = '';
         const files = Array.from(f.imgs.files);
@@ -316,37 +372,39 @@
         h('div', {}, r.title, h('small', {}, money(r.price) + (r.is_sample ? ' \u2022 sample' : ''))),
         h('span', { class: 'azs-status' }, r.status),
         r.status === 'removed' ? '' : h('button', { class: 'azs-link', onclick: async () => {
-          if (!window.confirm('Remove this ad?')) return;
-          await api('/api/listings/' + r.id, { method: 'DELETE' }); m.close(); openMine(); loadListings(true);
+          if (!(await ask({ title: 'Remove this ad?', text: 'Buyers will no longer see it.', ok: 'Remove', danger: true }))) return;
+          try { await api('/api/listings/' + r.id, { method: 'DELETE' }); m.close(); openMine(); loadListings(true); toast('Ad removed'); }
+          catch (e) { toast(e.message, 'bad'); }
         } }, 'Remove'))) : h('p', { class: 'azs-empty' }, 'You have no ads yet.'));
-    } catch (e) { toast(e.message); }
+    } catch (e) { toast(e.message, 'bad'); }
   }
- 
+
   // ---------- admin ----------
   async function openAdmin() {
     try {
       const d = await api('/api/admin/overview');
       const box = h('div');
       const m = modal('Admin', box);
-      const act = (fn) => async () => { try { await fn(); m.close(); openAdmin(); loadListings(true); } catch (e) { toast(e.message); } };
-      box.append(h('p', { class: 'azs-sub' }, 'Ads waiting for approval (' + d.listings.length + ')'),
+      const act = (fn, warn) => async () => { if (warn && !(await ask({ title: warn[0], text: warn[1], ok: warn[2], danger: true }))) return;
+        try { await fn(); m.close(); openAdmin(); loadListings(true); } catch (e) { toast(e.message, 'bad'); } };
+      put(box, h('p', { class: 'azs-sub' }, 'Ads waiting for approval (' + d.listings.length + ')'),
         d.listings.map((l) => h('div', { class: 'azs-item' },
           h('div', {}, l.title, h('small', {}, money(l.price) + ' \u2022 ' + l.seller_name + ' ' + l.phone)),
           h('div', {},
             h('button', { class: 'azs-btn', onclick: act(() => api('/api/admin/listings/' + l.id, { method: 'PATCH', body: { status: 'approved' } })) }, 'Approve'), ' ',
-            h('button', { class: 'azs-btn azs-danger', onclick: act(() => api('/api/admin/listings/' + l.id, { method: 'PATCH', body: { status: 'rejected' } })) }, 'Reject')))),
+            h('button', { class: 'azs-btn azs-danger', onclick: act(() => api('/api/admin/listings/' + l.id, { method: 'PATCH', body: { status: 'rejected' } }), ['Reject this ad?', 'The seller will not be able to publish it.', 'Reject']) }, 'Reject')))),
         h('p', { class: 'azs-sub' }, 'Sellers (approve = unlimited ads)'),
         d.sellers.map((u) => h('div', { class: 'azs-item' },
           h('div', {}, u.name, h('small', {}, u.phone + ' \u2022 ' + u.seller_status)),
           h('div', {},
             h('button', { class: 'azs-btn', onclick: act(() => api('/api/admin/users/' + u.id, { method: 'PATCH', body: { seller_status: 'approved' } })) }, 'Approve seller'), ' ',
-            h('button', { class: 'azs-btn azs-danger', onclick: act(() => api('/api/admin/users/' + u.id, { method: 'PATCH', body: { seller_status: 'blocked' } })) }, 'Block')))),
+            h('button', { class: 'azs-btn azs-danger', onclick: act(() => api('/api/admin/users/' + u.id, { method: 'PATCH', body: { seller_status: 'blocked' } }), ['Block this seller?', 'They will not be able to post ads.', 'Block']) }, 'Block')))),
         h('p', { class: 'azs-sub' }, 'Recent reports'),
         d.reports.map((r) => h('div', { class: 'azs-item' }, h('div', {}, r.title, h('small', {}, r.reason)),
-          h('button', { class: 'azs-btn azs-danger', onclick: act(() => api('/api/admin/listings/' + r.listing_id, { method: 'PATCH', body: { status: 'removed' } })) }, 'Remove ad'))));
-    } catch (e) { toast(e.message); }
+          h('button', { class: 'azs-btn azs-danger', onclick: act(() => api('/api/admin/listings/' + r.listing_id, { method: 'PATCH', body: { status: 'removed' } }), ['Remove this ad?', 'It disappears from the Store.', 'Remove']) }, 'Remove ad'))));
+    } catch (e) { toast(e.message, 'bad'); }
   }
- 
+
   // ---------- realtime ----------
   function loadSocketLib() {
     if (window.io) return Promise.resolve();
@@ -364,8 +422,13 @@
     if (S.socket) return;
     S.socket = window.io(API, { auth: { token: S.token } });
     S.socket.on('chat:message', (m) => {
-      if (S.chat && S.chat.id === m.conversation_id) { addMsg(m); } else toast('New message');
+      const mineMsg = S.me && m.sender_id === S.me.id;
+      const viewing = !!(S.chat && S.chat.id === m.conversation_id);
+      if (viewing) addMsg(m);
       if (S.chat) loadConvs();
+      if (mineMsg || (viewing && !document.hidden)) return;
+      S.unread[m.conversation_id] = (S.unread[m.conversation_id] || 0) + 1;
+      saveUnread(); paintBadges(); notifyMessage(m);
     });
     S.socket.on('chat:live', (d) => {
       if (S.chat && S.chat.id === d.conversation_id) showLive(d);
@@ -374,11 +437,11 @@
       if (S.chat && S.chat.id === d.conversation_id) hideLive('Live location ended');
     });
   }
- 
+
   // ---------- chat UI (responsive: 2 panes on desktop, 1 pane at a time on phones) ----------
   function openChats(convId) {
     if (!S.me) return needLogin(() => openChats(convId));
-    connectSocket();
+    connectSocket(); askNotifyPermission();
     if (S.chat && S.chat.ui) S.chat.ui.remove();
     const clist = h('div');
     const msgs = h('div', { class: 'azs-msgs' }, h('p', { class: 'azs-empty-thread' }, 'Select a chat'));
@@ -400,14 +463,14 @@
     document.body.append(wrap);
     S.chat = { id: 0, ui: wrap, clist, msgs, title, liveHolder, input, shareBtn };
     loadConvs().then(() => { if (typeof convId === 'number') selectConv(convId); });
- 
+
     function send() {
       const text = input.value.trim();
       if (!text || !S.chat.id || !S.socket) return;
       sendBtn.disabled = true;
       S.socket.emit('chat:send', { conversation_id: S.chat.id, body: text }, (r) => {
         sendBtn.disabled = false;
-        if (r && r.error) toast(r.error); else input.value = '';
+        if (r && r.error) toast(r.error, 'bad'); else input.value = '';
       });
     }
   }
@@ -422,13 +485,13 @@
       S.chat.clist.textContent = '';
       if (!S.convs.length) S.chat.clist.append(h('p', { class: 'azs-empty' }, 'No chats yet. Tap Contact on an ad.'));
       S.convs.forEach((c) => S.chat.clist.append(h('div', { class: 'azs-conv' + (S.chat.id === c.id ? ' on' : ''),
-        onclick: () => selectConv(c.id) }, h('b', {}, c.other_name), h('small', {}, c.title), h('small', {}, c.last_body || 'No messages yet'))));
-    } catch (e) { toast(e.message); }
+        onclick: () => selectConv(c.id) }, h('b', {}, c.other_name, S.unread[c.id] ? h('span', { class: 'azs-nbadge' }, String(S.unread[c.id])) : null), h('small', {}, c.title), h('small', {}, c.last_body || 'No messages yet'))));
+    } catch (e) { toast(e.message, 'bad'); }
   }
   async function selectConv(id) {
     if (!S.chat) return;
     if (S.chat.id !== id) hideLive();
-    S.chat.id = id;
+    S.chat.id = id; markRead(id);
     S.chat.ui.classList.add('in-thread');
     const c = S.convs.find((x) => x.id === id);
     S.chat.title.textContent = c ? c.other_name + ' \u2022 ' + c.title : 'Chat';
@@ -439,13 +502,14 @@
       list.forEach(addMsg);
       if (!list.length) S.chat.msgs.append(h('p', { class: 'azs-empty-thread' }, 'Say hello \u{1F44B}'));
       loadConvs();
-    } catch (e) { toast(e.message); }
+    } catch (e) { toast(e.message, 'bad'); }
   }
   function addMsg(m) {
     if (!S.chat) return;
     const first = S.chat.msgs.querySelector('.azs-empty-thread');
     if (first) first.remove();
     const mine = m.sender_id === S.me.id;
+    if (!mine && S.chat.id === m.conversation_id) markRead(m.conversation_id);
     const bubble = h('div', { class: 'azs-msg' + (mine ? ' me' : '') });
     if (m.type === 'location') {
       bubble.append(h('div', {}, '\u{1F4CD} Live location started'),
@@ -455,7 +519,7 @@
     S.chat.msgs.append(bubble);
     S.chat.msgs.scrollTop = S.chat.msgs.scrollHeight;
   }
- 
+
   // ---------- live location ----------
   function updateShareBtn() {
     if (!S.chat) return;
@@ -463,11 +527,12 @@
     S.chat.shareBtn.textContent = on ? '\u23F9 Stop' : '\u{1F4CD}';
     S.chat.shareBtn.title = on ? 'Stop sharing location' : 'Share live location';
   }
-  function toggleShare() {
+  async function toggleShare() {
     if (S.watch != null) { stopShare(); return; }
-    if (!S.chat || !S.chat.id) { toast('Open a chat first'); return; }
-    if (!navigator.geolocation) { toast('Location is not supported on this device'); return; }
-    if (!window.confirm('Share your live location with this person for ' + LIVE_MINUTES + ' minutes? You can stop any time.')) return;
+    if (!S.chat || !S.chat.id) { toast('Open a chat first', 'bad'); return; }
+    if (!navigator.geolocation) { toast('Location is not supported on this device', 'bad'); return; }
+    if (!(await ask({ title: 'Share live location?', text: 'This person will see where you are for ' + LIVE_MINUTES + ' minutes. You can stop any time.', ok: 'Share' }))) return;
+    if (S.watch != null) return;
     const cid = S.chat.id; let first = true; let last = 0;
     S.shareConv = cid;
     S.watch = navigator.geolocation.watchPosition((p) => {
@@ -477,7 +542,7 @@
       S.socket.emit('chat:location', { conversation_id: cid, lat: p.coords.latitude, lng: p.coords.longitude,
         accuracy: p.coords.accuracy, start: first });
       first = false;
-    }, (err) => { toast(err.code === 1 ? 'Location permission denied' : 'Could not get your location'); stopShare(); },
+    }, (err) => { toast(err.code === 1 ? 'Location permission denied' : 'Could not get your location', 'bad'); stopShare(); },
     { enableHighAccuracy: true, maximumAge: 5000, timeout: 20000 });
     S.shareTimer = setTimeout(stopShare, LIVE_MINUTES * 60 * 1000);
     updateShareBtn();
@@ -494,12 +559,13 @@
   function showLive(d) {
     if (!S.chat) return;
     if (!S.liveBox) {
-      S.liveBox = { box: mapBox(180), cap: h('span', {}, '') };
+      S.liveBox = { box: mapBox(180), cap: h('span', {}, ''), link: h('a', { class: 'azs-link', target: '_blank', rel: 'noopener' }, 'Open in maps') };
       S.chat.liveHolder.append(h('div', { class: 'azs-live' },
-        h('p', {}, S.liveBox.cap, h('button', { class: 'azs-link', onclick: () => hideLive() }, 'Hide')), S.liveBox.box.node));
+        h('p', {}, S.liveBox.cap, h('span', {}, S.liveBox.link, ' \u00A0 ', h('button', { class: 'azs-link', onclick: () => hideLive() }, 'Hide'))), S.liveBox.box.node));
     }
     S.liveBox.cap.textContent = '\u{1F4CD} Live location \u2022 updated ' + new Date(d.at).toLocaleTimeString();
-    S.liveBox.box.set(d.lat, d.lng).catch((e) => toast(e.message));
+    S.liveBox.link.href = mapsUrl(d.lat, d.lng);
+    S.liveBox.box.set(d.lat, d.lng).catch((e) => toast(e.message, 'bad'));
     clearTimeout(S.liveTimeout);
     S.liveTimeout = setTimeout(() => hideLive('Live location stopped updating'), 90000);
   }
@@ -509,15 +575,15 @@
     if (S.chat) S.chat.liveHolder.textContent = '';
     if (msg) toast(msg);
   }
- 
+
   // ---------- start ----------
   async function mountStore(root) {
     buildPage(root);
-    drawTop();
+    drawTop(); paintBadges();
     if (!S.cats.length) { try { S.cats = await api('/api/categories'); } catch (e) { S.cats = []; } }
     drawCats();
     if (S.token && !S.me) await refreshMe();
-    drawTop();
+    drawTop(); paintBadges();
     loadListings(true);
   }
   function checkMount() {
