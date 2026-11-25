@@ -499,9 +499,9 @@ events(){const e=S.ev,cur=TIERS.find(x=>x.k===e.tier);
 const sample=[{n:"Music night",k:5,o:"Tigist Mulugeta"},{n:"Azmari evening",k:4,o:"Meron Bekele"},{n:"Student concert",k:2,o:"Abel Girma"},{n:"Open mic",k:1,o:"Dawit Alemu"}];
 if(e.title)sample.push({n:e.title,k:e.tier,me:1});sample.sort((a,b)=>b.k-a.k);
 return `<h2>${t("events")}</h2><p class="mu">Choose a tier. Higher tiers show first on the home page and in search.</p>
-<div style="display:flex;flex-wrap:wrap;gap:12px;align-items:flex-start;margin-bottom:8px"><div style="flex:1 1 220px;min-width:0">${azEvTop()}</div><div style="flex:1 1 240px;min-width:0">${TIERS.map(x=>`<button type="button" class="tier k${x.k} ${x.k===e.tier?"on":""}" data-act="tier" data-v="${x.k}"><div><b>${x.n}</b><div class="tt">${x.d} days · ${x.x}</div></div><span class="p">${fmt(x.p)}</span></button>`).join("")}
-</div></div>${azFramePicker()}<label for="et">Event name</label><input id="et" data-f="evtitle" value="${esc(e.title)}" placeholder="Music night">
-${azMediaEvent("event")}<button class="btn" data-act="evpay">${t("paynow")} · ${fmt(cur.p)} birr</button>
+${azFramePicker()}${azEvArea()}<div class="azpr">${TIERS.map(x=>`<button type="button" class="tier k${x.k} ${x.k===e.tier?"on":""}" data-act="tier" data-v="${x.k}"><div><b>${x.n}</b><div class="tt">${x.d} days · ${x.x}</div></div><span class="p">${fmt(x.p)}</span></button>`).join("")}
+</div><label for="et">Event name</label><input id="et" data-f="evtitle" value="${esc(e.title)}" placeholder="Music night">
+${azEvInfo("event")}<button class="btn" data-act="evpay">${t("paynow")} · ${fmt(cur.p)} birr</button>
 ${azRenderPublicCards("event")}
 <h3 style="margin-top:18px">Preview order</h3>${sample.map(x=>`<div class="card row" style="${x.me?"border-color:var(--gr)":""}"><div><b>${esc(x.n)}</b><div class="mu">${x.me?"You":"by "+x.o}</div></div><span class="badge">${TIERS.find(y=>y.k===x.k).n}</span></div>`).join("")}`},
 tuner(){return `<h2>Tuner</h2>${setKrar()||""}${chips(Object.keys(TUN),T.inst,"tn_inst")}<div class="card"><div class="big" id="tn">–</div><div class="mu" style="text-align:center" id="th">Tap Listen, then play one string</div><div class="meterT"><i id="nd"></i></div><div class="row"><span class="mu">♭ flat</span><span class="mu" style="text-align:center" id="tc">0 cents</span><span class="mu" style="text-align:right">sharp ♯</span></div><button class="btn ${T.on?"is-listening":""}" data-act="tn_mic" aria-pressed="${T.on?"true":"false"}">${T.on?"🔴 "+t("stopListening"):"🎙️ "+t("listenMic")}</button><p class="mic-status ${T.on?"active":""}" role="status">${T.on?"● "+t("stopListening"):t("micHelp")}</p></div><h3>Reference tones</h3><div class="grid">${TUN[T.inst].map(s=>`<button class="tile" data-act="tn_play" data-v="${s[1]}" style="min-height:64px"><b style="font-size:20px">${s[0]}</b><span class="mu">${s[1]} Hz</span></button>`).join("")}</div><p class="tt">Strings go from lowest to highest. Tune until the needle is in the middle. Use a quiet room and hold the phone close to the instrument. Low-frequency instruments may produce overtones; the tuner estimates the fundamental note.</p>${T.inst==="Begena (10-string)"?`<p class="tt">Begena reference set: these ten low-to-high pitches are a starting reference only, not a claim of one universal Orthodox Begena tuning. Confirm the tuning with your teacher or instrument tradition.</p>`:T.inst.startsWith("Krar")?`<p class="tt">Krar: traditional tuning is done by ear and is not exactly equal-tempered. "Krar (Tizita)" is C D E, G A, then the octave C, starting from middle C (no F). "Krar (Tizita minor)" is C D D♯, G G♯, then the octave C.  "Krar (free)" simply shows any note you play. Bati, Ambassel and Anchihoye are written differently by different teachers, so confirm them with a krar teacher before they are added.</p>`:""}`},
@@ -560,7 +560,7 @@ Object.assign(L.ti,{fr_concert:"ኮንሰርት / ሙዚቃ",fr_party:"መርዓ
 Object.assign(L.ar,{fr_concert:"حفلة موسيقية",fr_party:"زفاف / حفل",fr_sports:"رياضة",fr_workshop:"ورشة / تدريب",fr_cultural:"ديني / ثقافي",fr_expo:"أعمال / معرض",tpl:"قالب الفعالية",pol:"سياسة الدفع",close:"إغلاق",crop:"اقتصاص الصورة (8:9)",cropUse:"استخدام الصورة",cropCancel:"إلغاء",cropHint:"اسحب للتحريك وحرّك الشريط للتكبير",call:"اتصل",share:"مشاركة",map:"خريطة"});
 (function(){var st=document.createElement("style");st.textContent=".azsl{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;aspect-ratio:8/9;max-width:420px;border-radius:12px;margin:8px 0;scrollbar-width:none;border:1px solid var(--ln)}.azsl::-webkit-scrollbar{display:none}.azsl-i{flex:0 0 100%;scroll-snap-align:center}.azsl-i img{width:100%;height:100%;object-fit:cover;display:block}";document.head.appendChild(st);
 setInterval(function(){document.querySelectorAll(".azsl").forEach(function(el){var n=+el.dataset.n;if(n<2)return;var w=el.clientWidth,i=Math.round(Math.abs(el.scrollLeft)/w),nx=(i+1)%n,rtl=document.documentElement.dir==="rtl";el.scrollTo({left:(rtl?-1:1)*nx*w,behavior:"smooth"})})},4500);})();
-function azSlider(p){if(!p.length)return "";return '<div class="azsl" data-n="'+p.length+'">'+p.map(function(u,i){return '<div class="azsl-i"><img src="'+esc(u)+'" alt="Photo '+(i+1)+'" loading="lazy"></div>'}).join("")+'</div>'}
+function azSlider(p,w){if(!p.length)return "";return '<div class="azsl'+(w?' az16':'')+'" data-n="'+p.length+'">'+p.map(function(u,i){return '<div class="azsl-i"><img src="'+esc(u)+'" alt="Photo '+(i+1)+'" loading="lazy"></div>'}).join("")+'</div>'}
 function azTier(row){var d=row&&row.data&&typeof row.data==="object"?row.data:{};return Number(d.tier)||0}
 function azShare(b){var s=b.getAttribute("data-s")||"Azmari Bet",u=location.href.split("#")[0];if(navigator.share){navigator.share({title:s,url:u}).catch(function(){})}else if(navigator.clipboard){navigator.clipboard.writeText(u).then(function(){toast("\u2713")})}}
 function azEvExtra(kind,row,d){
@@ -580,9 +580,9 @@ function azCrop(file,cb){
   var url=URL.createObjectURL(file),im=new Image();
   im.onerror=function(){URL.revokeObjectURL(url);cb(file)};
   im.onload=function(){
-    var W=288,H=324,OW=720,OH=810,z=1,ox=0,oy=0,base=Math.max(W/im.width,H/im.height);
+    var R=window.AZ_CROP_R||[8,9],ct=esc(t("crop")).replace("8:9",R[0]+":"+R[1]),W=288,H=Math.round(288*R[1]/R[0]),OW=720,OH=Math.round(720*R[1]/R[0]),z=1,ox=0,oy=0,base=Math.max(W/im.width,H/im.height);
     var m=document.createElement("div");m.className="sheet";
-    m.innerHTML='<div role="dialog" aria-label="'+esc(t("crop"))+'"><h3>'+esc(t("crop"))+'</h3><canvas width="'+W+'" height="'+H+'" style="width:'+W+'px;max-width:100%;touch-action:none;border-radius:12px;border:1px solid var(--ln)"></canvas><input type="range" min="1" max="3" step="0.01" value="1" style="width:100%" aria-label="Zoom"><p class="tt">'+esc(t("cropHint"))+'</p><div class="row"><button type="button" class="chip" id="azcx">'+esc(t("cropCancel"))+'</button><button type="button" class="btn" id="azcu">'+esc(t("cropUse"))+'</button></div></div>';
+    m.innerHTML='<div role="dialog" aria-label="'+ct+'"><h3>'+ct+'</h3><canvas width="'+W+'" height="'+H+'" style="width:'+W+'px;max-width:100%;touch-action:none;border-radius:12px;border:1px solid var(--ln)"></canvas><input type="range" min="1" max="3" step="0.01" value="1" style="width:100%" aria-label="Zoom"><p class="tt">'+esc(t("cropHint"))+'</p><div class="row"><button type="button" class="chip" id="azcx">'+esc(t("cropCancel"))+'</button><button type="button" class="btn" id="azcu">'+esc(t("cropUse"))+'</button></div></div>';
     document.body.appendChild(m);
     var cv=m.querySelector("canvas"),rg=m.querySelector("input");
     function clamp(){var s=base*z,mx=Math.max(0,(im.width*s-W)/2),my=Math.max(0,(im.height*s-H)/2);ox=Math.max(-mx,Math.min(mx,ox));oy=Math.max(-my,Math.min(my,oy))}
@@ -671,6 +671,21 @@ function azMediaEvent(k){
 
 /* AZ-PT */
 (function(){var st=document.createElement("style");st.textContent=".azpt{display:flex;flex-wrap:nowrap;gap:6px;overflow-x:auto;white-space:nowrap;margin:6px 0;scrollbar-width:none}.azpt::-webkit-scrollbar{display:none}.azpt .chip{flex:0 0 auto}";document.head.appendChild(st)})();
+
+/* AZ-EV169 */
+(function(){var st=document.createElement("style");st.textContent=".azsl.az16{aspect-ratio:16/7;max-width:100%}.azpr{display:flex;flex-wrap:nowrap;gap:6px;overflow-x:auto;margin:8px 0;scrollbar-width:none}.azpr::-webkit-scrollbar{display:none}.azpr .tier{flex:0 0 auto;width:auto!important;padding:4px 10px!important;gap:8px;font-size:12px}.azpr .tier b,.azpr .tier .p{font-size:12px}.azpr .tier .tt{display:none}";document.head.appendChild(st);
+document.addEventListener("click",function(e){var b=e.target.closest&&e.target.closest('[data-act="mp"]');if(b)window.AZ_CROP_R=b.getAttribute("data-v")==="event"?[16,7]:[8,9]},true);})();
+function azEvArea(){
+  var m=M.event||(M.event={p:[],v:null}),own=m.p.filter(Boolean),n=own.length,sl;
+  if(n){sl='<div class="azsl az16" data-n="'+n+'">'+own.map(function(u,i){return '<div class="azsl-i"><img src="'+esc(u)+'" alt="Photo '+(i+1)+'"></div>'}).join("")+'</div>'}
+  else{sl=azEvTop().replace('class="azsl"','class="azsl az16"')}
+  var h='<div style="position:relative;margin:8px 0">'+sl;
+  if(n<3)h+='<button type="button" class="chip" data-act="mp" data-v="event" style="position:absolute;right:8px;top:8px;z-index:2;background:var(--sf);color:var(--ink)">\uFF0B '+esc(t("ev_add"))+' ('+n+'/3)</button>';
+  h+='</div>';
+  if(n){h+='<div class="chips" style="margin:4px 0">';own.forEach(function(u,i){h+='<button type="button" class="chip" data-act="mdel" data-v="event|p|'+i+'">\u2715 '+esc(t("ev_rm"))+' '+(i+1)+'</button>'});h+='</div>'}
+  return h;
+}
+function azEvInfo(k){var d=D[k]||{};return infoUI(k)+'<div class="card"><label class="ck"><input type="checkbox" data-d="'+k+'|ok" '+(d.ok?"checked":"")+'> <span>'+esc(t("ev_rules"))+'</span></label></div>'}
 
 function azEventCode(tierNum) {
   const map = {1:"event_basic",2:"event_bronze",3:"event_silver",4:"event_gold",5:"event_platinum"};
