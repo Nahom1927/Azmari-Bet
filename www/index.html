@@ -601,7 +601,7 @@ function azCrop(file,cb){
 }
 document.addEventListener("change",function(e){
   var inp=e.target;if(!inp||inp.id!=="pg")return;
-  if(inp.__azok){inp.__azok=false;return}
+  if(inp.__azok){inp.__azok=false;return}/* AZ-SCOPE */if(typeof GK==="undefined"||(GK!=="event"&&GK!=="band"))return;
   var fl=inp.files&&inp.files[0];if(!fl)return;
   e.stopImmediatePropagation();
   azCrop(fl,function(blob){
@@ -689,12 +689,12 @@ function azBuildPostData(kind, extra) {
   }, extra || {});
 }
 
-function azRenderMediaCard(item) {
+function azRenderMediaCard(item, kind) {
   const photos = Array.isArray(item.photos) ? item.photos.filter(Boolean) : [];
   const vid = item.video || "";
   let html = "";
   if (photos.length) {
-    html += azSlider(photos);
+    html += (kind === "event" || kind === "band") ? azSlider(photos, !!(item.tier || item.tier_name)) : '<div class="mgrid" style="margin:8px 0">' + photos.map((u, i) => '<div class="mth"><img src="' + esc(u) + '" alt="Photo ' + (i+1) + '"></div>').join("") + '</div>';
   }
   if (vid) {
     html += '<div class="mth vid" style="margin:8px 0"><video src="' + esc(vid) + '" controls playsinline preload="metadata"></video></div>';
@@ -732,7 +732,7 @@ function azRenderPublicCards(kind, filterFn) {
     return '<div class="card"><b>' + esc(title) + '</b>' +
       (loc ? '<div class="mu">' + esc(loc) + (dt ? " · " + new Date(dt).toLocaleDateString() : "") + '</div>' : "") +
       (desc && desc !== title ? '<p class="mu">' + esc(desc) + '</p>' : "") +
-      azRenderMediaCard(rawData) + azEvExtra(kind, row, rawData) +
+      azRenderMediaCard(rawData, kind) + azEvExtra(kind, row, rawData) +
       who(row.author_name || "Member", "Approved post") +
       (con ? jobLink(con) : "") + '</div>';
   }).join("");
