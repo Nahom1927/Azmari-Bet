@@ -695,6 +695,24 @@ try{if(typeof V!=="undefined"&&V.events&&!V.events.__az){var _evp=V.events;V.eve
 (function(){document.addEventListener("click",function(e){var b=e.target.closest&&e.target.closest('[data-act="mp"]');if(!b)return;var v=b.getAttribute("data-v"),pg=document.getElementById("pg");if(pg)pg.multiple=(v==="event"||v==="band")},true)})();
 function azNext(inp){var q=window.__azq||[];if(!q.length)return;var f=q.shift();azCrop(f,function(blob){if(!blob){window.__azq=[];return}try{var nf=new File([blob],"crop.jpg",{type:"image/jpeg"}),dt=new DataTransfer();dt.items.add(nf);inp.files=dt.files;inp.__azok=true;inp.dispatchEvent(new Event("change",{bubbles:true}))}catch(x){window.__azq=[];return}azNext(inp)})}
 
+/* AZ-COUNT */
+(function(){var st=document.createElement("style");st.textContent=".azcd{display:inline-block;margin:4px 0;padding:2px 10px;border-radius:999px;font-size:12px;font-weight:600;background:var(--gb);color:var(--gd)}.azcd.lo{background:var(--rd);color:#fff}";document.head.appendChild(st)})();
+Object.assign(L.en,{ev_left:"{n} days left",ev_last:"Last day",ev_exp:"Expired"});
+Object.assign(L.am,{ev_left:"{n} ቀን ቀርቷል",ev_last:"የመጨረሻ ቀን",ev_exp:"ጊዜው አልፏል"});
+Object.assign(L.om,{ev_left:"Guyyaa {n} hafe",ev_last:"Guyyaa dhumaa",ev_exp:"Yeroon darbeera"});
+Object.assign(L.so,{ev_left:"{n} maalmood ayaa hadhay",ev_last:"Maalinta ugu dambeysa",ev_exp:"Waa dhacay"});
+Object.assign(L.ti,{ev_left:"{n} መዓልቲ ተሪፉ",ev_last:"ናይ መወዳእታ መዓልቲ",ev_exp:"ግዜኡ ሓሊፉ"});
+Object.assign(L.ar,{ev_left:"متبقي {n} أيام",ev_last:"اليوم الأخير",ev_exp:"انتهى"});
+function azCount(kind,row,d){
+  if(kind!=="event"||!d)return "";
+  var T=TIERS.find(function(x){return x.k===Number(d.tier)});if(!T)return "";
+  var s=new Date(row.visible_from||row.created_at||"").getTime();if(!s)return "";
+  var ms=s+T.d*864e5-Date.now(),n=Math.ceil(ms/864e5);
+  var txt=ms<=0?t("ev_exp"):n<=1?t("ev_last"):t("ev_left").replace("{n}",n);
+  return '<div class="azcd'+(n<=2?' lo':'')+'">\u23F3 '+esc(txt)+'</div>';
+}
+if(typeof azEvExtra==="function"){var _azx=azEvExtra;azEvExtra=function(k,r,d){return _azx(k,r,d)+azCount(k,r,d)}}
+
 function azEventCode(tierNum) {
   const map = {1:"event_basic",2:"event_bronze",3:"event_silver",4:"event_gold",5:"event_platinum"};
   return map[Number(tierNum)] || "event_silver";
