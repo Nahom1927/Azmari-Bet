@@ -324,3 +324,6 @@
   if (document.readyState === "complete") boot(); else window.addEventListener("load", boot);
 })();
 
+
+/* AZ-DBG */
+(function(){try{var sb=window.azSupabase;if(!sb||sb.__azdbg)return;sb.__azdbg=1;var o=sb.rpc.bind(sb);sb.rpc=function(n,a){var p=o(n,a);if(n==="app_submit_paid_post"){Promise.resolve(p).then(function(r){alert("Server answer for "+n+":\n"+JSON.stringify({error:r.error||null,data:r.data===undefined?null:r.data,status:r.status}).slice(0,600))})}return p}}catch(e){}})();
