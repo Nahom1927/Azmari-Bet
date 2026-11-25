@@ -1,0 +1,6 @@
+{
+  "pollMs": 30000,
+  "toastMs": 4500,
+  "urlPattern": "chat|message|thread|conversation",
+  "toastTitle": "New message"
+}
