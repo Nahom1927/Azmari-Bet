@@ -713,6 +713,15 @@ function azCount(kind,row,d){
 }
 if(typeof azEvExtra==="function"){var _azx=azEvExtra;azEvExtra=function(k,r,d){return _azx(k,r,d)+azCount(k,r,d)}}
 
+/* AZ-MOVIE */
+Object.assign(L.en,{fr_movie:"Movie",fl_movie:"Movie title",fl_cinema:"Cinema",fl_lang:"Language",fl_genre:"Genre",fl_age:"Age rating"});
+Object.assign(L.am,{fr_movie:"ፊልም",fl_movie:"የፊልም ርዕስ",fl_cinema:"ሲኒማ ቤት",fl_lang:"ቋንቋ",fl_genre:"ዘውግ",fl_age:"የዕድሜ ገደብ"});
+Object.assign(L.om,{fr_movie:"Fiilmii",fl_movie:"Maqaa fiilmii",fl_cinema:"Sinemaa",fl_lang:"Afaan",fl_genre:"Gosa",fl_age:"Daangaa umurii"});
+Object.assign(L.so,{fr_movie:"Filim",fl_movie:"Magaca filimka",fl_cinema:"Shineemo",fl_lang:"Luqad",fl_genre:"Nooc",fl_age:"Da'da"});
+Object.assign(L.ti,{fr_movie:"ፊልሚ",fl_movie:"ስም ፊልሚ",fl_cinema:"ሲነማ",fl_lang:"ቋንቋ",fl_genre:"ዓይነት",fl_age:"ደረጃ ዕድመ"});
+Object.assign(L.ar,{fr_movie:"فيلم",fl_movie:"اسم الفيلم",fl_cinema:"السينما",fl_lang:"اللغة",fl_genre:"النوع",fl_age:"التصنيف العمري"});
+setTimeout(function(){try{if(Array.isArray(AZ_FRAMES)&&!AZ_FRAMES.some(function(x){return x.k==="movie"})){AZ_FRAMES.push({k:"movie",n:"Movie",f:[["movie","Movie title"],["cinema","Cinema"],["date","Date"],["time","Time"],["lang","Language"],["genre","Genre"],["age","Age rating"],["price","Ticket price (birr)"],["vip","VIP price (birr)"]]});render()}}catch(e){}},0);
+
 function azEventCode(tierNum) {
   const map = {1:"event_basic",2:"event_bronze",3:"event_silver",4:"event_gold",5:"event_platinum"};
   return map[Number(tierNum)] || "event_silver";
