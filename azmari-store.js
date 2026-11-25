@@ -4,6 +4,7 @@
 const SB_URL = 'https://rnqizccrzbolsynfsxbu.supabase.co', SB_KEY = 'sb_publishable_1pbzO1FOGTjIjjE-yF7d1A__OFPESB2';
 const CATS = [['Keyboards','🎹'],['Strings','🎸'],['Traditional','🪕'],['Percussion','🥁'],['Wind','🎺'],['Audio','🎧'],['Rental','🔊']];
 const ICON = Object.fromEntries(CATS);
+const SITE = location.origin + location.pathname.replace(/index\.html$/, '');
 const S = { sb: null, me: null, prof: null, used: 0, cat: '', q: '', msgs: [], read: {}, chat: null, live: {}, watch: null, ui: null };
 const CSS = `
 .azs,.azs-ov,.azs-chat,.azs-toasts{--bg:#070d24;--c1:#0d1635;--c2:#131f46;--ln:rgba(255,255,255,.09);--tx:#e8f0ff;--mu:#8da2c8;--ac:#1fc7f5;--pr:#3aa9ff;--ok:#14b86a;--bad:#e5484d;--on:#04202b;color:var(--tx);font-family:inherit;box-sizing:border-box}
@@ -117,6 +118,7 @@ function lib() { return window.supabase ? Promise.resolve() : new Promise((ok, n
 async function init() {
   if (S.sb) return; await lib();
   S.sb = window.supabase.createClient(SB_URL, SB_KEY, { auth: { storageKey: 'azs-auth', persistSession: true, autoRefreshToken: true } });
+  S.sb.auth.onAuthStateChange((ev) => { if (ev === 'PASSWORD_RECOVERY') { try { history.replaceState(null, '', location.pathname + location.search); } catch (e) { /* ignore */ } setTimeout(newPassword, 0); } });
   const { data } = await S.sb.auth.getSession(); await setUser(data.session && data.session.user);
 }
 async function setUser(u) {
@@ -133,30 +135,70 @@ async function setUser(u) {
 }
 const norm = (d) => { d = d.replace(/\D/g, ''); if (d.indexOf('251') === 0) d = '0' + d.slice(3); if (d.length === 9) d = '0' + d; return d; };
 function login(after) {
-  let reg = false; const err = h('div', { class: 'azs-err' });
+  let mode = 'login';
+  const err = h('div', { class: 'azs-err' });
+  const info = h('div', { class: 'azs-note', style: 'display:none' });
   const name = h('input', { class: 'azs-input', maxlength: 60, autocomplete: 'name' });
-  const phone = h('input', { class: 'azs-input', type: 'tel', placeholder: '09XXXXXXXX', autocomplete: 'tel' });
+  const email = h('input', { class: 'azs-input', type: 'email', placeholder: 'you@example.com', autocomplete: 'email', maxlength: 120 });
   const pw = h('input', { class: 'azs-input', type: 'password', autocomplete: 'current-password' });
   const nf = h('label', { class: 'azs-field', style: 'display:none' }, 'Full name', name);
+  const pf = h('label', { class: 'azs-field' }, 'Password (8+ characters)', pw);
   const go = h('button', { class: 'azs-btn', onclick: submit }, 'Log in');
-  const sw = h('button', { class: 'azs-link', onclick: toggle }, 'New here? Create an account');
-  const m = modal('Log in', nf, h('label', { class: 'azs-field' }, 'Phone', phone), h('label', { class: 'azs-field' }, 'Password (8+ characters)', pw), err, go, h('p', {}, sw));
-  function toggle() { reg = !reg; nf.style.display = reg ? 'block' : 'none'; go.textContent = reg ? 'Create account' : 'Log in'; sw.textContent = reg ? 'I already have an account' : 'New here? Create an account'; }
+  const sw = h('button', { class: 'azs-link', onclick: () => { mode = mode === 'login' ? 'register' : 'login'; draw(); } }, '');
+  const fg = h('button', { class: 'azs-link', onclick: () => { mode = 'forgot'; draw(); } }, 'Forgot password?');
+  const m = modal('Account', nf, h('label', { class: 'azs-field' }, 'Email', email), pf, err, info, go, h('p', {}, sw), h('p', {}, fg));
+  function draw() {
+    nf.style.display = mode === 'register' ? 'block' : 'none';
+    pf.style.display = mode === 'forgot' ? 'none' : 'block';
+    fg.style.display = mode === 'login' ? 'inline' : 'none';
+    go.textContent = mode === 'login' ? 'Log in' : mode === 'register' ? 'Create account' : 'Send reset link';
+    sw.textContent = mode === 'login' ? 'New here? Create an account' : 'Back to log in';
+    pw.autocomplete = mode === 'register' ? 'new-password' : 'current-password';
+    err.textContent = ''; info.style.display = 'none';
+  }
+  draw();
   async function submit() {
-    err.textContent = ''; const d = norm(phone.value);
-    if (d.length < 10) { err.textContent = 'Enter a valid phone number'; return; }
-    if (pw.value.length < 8) { err.textContent = 'Password needs 8+ characters'; return; }
-    if (reg && !name.value.trim()) { err.textContent = 'Enter your name'; return; }
+    err.textContent = ''; info.style.display = 'none';
+    const em = email.value.trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)) { err.textContent = 'Enter a valid email address'; return; }
     go.disabled = true;
     try {
-      const email = d + '@example.com'; let r;
-      if (reg) { r = await S.sb.auth.signUp({ email, password: pw.value, options: { data: { name: name.value.trim() } } });
-        if (!r.error && !r.data.session) throw new Error('Account created, but "Confirm email" is still on in Supabase. Turn it off, then log in.'); }
-      else r = await S.sb.auth.signInWithPassword({ email, password: pw.value });
-      if (r.error) throw r.error;
+      if (mode === 'forgot') {
+        const r = await S.sb.auth.resetPasswordForEmail(em, { redirectTo: SITE });
+        if (r.error) throw r.error;
+        info.textContent = 'If that email has an account, a reset link is on its way. Open the link on this device.'; info.style.display = 'block';
+        return;
+      }
+      if (pw.value.length < 8) { err.textContent = 'Password needs 8+ characters'; return; }
+      let r;
+      if (mode === 'register') {
+        if (!name.value.trim()) { err.textContent = 'Enter your name'; return; }
+        r = await S.sb.auth.signUp({ email: em, password: pw.value, options: { data: { name: name.value.trim() }, emailRedirectTo: SITE } });
+        if (r.error) throw r.error;
+        if (!r.data.session) { info.textContent = 'Account created. Open the confirmation link we emailed you, then log in.'; info.style.display = 'block'; return; }
+      } else {
+        r = await S.sb.auth.signInWithPassword({ email: em, password: pw.value });
+        if (r.error) throw r.error;
+      }
       await setUser(r.data.user); m.close(); if (after) after();
-    } catch (e) { err.textContent = /invalid login/i.test(e.message) ? 'Wrong phone or password' : e.message; } finally { go.disabled = false; }
+    } catch (e) { err.textContent = /invalid login/i.test(e.message) ? 'Wrong email or password' : e.message; } finally { go.disabled = false; }
   }
+}
+function newPassword() {
+  const err = h('div', { class: 'azs-err' });
+  const p1 = h('input', { class: 'azs-input', type: 'password', autocomplete: 'new-password' });
+  const p2 = h('input', { class: 'azs-input', type: 'password', autocomplete: 'new-password' });
+  const go = h('button', { class: 'azs-btn', onclick: async () => {
+    err.textContent = '';
+    if (p1.value.length < 8) { err.textContent = 'Password needs 8+ characters'; return; }
+    if (p1.value !== p2.value) { err.textContent = 'Passwords do not match'; return; }
+    go.disabled = true;
+    const r = await S.sb.auth.updateUser({ password: p1.value });
+    go.disabled = false;
+    if (r.error) { err.textContent = r.error.message; return; }
+    m.close(); toast('Password changed. You are logged in.');
+  } }, 'Save new password');
+  const m = modal('Set a new password', h('label', { class: 'azs-field' }, 'New password (8+ characters)', p1), h('label', { class: 'azs-field' }, 'Repeat new password', p2), err, go);
 }
 async function logout() { stopShare(); closeChats(); await S.sb.auth.signOut(); await setUser(null); }
 
@@ -390,6 +432,7 @@ async function mount(root) {
   try { await init(); } catch (e) { S.ui.grid.append(h('p', { class: 'azs-empty' }, e.message)); return; }
   drawTop(); load();
 }
+if (/type=recovery/.test(location.hash)) { init().catch(function () {}); }
 function check() { const r = document.getElementById('shop-root'); if (r && r.dataset.azs !== '3') { r.dataset.azs = '3'; mount(r); } }
 new MutationObserver(check).observe(document.documentElement, { childList: true, subtree: true });
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', check); else check();
