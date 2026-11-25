@@ -23,10 +23,25 @@ const CSS = `
 .azs-link{background:none;border:0;padding:0;color:var(--ac);text-decoration:underline;cursor:pointer;font-size:13px}
 .azs-grid{display:grid;gap:12px;grid-template-columns:repeat(2,minmax(0,1fr))}
 @media(min-width:700px){.azs-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}@media(min-width:1000px){.azs-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
-.azs-card{background:var(--c1);border:1px solid var(--ln);border-radius:14px;overflow:hidden;cursor:pointer}
+.azs-card{background:var(--c1);border:1px solid var(--ln);border-radius:14px;overflow:hidden;cursor:pointer;transition:transform .2s ease,box-shadow .2s ease}
+.azs-card:hover{transform:translateY(-4px);box-shadow:0 10px 24px rgba(0,0,0,.35)}
+.azs-card:active{transform:scale(.97)}
+.azs-card img{transition:transform .35s ease}
+.azs-card:hover img{transform:scale(1.06)}
+.azs-prow{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px}
+.azs-like{border:0;background:transparent;color:inherit;font-size:14px;cursor:pointer;padding:2px 6px;border-radius:8px}
+.azs-like.on{color:#ef4444}
+/* AZ-GAP */
+.azs-body .azs-prow{margin:0 0 14px !important}
+.azs-body .azs-price{margin:0 !important;line-height:1.3}
+.azs-body .azs-title{margin:0 0 10px !important;line-height:1.35}
+.azs-prow+.azs-title{margin-top:0 !important}
+@keyframes azpop{0%{transform:scale(1)}50%{transform:scale(1.45)}100%{transform:scale(1)}}
+.azs-like.pop{animation:azpop .3s}
+@media (prefers-reduced-motion:reduce){.azs-card,.azs-card img{transition:none}.azs-card:hover,.azs-card:active,.azs-card:hover img{transform:none}.azs-like.pop{animation:none}}
 .azs-media{position:relative;height:110px;display:flex;align-items:center;justify-content:center;background:var(--ac)}
 .azs-emoji{font-size:46px}.azs-badge{position:absolute;left:6px;bottom:6px;padding:2px 7px;font-size:10px;border-radius:6px;background:var(--ok);color:#fff}
-.azs-body{padding:10px}.azs-price{color:var(--pr);font-weight:700;font-size:14px}.azs-title{margin:2px 0 6px;font-weight:600;font-size:15px}
+.azs-body{padding:10px}.azs-price{color:var(--pr);font-weight:700;font-size:14px}.azs-title{margin:8px 0 10px;font-weight:600;font-size:15px}
 .azs-meta{font-size:11px;color:var(--mu);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .azs-row{display:flex;gap:6px;margin-top:10px}.azs-contact{flex:1}
 .azs-flag{width:38px;border-radius:10px;border:0;cursor:pointer;color:var(--bad);background:rgba(229,72,77,.15);font-size:16px}
@@ -306,10 +321,99 @@ function azBig(l) {
   return wrap;
 }
 /* AZ-PICS-END */
+/* AZ-LIKE-START */
+const AZL = { n: {}, mine: new Set(), btns: {}, uid: undefined, busy: false };
+function azPaintLikes(id) {
+  (AZL.btns[id] || []).forEach((b) => {
+    const on = AZL.mine.has(id);
+    b.textContent = (on ? '\u2665 ' : '\u2661 ') + (AZL.n[id] || 0);
+    b.classList.toggle('on', on);
+    b.setAttribute('aria-label', (on ? 'Unlike' : 'Like') + ' - ' + (AZL.n[id] || 0) + ' likes');
+  });
+}
+async function azLoadLikes() {
+  if (AZL.busy) return; AZL.busy = true;
+  AZL.uid = S.me ? S.me.id : null;
+  try {
+    const a = await S.sb.from('azs_like_counts').select('listing_id,likes');
+    AZL.n = {}; (a.data || []).forEach((r) => { AZL.n[r.listing_id] = r.likes; });
+    AZL.mine = new Set();
+    if (S.me) { const b = await S.sb.from('azs_likes').select('listing_id'); (b.data || []).forEach((r) => AZL.mine.add(r.listing_id)); }
+  } catch (e) { /* ignore */ }
+  AZL.busy = false;
+  Object.keys(AZL.btns).forEach((id) => azPaintLikes(isNaN(id) ? id : Number(id)));
+}
+async function azToggle(l) {
+  if (!l.seller_id) { toast('This is a sample ad.'); return; }
+  if (!S.me) { toast('Please log in to like ads', 'bad'); return; }
+  const id = l.id, had = AZL.mine.has(id);
+  if (had) { AZL.mine.delete(id); AZL.n[id] = Math.max(0, (AZL.n[id] || 0) - 1); }
+  else { AZL.mine.add(id); AZL.n[id] = (AZL.n[id] || 0) + 1; }
+  azPaintLikes(id);
+  let r;
+  try {
+    r = had ? await S.sb.from('azs_likes').delete().eq('listing_id', id).eq('user_id', S.me.id)
+            : await S.sb.from('azs_likes').insert({ listing_id: id });
+  } catch (e) { r = { error: e }; }
+  if (r && r.error) {
+    if (had) { AZL.mine.add(id); AZL.n[id] = (AZL.n[id] || 0) + 1; }
+    else { AZL.mine.delete(id); AZL.n[id] = Math.max(0, (AZL.n[id] || 0) - 1); }
+    azPaintLikes(id);
+    toast(r.error.message || 'Could not save like', 'bad');
+  }
+}
+function azLike(l) {
+  const b = document.createElement('button');
+  b.type = 'button'; b.className = 'azs-like';
+  (AZL.btns[l.id] = (AZL.btns[l.id] || []).filter((x) => x.isConnected)).push(b);
+  b.onclick = (e) => {
+    e.stopPropagation();
+    b.classList.remove('pop'); void b.offsetWidth; b.classList.add('pop');
+    azToggle(l);
+  };
+  azPaintLikes(l.id);
+  const uid = S.me ? S.me.id : null;
+  if (AZL.uid !== uid) azLoadLikes();
+  return b;
+}
+const AZSND = { on: true, ctx: null };
+try { AZSND.on = localStorage.getItem('azs_snd') !== 'off'; } catch (e) { /* ignore */ }
+function azBeep() {
+  if (!AZSND.on) return;
+  try {
+    const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return;
+    AZSND.ctx = AZSND.ctx || new AC();
+    const c = AZSND.ctx; if (c.state === 'suspended') c.resume();
+    const t = c.currentTime;
+    [880, 1175].forEach((fr, i) => {
+      const o = c.createOscillator(), g = c.createGain(), st = t + i * 0.12;
+      o.type = 'sine'; o.frequency.value = fr;
+      g.gain.setValueAtTime(0.0001, st);
+      g.gain.exponentialRampToValueAtTime(0.2, st + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, st + 0.2);
+      o.connect(g); g.connect(c.destination); o.start(st); o.stop(st + 0.22);
+    });
+  } catch (e) { /* ignore */ }
+}
+function azMuteBtn() {
+  const b = document.createElement('button');
+  b.type = 'button'; b.className = 'azs-x';
+  const set = () => {
+    b.textContent = AZSND.on ? '\u{1F514}' : '\u{1F515}';
+    b.setAttribute('aria-label', AZSND.on ? 'Mute chat sound' : 'Unmute chat sound');
+  };
+  b.onclick = () => {
+    AZSND.on = !AZSND.on;
+    try { localStorage.setItem('azs_snd', AZSND.on ? 'on' : 'off'); } catch (e) { /* ignore */ }
+    set(); if (AZSND.on) azBeep();
+  };
+  set(); return b;
+}
+/* AZ-LIKE-END */
 function card(l) {
   return h('article', { class: 'azs-card', onclick: () => detail(l) },
     h('div', { class: 'azs-media' }, azThumb(l), l.verified ? h('span', { class: 'azs-badge' }, '\u2714 Verified') : null),
-    h('div', { class: 'azs-body' }, h('div', { class: 'azs-price' }, money(l.price)), h('div', { class: 'azs-title' }, l.title),
+    h('div', { class: 'azs-body' }, h('div', { class: 'azs-prow' }, h('div', { class: 'azs-price' }, money(l.price)), azLike(l)), h('div', { class: 'azs-title' }, l.title),
       h('div', { class: 'azs-meta' }, '\u{1F4CD} ' + (l.city || '')), h('div', { class: 'azs-meta' }, '\u{1F552} ' + ago(l.created_at)), h('div', { class: 'azs-meta' }, '\u{1F464} ' + l.seller_name),
       h('div', { class: 'azs-row' }, h('button', { class: 'azs-btn azs-contact', onclick: (e) => { e.stopPropagation(); contact(l); } }, 'Contact'),
         h('button', { class: 'azs-flag', 'aria-label': 'Report this ad', onclick: (e) => { e.stopPropagation(); report(l); } }, '\u2691'))));
@@ -327,7 +431,7 @@ async function load() {
 }
 function detail(l) {
   const acts = h('div', { class: 'azs-row' });
-  const m = modal(l.title, azBig(l), h('div', { class: 'azs-price' }, money(l.price)),
+  const m = modal(l.title, azBig(l), h('div', { class: 'azs-prow' }, h('div', { class: 'azs-price' }, money(l.price)), azLike(l)),
     h('p', { class: 'azs-meta' }, [l.category, l.condition, l.city, ago(l.created_at), l.seller_name].filter(Boolean).join(' \u2022 ')),
     h('p', { style: 'white-space:pre-wrap;word-break:break-word' }, l.description || 'No description.'), acts);
   acts.append(h('button', { class: 'azs-btn azs-contact', onclick: () => { m.close(); contact(l); } }, 'Chat with seller'));
@@ -429,13 +533,14 @@ function unsub() { if (S.ch) { S.sb.removeChannel(S.ch); S.ch = null; } }
 function onMsg(m) {
   if (!m || S.msgs.some((x) => x.id === m.id)) return; S.msgs.push(m);
   const k = ckey(m), open = S.chat && S.chat.key === k;
-  if (m.sender_id !== S.me.id) { if (open && !document.hidden) markRead(k); else notify(m, k); }
+  if (m.sender_id !== S.me.id) { if (open && !document.hidden) { markRead(k); azBeep(); } else notify(m, k); }
   badges(); paint();
 }
 function notify(m, k) {
   const text = m.lat != null ? '\u{1F4CD} Shared a live location' : String(m.body || '').slice(0, 80);
   toast(h('div', {}, h('b', {}, m.sender_name || 'New message'), text), 'msg', () => openChats(k));
   try { if (navigator.vibrate) navigator.vibrate(80); } catch (e) { /* ignore */ }
+  azBeep();
   try { if (document.hidden && 'Notification' in window && Notification.permission === 'granted') { const n = new Notification(m.sender_name || 'New message', { body: text, tag: 'azs-' + k }); n.onclick = () => { window.focus(); openChats(k); n.close(); }; } } catch (e) { /* ignore */ }
 }
 function onLive(r) {
@@ -455,7 +560,7 @@ async function openChats(key) {
   input.addEventListener('keydown', (e) => { if (e.key === 'Enter') send(); });
   C.shareBtn = h('button', { class: 'azs-btn azs-ghost', 'aria-label': 'Share live location', onclick: () => { const c = cur(); if (c) share(c); else toast('Open a chat first', 'bad'); } }, '\u{1F4CD}');
   C.wrap = h('div', { class: 'azs-chat' + (key ? ' in-thread' : '') },
-    h('div', { class: 'azs-clist' }, h('div', { class: 'azs-ch' }, h('span', {}, 'My chats'), h('button', { class: 'azs-x', 'aria-label': 'Close chats', onclick: closeChats }, '\u00D7')), C.listEl),
+    h('div', { class: 'azs-clist' }, h('div', { class: 'azs-ch' }, h('span', {}, 'My chats'), azMuteBtn(), h('button', { class: 'azs-x', 'aria-label': 'Close chats', onclick: closeChats }, '\u00D7')), C.listEl),
     h('div', { class: 'azs-thread' }, h('div', { class: 'azs-ch' }, h('button', { class: 'azs-btn azs-ghost azs-back', onclick: () => C.wrap.classList.remove('in-thread') }, '\u2190'), C.titleEl,
       h('button', { class: 'azs-x', 'aria-label': 'Close chats', onclick: closeChats }, '\u00D7')), C.liveEl, C.msgsEl,
       h('div', { class: 'azs-compose' }, C.shareBtn, input, h('button', { class: 'azs-btn', onclick: send }, 'Send'))));
