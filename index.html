@@ -499,7 +499,7 @@ events(){const e=S.ev,cur=TIERS.find(x=>x.k===e.tier);
 const sample=[{n:"Music night",k:5,o:"Tigist Mulugeta"},{n:"Azmari evening",k:4,o:"Meron Bekele"},{n:"Student concert",k:2,o:"Abel Girma"},{n:"Open mic",k:1,o:"Dawit Alemu"}];
 if(e.title)sample.push({n:e.title,k:e.tier,me:1});sample.sort((a,b)=>b.k-a.k);
 return `<h2>${t("events")}</h2><p class="mu">Choose a tier. Higher tiers show first on the home page and in search.</p>
-${azFramePicker()}${azEvArea()}<div class="azpr">${TIERS.map(x=>`<button type="button" class="tier k${x.k} ${x.k===e.tier?"on":""}" data-act="tier" data-v="${x.k}"><div><b>${x.n}</b><div class="tt">${x.d} days · ${x.x}</div></div><span class="p">${fmt(x.p)}</span></button>`).join("")}
+${azFramePicker()}${azEvArea()}<div class="azpr azin">${TIERS.map(x=>`<button type="button" class="tier k${x.k} ${x.k===e.tier?"on":""}" data-act="tier" data-v="${x.k}"><div><b>${x.n}</b><div class="tt">${x.d} days · ${x.x}</div></div><span class="p">${fmt(x.p)}</span></button>`).join("")}
 </div><label for="et">Event name</label><input id="et" data-f="evtitle" value="${esc(e.title)}" placeholder="Music night">
 ${azEvInfo("event")}<button class="btn" data-act="evpay">${t("paynow")} · ${fmt(cur.p)} birr</button>
 ${azRenderPublicCards("event")}
@@ -524,13 +524,6 @@ const AZ_FRAMES=[
 {k:"workshop",n:"Workshop / Training",f:[["topic","Topic"],["speaker","Speaker"],["date","Date"],["seats","Seats"],["fee","Fee (birr)"],["incl","What is included"]]},
 {k:"cultural",n:"Religious / Cultural",f:[["occasion","Occasion"],["date","Date"],["place","Place"],["fee","Free or donation"],["contact","Contact"]]},
 {k:"expo",n:"Business / Expo",f:[["company","Company"],["date","Date"],["price","Ticket price (birr)"],["schedule","Schedule"]]}];
-function azFramePicker(){
-  const cur=AZ_FRAMES.find(x=>x.k===S.ev.frame);
-  const chips=AZ_FRAMES.map(x=>'<button type="button" class="chip'+(cur&&cur.k===x.k?' on':'')+'" data-act="frame" data-v="'+x.k+'">'+esc(t("fr_"+x.k))+'</button>').join("");
-  let fields="";
-  if(cur){const v=D.evf||{};fields=cur.f.map(p=>'<label>'+esc(azFL(cur.k,p))+'</label><input class="fi" data-d="evf|'+p[0]+'" value="'+esc(v[p[0]]||"")+'" autocomplete="off">').join("");}
-  return '<div class="card"><h3>'+esc(t("tpl"))+'</h3><div class="chips">'+chips+'</div>'+fields+'<p><button type="button" class="chip" data-act="evpolicy">'+esc(t("pol"))+'</button></p></div>';
-}
 function azPolicy(){
   const tiers=TIERS.map(x=>x.n+": "+fmt(x.p)+" birr for "+x.d+" days ("+x.x+")").join("; ");
   const items=[
@@ -675,17 +668,28 @@ function azMediaEvent(k){
 /* AZ-EV169 */
 (function(){var st=document.createElement("style");st.textContent=".azsl.az16{aspect-ratio:16/7;max-width:100%}.azpr{display:flex;flex-wrap:nowrap;gap:6px;overflow-x:auto;margin:8px 0;scrollbar-width:none}.azpr::-webkit-scrollbar{display:none}.azpr .tier{flex:0 0 auto;width:auto!important;padding:4px 10px!important;gap:8px;font-size:12px}.azpr .tier b,.azpr .tier .p{font-size:12px}.azpr .tier .tt{display:none}";document.head.appendChild(st);
 document.addEventListener("click",function(e){var b=e.target.closest&&e.target.closest('[data-act="mp"]');if(b)window.AZ_CROP_R=b.getAttribute("data-v")==="event"?[16,7]:[8,9]},true);})();
+function azEvInfo(k){var d=D[k]||{};return infoUI(k)+'<div class="card"><label class="ck"><input type="checkbox" data-d="'+k+'|ok" '+(d.ok?"checked":"")+'> <span>'+esc(t("ev_rules"))+'</span></label></div>'}
+
+/* AZ-EVUI */
+(function(){var st=document.createElement("style");st.textContent=".azdd{margin:8px 0}.azdd summary{list-style:none;cursor:pointer;padding:10px 12px;border:1px solid var(--ln);border-radius:12px;background:var(--sf);color:var(--ink);font-weight:600}.azdd summary::-webkit-details-marker{display:none}.azdd[open] summary{border-color:var(--gr)}.azdd .chips{padding:8px 0}.azpr.azin{position:relative;z-index:2;margin:-42px 0 10px;padding:0 8px 6px}";document.head.appendChild(st)})();
+function azFramePicker(){
+  var cur=AZ_FRAMES.find(function(x){return x.k===S.ev.frame});
+  var chips=AZ_FRAMES.map(function(x){return '<button type="button" class="chip'+(cur&&cur.k===x.k?' on':'')+'" data-act="frame" data-v="'+x.k+'">'+esc(t("fr_"+x.k))+'</button>'}).join("");
+  var fields="";
+  if(cur){var v=D.evf||{};fields=cur.f.map(function(p){return '<label>'+esc(azFL(cur.k,p))+'</label><input class="fi" data-d="evf|'+p[0]+'" value="'+esc(v[p[0]]||"")+'" autocomplete="off">'}).join("")}
+  return '<details class="azdd"><summary>\u2630 '+esc(t("tpl"))+(cur?': '+esc(t("fr_"+cur.k)):'')+' \u25BE</summary><div class="chips">'+chips+'</div></details>'+(fields?'<div class="card">'+fields+'</div>':'');
+}
 function azEvArea(){
   var m=M.event||(M.event={p:[],v:null}),own=m.p.filter(Boolean),n=own.length,sl;
   if(n){sl='<div class="azsl az16" data-n="'+n+'">'+own.map(function(u,i){return '<div class="azsl-i"><img src="'+esc(u)+'" alt="Photo '+(i+1)+'"></div>'}).join("")+'</div>'}
   else{sl=azEvTop().replace('class="azsl"','class="azsl az16"')}
-  var h='<div style="position:relative;margin:8px 0">'+sl;
+  var h='<div style="position:relative;margin:8px 0 0">'+sl;
   if(n<3)h+='<button type="button" class="chip" data-act="mp" data-v="event" style="position:absolute;right:8px;top:8px;z-index:2;background:var(--sf);color:var(--ink)">\uFF0B '+esc(t("ev_add"))+' ('+n+'/3)</button>';
-  h+='</div>';
-  if(n){h+='<div class="chips" style="margin:4px 0">';own.forEach(function(u,i){h+='<button type="button" class="chip" data-act="mdel" data-v="event|p|'+i+'">\u2715 '+esc(t("ev_rm"))+' '+(i+1)+'</button>'});h+='</div>'}
-  return h;
+  if(n)h+='<div style="position:absolute;left:8px;top:8px;z-index:2;display:flex;gap:4px">'+own.map(function(u,i){return '<button type="button" class="chip" data-act="mdel" data-v="event|p|'+i+'" aria-label="'+esc(t("ev_rm"))+' '+(i+1)+'" style="background:var(--sf);color:var(--ink);padding:2px 8px">\u2715 '+(i+1)+'</button>'}).join("")+'</div>';
+  return h+'</div>';
 }
-function azEvInfo(k){var d=D[k]||{};return infoUI(k)+'<div class="card"><label class="ck"><input type="checkbox" data-d="'+k+'|ok" '+(d.ok?"checked":"")+'> <span>'+esc(t("ev_rules"))+'</span></label></div>'}
+function azPolBtn(){return '<div style="text-align:left;margin:18px 0 70px"><button type="button" data-act="evpolicy" style="background:none;border:0;padding:4px 0;color:#8a8f98;font-size:12px;text-decoration:underline;cursor:pointer">'+esc(t("pol"))+'</button></div>'}
+try{if(typeof V!=="undefined"&&V.events&&!V.events.__az){var _evp=V.events;V.events=function(){return _evp.apply(this,arguments)+azPolBtn()};V.events.__az=1}}catch(e){}
 
 function azEventCode(tierNum) {
   const map = {1:"event_basic",2:"event_bronze",3:"event_silver",4:"event_gold",5:"event_platinum"};
