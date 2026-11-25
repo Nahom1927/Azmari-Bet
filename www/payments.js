@@ -124,6 +124,79 @@
   };
 
 
+  /* AZ-RESTORE */
+  window.azSubmitPaidPost = async function (opts) {
+    var token = null;
+    var rpcStarted = false;
+    try {
+      var acct = (opts && opts.acct) || null;
+      var kind = String((opts && opts.kind) || "").trim();
+      var productCode = String((opts && opts.productCode) || "").trim();
+      var ref = String((opts && opts.ref) || "").trim();
+      var method = String((opts && opts.method) || "").trim();
+      var ptime = (opts && opts.ptime) || null;
+      var postData = (opts && opts.data) || {};
+
+      if (!acct || !acct.name || !acct.phone) {
+        return { ok: false, msg: "Add your name and phone in your account first" };
+      }
+      if (!kind || !productCode) {
+        return { ok: false, msg: "Missing post category or product code" };
+      }
+
+      token = makeToken();
+      var trackingHash = await hashToken(token);
+      saveToken(token, productCode);
+
+      rpcStarted = true;
+      var r = await sb.rpc("app_submit_paid_post", {
+        p_kind: kind,
+        p_name: acct.name,
+        p_phone: acct.phone,
+        p_data: postData,
+        p_product_code: productCode,
+        p_reference: ref,
+        p_method: method,
+        p_paid_time: ptime,
+        p_tracking_hash: trackingHash
+      });
+
+      if (r.error) {
+        var tokens = getTokens().filter(function (x) {
+          return x && x.token !== token;
+        });
+        localStorage.setItem(TOKEN_KEY, JSON.stringify(tokens));
+
+        var m = r.error.message || "";
+        if (r.error.code === "23505" || m.indexOf("duplicate") >= 0 || m.indexOf("already") >= 0) {
+          return { ok: false, msg: "That transaction ID was already submitted." };
+        }
+        if (m.indexOf("too many") >= 0 || m.indexOf("rate") >= 0 || m.indexOf("limit") >= 0) {
+          return { ok: false, msg: "Too many submissions right now. Try again later." };
+        }
+        if (m.indexOf("phone") >= 0) {
+          return { ok: false, msg: "Your phone number looks invalid. Edit your profile." };
+        }
+        if (m.indexOf("name") >= 0) {
+          return { ok: false, msg: "Your name looks invalid. Edit your profile." };
+        }
+        if (m.indexOf("time") >= 0) {
+          return { ok: false, msg: "The receipt time looks invalid." };
+        }
+        return { ok: false, msg: r.error.message || "Could not submit post. Try again." };
+      }
+
+      return { ok: true, id: r.data };
+    } catch (e) {
+      return {
+        ok: false,
+        msg: rpcStarted
+          ? "Could not confirm post submission. Check before trying again."
+          : "Could not prepare your submission securely. Please try again."
+      };
+    }
+  };
+
   var QK = "az_rec_queue";
   function qget() { try { return JSON.parse(localStorage.getItem(QK) || "[]"); } catch (e) { return []; } }
   function qset(a) { try { localStorage.setItem(QK, JSON.stringify(a.slice(-20))); } catch (e) {} }
