@@ -568,7 +568,7 @@ function azEvExtra(kind,row,d){
   var h="";
   if(d.tier_name)h+='<span class="badge">'+esc(d.tier_name)+'</span> ';
   var fr=AZ_FRAMES.find(function(x){return x.k===d.frame});
-  if(fr&&d.fields){h+='<div class="mu">'+fr.f.filter(function(p){return d.fields[p[0]]}).map(function(p){return esc(azFL(fr.k,p))+": "+esc(d.fields[p[0]])}).join(" \u00B7 ")+'</div>';}
+  if(fr&&d.fields){var PR={price:1,vip:1,fee:1};var pt=fr.f.filter(function(p){return PR[p[0]]&&d.fields[p[0]]});var ot=fr.f.filter(function(p){return !PR[p[0]]&&d.fields[p[0]]});if(ot.length)h+='<div class="mu">'+ot.map(function(p){return esc(azFL(fr.k,p))+": "+esc(d.fields[p[0]])}).join(" \u00B7 ")+'</div>';if(pt.length)h+='<div class="azpt">'+pt.map(function(p){return '<span class="chip">'+esc(azFL(fr.k,p))+': <b>'+esc(d.fields[p[0]])+'</b></span>'}).join("")+'</div>';}
   var con=String(d.con||row.author_phone||"").replace(/[^\d+]/g,"");
   var b="";
   if(con.length>=7)b+='<a class="chip" href="tel:'+con+'">\u{1F4DE} '+esc(t("call"))+'</a> ';
@@ -668,6 +668,9 @@ function azMediaEvent(k){
   h+='<label class="ck"><input type="checkbox" data-d="'+k+'|ok" '+(d.ok?"checked":"")+'> <span>'+esc(t("ev_rules"))+'</span></label></div>';
   return h;
 }
+
+/* AZ-PT */
+(function(){var st=document.createElement("style");st.textContent=".azpt{display:flex;flex-wrap:nowrap;gap:6px;overflow-x:auto;white-space:nowrap;margin:6px 0;scrollbar-width:none}.azpt::-webkit-scrollbar{display:none}.azpt .chip{flex:0 0 auto}";document.head.appendChild(st)})();
 
 function azEventCode(tierNum) {
   const map = {1:"event_basic",2:"event_bronze",3:"event_silver",4:"event_gold",5:"event_platinum"};
