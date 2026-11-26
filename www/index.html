@@ -572,7 +572,7 @@ function azCrop(file,cb){
   var url=URL.createObjectURL(file),im=new Image();
   im.onerror=function(){URL.revokeObjectURL(url);cb(file)};
   im.onload=function(){
-    var R=window.AZ_CROP_R||[8,9],ct=esc(t("crop")).replace("8:9",R[0]+":"+R[1]),W=288,H=Math.round(288*R[1]/R[0]),OW=720,OH=Math.round(720*R[1]/R[0]),z=1,ox=0,oy=0,base=Math.max(W/im.width,H/im.height);
+    var R=window.AZ_CROP_R||[8,9],ct=esc(t("crop")).replace("8:9",R[0]+":"+R[1]),W=288,H=Math.round(288*R[1]/R[0]),OW=1080,OH=Math.round(1080*R[1]/R[0]),z=1,ox=0,oy=0,base=Math.max(W/im.width,H/im.height);
     var m=document.createElement("div");m.className="sheet";
     m.innerHTML='<div role="dialog" aria-label="'+ct+'"><h3>'+ct+'</h3><canvas width="'+W+'" height="'+H+'" style="width:'+W+'px;max-width:100%;touch-action:none;border-radius:12px;border:1px solid var(--ln)"></canvas><input type="range" min="1" max="3" step="0.01" value="1" style="width:100%" aria-label="Zoom"><p class="tt">'+esc(t("cropHint"))+'</p><div class="row"><button type="button" class="chip" id="azcx">'+esc(t("cropCancel"))+'</button><button type="button" class="btn" id="azcu">'+esc(t("cropUse"))+'</button></div></div>';
     document.body.appendChild(m);
@@ -587,7 +587,7 @@ function azCrop(file,cb){
     rg.oninput=function(){z=+rg.value;clamp();paint(cv,1)};
     function end(){m.remove();URL.revokeObjectURL(url)}
     m.querySelector("#azcx").onclick=function(){end();cb(null)};
-    m.querySelector("#azcu").onclick=function(){var oc=document.createElement("canvas");oc.width=OW;oc.height=OH;paint(oc,OW/W);oc.toBlob(function(b){end();cb(b)},"image/jpeg",0.85)};
+    m.querySelector("#azcu").onclick=function(){var oc=document.createElement("canvas");oc.width=OW;oc.height=OH;paint(oc,OW/W);oc.toBlob(function(b){end();cb(b)},"image/jpeg",0.97)};
   };
   im.src=url;
 }
@@ -746,6 +746,36 @@ function azPaidDone(){
   m.innerHTML='<div role="dialog" aria-label="Payment submitted"><h3>Payment submitted</h3><p>Thank you. We have received your payment details.</p><p class="mu">Your post will be published after an administrator verifies the payment. Please do not pay again for this post.</p><button type="button" class="btn">Close</button></div>';
   document.body.appendChild(m);
   m.querySelector("button").onclick=function(){m.remove()};
+}
+
+/* AZ-COMPRESS */
+// Resizes in smooth steps, sharpens lightly, and never makes a file larger than the old 720px JPEG.
+function azDraw(src,w,h){var c=document.createElement("canvas");c.width=w;c.height=h;var x=c.getContext("2d");x.imageSmoothingQuality="high";x.drawImage(src,0,0,w,h);return c}
+function azScale(im,max){
+  var s=Math.min(1,max/Math.max(im.width,im.height)),w=Math.round(im.width*s),h=Math.round(im.height*s),cur=im;
+  while(cur.width>w*2)cur=azDraw(cur,Math.round(cur.width/2),Math.round(cur.height/2));
+  return azDraw(cur,w,h);
+}
+function azSharpen(c,a){
+  var x=c.getContext("2d"),w=c.width,h=c.height,img=x.getImageData(0,0,w,h),d=img.data,o=new Uint8ClampedArray(d);
+  for(var y=1;y<h-1;y++)for(var i=(y*w+1)*4,e=(y*w+w-1)*4;i<e;i+=4)for(var k=0;k<3;k++){var p=i+k;d[p]=o[p]+a*(4*o[p]-o[p-4]-o[p+4]-o[p-w*4]-o[p+w*4])/4}
+  x.putImageData(img,0,0);
+}
+function azCompress(im){
+  var old=azScale(im,720).toDataURL("image/jpeg",.8),limit=Math.min(old.length,180000);
+  try{
+    var type=document.createElement("canvas").toDataURL("image/webp").indexOf("data:image/webp")===0?"image/webp":"image/jpeg";
+    var sizes=type==="image/webp"?[1080,900,720]:[900,720];
+    for(var n=0;n<sizes.length;n++){
+      var c=azScale(im,sizes[n]);
+      if(c.width<im.width)azSharpen(c,.25);
+      var lo=n===sizes.length-1?.5:.72,hi=.92,best=c.toDataURL(type,lo);
+      if(best.length>limit)continue;
+      for(var j=0;j<5;j++){var q=(lo+hi)/2,u=c.toDataURL(type,q);if(u.length<=limit){best=u;lo=q}else hi=q}
+      return best;
+    }
+  }catch(e){}
+  return old;
 }
 
 function azEventCode(tierNum) {
@@ -907,7 +937,7 @@ function sky(id,n,c){const a=[];for(let i=0;i<n;i++)a.push((Math.random()*100).t
 sky("#s1",70,"#fff");sky("#s2",25,"#9fe4ff");
 document.body.insertAdjacentHTML("beforeend",'<input type="file" accept="image/*" id="pf" hidden>');$("#pf").onchange=e=>{const fl=e.target.files[0];if(!fl||!PK)return;const k=PK,im=new Image(),u=URL.createObjectURL(fl);im.onload=()=>{const c=document.createElement("canvas"),s=Math.min(im.width,im.height);c.width=c.height=200;c.getContext("2d").drawImage(im,(im.width-s)/2,(im.height-s)/2,s,s,0,0,200,200);PH[k]=c.toDataURL("image/jpeg",.8);try{localStorage.setItem("ph:"+k,PH[k])}catch(x){}URL.revokeObjectURL(u);render()};im.src=u;e.target.value=""};
 document.body.insertAdjacentHTML("beforeend",'<input type="file" accept="image/*" id="pg" hidden><input type="file" accept="video/*" id="pv" hidden>');
-$("#pg").onchange=e=>{const fl=e.target.files[0];e.target.value="";if(!fl||!GK)return;const gk=GK,m=M[gk]||(M[gk]={p:[],v:null});if(m.p.length>=3){toast("Maximum 3 photos");return}const im=new Image(),u=URL.createObjectURL(fl);im.onload=async()=>{const c=document.createElement("canvas"),sc=Math.min(1,720/Math.max(im.width,im.height));c.width=Math.round(im.width*sc);c.height=Math.round(im.height*sc);c.getContext("2d").drawImage(im,0,0,c.width,c.height);URL.revokeObjectURL(u);const dataUrl=c.toDataURL("image/jpeg",.8);if(window.azUploadPostMedia){try{toast("Uploading photo...");const blob=await(await fetch(dataUrl)).blob();const upFile=new File([blob],(fl.name||"photo").replace(/\.[^.]+$/,"")+".jpg",{type:"image/jpeg"});const pubUrl=await window.azUploadPostMedia(upFile);m.p.push(pubUrl||dataUrl);toast("Photo uploaded ✓");render();return}catch(err){toast("Upload failed: "+(err&&err.message?err.message:err));return}}m.p.push(dataUrl);render()};im.src=u};
+$("#pg").onchange=e=>{const fl=e.target.files[0];e.target.value="";if(!fl||!GK)return;const gk=GK,m=M[gk]||(M[gk]={p:[],v:null});if(m.p.length>=3){toast("Maximum 3 photos");return}const im=new Image(),u=URL.createObjectURL(fl);im.onload=async()=>{const dataUrl=azCompress(im);URL.revokeObjectURL(u);if(window.azUploadPostMedia){try{toast("Uploading photo...");const blob=await(await fetch(dataUrl)).blob();const upFile=new File([blob],(fl.name||"photo").replace(/\.[^.]+$/,"")+".jpg",{type:"image/jpeg"});const pubUrl=await window.azUploadPostMedia(upFile);m.p.push(pubUrl||dataUrl);toast("Photo uploaded ✓");render();return}catch(err){toast("Upload failed: "+(err&&err.message?err.message:err));return}}m.p.push(dataUrl);render()};im.src=u};
 $("#pv").onchange=e=>{const fl=e.target.files[0];e.target.value="";if(!fl||!GK)return;if(fl.size>30*1048576){toast("Video is bigger than 30 MB");return}const gk=GK,m=M[gk]||(M[gk]={p:[],v:null}),u=URL.createObjectURL(fl),vd=document.createElement("video");vd.preload="metadata";vd.onloadedmetadata=async()=>{if(vd.duration>61){URL.revokeObjectURL(u);toast("Video is longer than 60 seconds");return}if(window.azUploadPostMedia){try{toast("Uploading video...");const pubUrl=await window.azUploadPostMedia(fl);URL.revokeObjectURL(u);m.v=pubUrl||u;toast("Video uploaded ✓");render();return}catch(err){URL.revokeObjectURL(u);toast("Upload failed: "+(err&&err.message?err.message:err));return}}m.v=u;render()};vd.onerror=()=>{URL.revokeObjectURL(u);toast("Could not read this video")};vd.src=u};
 const gl=(d,w)=>[[36,.07],[24,.12],[12,.22]].map(a=>`<path d="${d}" fill="none" stroke="#3cc8ff" stroke-opacity="${a[1]}" stroke-width="${w+a[0]}" stroke-linecap="round" stroke-linejoin="round"/>`).join("")+`<path d="${d}" fill="none" stroke="url(#neon)" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round"/>`;
 const B="256,232 314,318 256,398 198,318";
