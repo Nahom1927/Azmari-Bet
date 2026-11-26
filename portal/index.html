@@ -953,29 +953,5 @@ try{matchMedia("(prefers-color-scheme: dark)").addEventListener("change",apply)}
   boot();
 })();
 </script>  <script src="../academy-progress.js"></script>
-<button type="button" id="azHomeBtn2" onclick="event.stopPropagation();var h=location.hostname.indexOf('github.io')>-1?'https://nahom1927.github.io/Azmari-Bet/':location.origin+'/';location.href=h" style="position:fixed;left:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:2147483647;padding:12px 20px;border:0;border-radius:99px;background:#04d9ff;color:#060B1A;font:700 15px system-ui,<script>
-window.azCompress = async function (file, maxBytes) {
-  maxBytes = maxBytes || 1900000;
-  if (!file || !/^image\//.test(file.type)) return null;
-  if (file.size <= maxBytes && /jpeg|png|webp/.test(file.type)) return file;
-  try {
-    var url = URL.createObjectURL(file), img = new Image();
-    await new Promise(function (ok, no) { img.onload = ok; img.onerror = no; img.src = url; });
-    var w = img.naturalWidth, h = img.naturalHeight, scale = Math.min(1, 2400 / Math.max(w, h));
-    for (var round = 0; round < 6; round++) {
-      var c = document.createElement("canvas"); c.width = Math.round(w * scale); c.height = Math.round(h * scale);
-      var x = c.getContext("2d"); x.fillStyle = "#fff"; x.fillRect(0, 0, c.width, c.height); x.drawImage(img, 0, 0, c.width, c.height);
-      var qs = [0.92, 0.86, 0.8, 0.74, 0.68];
-      for (var k = 0; k < qs.length; k++) {
-        var blob = await new Promise(function (r) { c.toBlob(r, "image/jpeg", qs[k]); });
-        if (blob && blob.size <= maxBytes) { URL.revokeObjectURL(url); return blob; }
-      }
-      scale *= 0.85;
-    }
-    URL.revokeObjectURL(url);
-  } catch (e) {}
-  return null;
-};
-</script>
-sans-serif;box-shadow:0 0 14px #04d9ff;cursor:pointer">← Home</button>
+<script src="az-buttons.js?v=1"></script>
 </body></html>
