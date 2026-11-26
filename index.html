@@ -404,11 +404,11 @@ const r=jd%1461,n=r%365+365*Math.floor(r/1460),yr=4*Math.floor(jd/1461)+Math.flo
 return WK[d.getDay()]+"፣ "+MON[Math.floor(n/30)]+" "+(n%30+1)+" ቀን "+yr+" ዓ.ም"}
 function toast(m){clearTimeout(toastT);let e=$(".toast");if(e)e.remove();e=document.createElement("div");e.className="toast";e.textContent=m;document.body.appendChild(e);toastT=setTimeout(()=>e.remove(),2800)}
 function chips(list,cur,act){return `<div class="chips">${list.map(x=>`<button type="button" class="chip ${x===cur?"on":""}" data-act="${act}" data-v="${esc(x)}">${esc(x)}</button>`).join("")}</div>`}
-function openPay(label,amount,done){const m=document.createElement("div");m.className="sheet";m.innerHTML=`<div role="dialog" aria-label="${esc(label)}"><h3>${esc(label)}</h3><p class="mu">${t("total")}: <b>${fmt(amount)} birr</b></p><p class="tt">Send the total to Telebirr +251911898184 or CBE 1000037200534 (Nahom Zewge Tesfaye), then enter the transaction ID below.</p><div class="chips" id="pm"><button type="button" class="chip on" data-m="Telebirr">Telebirr</button><button type="button" class="chip" data-m="CBE">CBE</button></div><label for="rf">${t("ref")}</label><input id="rf" autocomplete="off" autocapitalize="characters"><label for="rt">Time on your receipt (optional)</label><input id="rt" type="time" step="1"><label for="rc">Or attach your receipt (photo or PDF)</label><input id="rc" type="file" accept="image/*,application/pdf"><button class="btn" id="go" type="button">${t("confirm")}</button><button class="btn ln" id="cx" type="button">✕</button></div>`;
+function openPay(label,amount,done){const m=document.createElement("div");m.className="sheet";m.innerHTML=`<div role="dialog" aria-label="${esc(label)}"><h3>${esc(label)}</h3><p class="mu">${t("total")}: <b>${fmt(amount)} birr</b></p><p class="tt">Kindly transfer the total amount by Telebirr to +251911898184, or to CBE account 1000037200534 (account holder: Nahom Zewge Tesfaye). Then enter your transaction ID below and submit it for verification.</p><div class="chips" id="pm"><button type="button" class="chip on" data-m="Telebirr">Telebirr</button><button type="button" class="chip" data-m="CBE">CBE</button></div><label for="rf">${t("ref")}</label><input id="rf" autocomplete="off" autocapitalize="characters"><label for="rt">Time on your receipt (optional)</label><input id="rt" type="time" step="1"><label for="rc">Or attach your receipt (photo or PDF)</label><input id="rc" type="file" accept="image/*,application/pdf"><button class="btn" id="go" type="button">${t("confirm")}</button><button class="btn ln" id="cx" type="button">✕</button></div>`;
 document.body.appendChild(m);let meth="Telebirr";
 m.querySelector("#pm").onclick=e=>{const b=e.target.closest("button");if(!b)return;meth=b.dataset.m;m.querySelectorAll("#pm .chip").forEach(c=>c.classList.toggle("on",c===b))};
 m.querySelector("#cx").onclick=()=>m.remove();
-m.querySelector("#go").onclick=async()=>{const rv=m.querySelector("#rf").value.trim(),fl=m.querySelector("#rc").files[0];if(!/^[A-Za-z0-9]{6,40}$/.test(rv)){toast("Enter the transaction ID (6-40 letters or numbers)");return}if(!window.azOrder||!window.azCode){toast("Payment system not loaded. Reload the app.");return}const code=window.azCode(amount,label===t("store"));if(!code){toast("Unknown item");return}const gb=m.querySelector("#go");gb.disabled=true;const res=await window.azOrder(code,label,rv,acct,meth,(m.querySelector("#rt")||{}).value||"");if(!res.ok){gb.disabled=false;toast(res.msg);return}m.remove();toast(t("waiting")+" · "+meth+(fl?" · "+fl.name:""));done&&done()}}
+m.querySelector("#go").onclick=async()=>{const rv=m.querySelector("#rf").value.trim(),fl=m.querySelector("#rc").files[0];if(!/^[A-Za-z0-9]{6,40}$/.test(rv)){toast("Please enter a valid transaction ID (6 to 40 letters or numbers).");return}if(!window.azOrder||!window.azCode){toast("Payment system not loaded. Reload the app.");return}const code=window.azCode(amount,label===t("store"));if(!code){toast("Unknown item");return}const gb=m.querySelector("#go");gb.disabled=true;const res=await window.azOrder(code,label,rv,acct,meth,(m.querySelector("#rt")||{}).value||"");if(!res.ok){gb.disabled=false;toast(res.msg);return}m.remove();toast(t("waiting")+" · "+meth+(fl?" · "+fl.name:""));done&&done()}}
 function render(){if(view!=="tuner"&&T.on)stopMic();const n=[["home","🏠"],["academy","🎓"],["store","🛒"],["events","🎫"],["more","☰"]];
 $("#nav").innerHTML=n.map(([k,i])=>`<button type="button" data-go="${k}" class="${view===k||(k==="more"&&["jobs","bands","legends","tuner","live"].includes(view))?"on":""}"><span>${i}</span>${t(k)}</button>`).join("");
 $("#view").innerHTML=V[view]()+devCard();adInit();sndSync();if(render.sv!==view){window.scrollTo(0,0);render.sv=view}}
@@ -467,7 +467,7 @@ document.addEventListener("click",e=>{const im=e.target.closest(".ads img");if(i
 document.addEventListener("keydown",e=>{if(e.key==="Escape"){const o=document.querySelector(".lb");o&&o.remove()}});
 function academyCoursesHTML(){return `<section class="academy-courses"><h2>🎓 ${t("coursesTitle")}</h2><p class="mu">The AZMARI MUSIC ACADEMY follows a 48-week curriculum across Foundation, Intermediate and Advanced levels. Your instructor records lesson progress; students can view their progress in the secure Student Portal. Progress is read-only for students.</p><div class="card"><b>Four learning pillars</b><p class="mu">Melody · Harmony · Rhythm · Solfège</p><b>Three levels</b><p class="mu">Level 1: Weeks 1–12 · Level 2: Weeks 13–24 · Level 3: Weeks 25–48</p><a class="btn" href="portal/" style="display:inline-block;text-decoration:none">Open Student / Instructor Portal</a></div></section>`}
 const V={
-home(){return `${azLive()}<div class="card hero"><div class="notes" aria-hidden="true">${["♪","♫","♬","♩","♪","♫","♬"].map((n,i)=>`<span style="--x:${8+i*13}%;--d:${(i*1.1).toFixed(1)}s;--t:${6+(i%3)*1.5}s;--s:${14+(i%4)*5}px">${n}</span>`).join("")}</div><div class="wrow"><h2 aria-label="${esc(t("welcome"))}">${wl(t("welcome"))}</h2><span class="wbadge"><svg class="wlg" aria-hidden="true"><use href="#logo"/></svg></span></div><p>አዝማሪ ቤት · Music for Ethiopia</p><div class="eq" aria-hidden="true">${[0,1,2,3,4,5,6,7,8].map(i=>`<i style="--d:${(i*.13).toFixed(2)}s;--h:${[.5,.9,.6,1,.7,.95,.55,.85,.65][i]}"></i>`).join("")}</div><span class="date">📅 ${ethDate()}</span><button type="button" class="snd" id="snd" aria-pressed="true">🎹 Tap to play music</button></div>${adHTML()}${acct?"":`<div class="card"><b>Create your account</b><p class="mu">Confirm your location to upload, post or pay.</p><button class="btn" data-act="acct">Create account</button></div>`}
+home(){return `<div class="card hero"><div class="notes" aria-hidden="true">${["♪","♫","♬","♩","♪","♫","♬"].map((n,i)=>`<span style="--x:${8+i*13}%;--d:${(i*1.1).toFixed(1)}s;--t:${6+(i%3)*1.5}s;--s:${14+(i%4)*5}px">${n}</span>`).join("")}</div><div class="wrow"><h2 aria-label="${esc(t("welcome"))}">${wl(t("welcome"))}</h2><span class="wbadge"><svg class="wlg" aria-hidden="true"><use href="#logo"/></svg></span></div><p>አዝማሪ ቤት · Music for Ethiopia</p><div class="eq" aria-hidden="true">${[0,1,2,3,4,5,6,7,8].map(i=>`<i style="--d:${(i*.13).toFixed(2)}s;--h:${[.5,.9,.6,1,.7,.95,.55,.85,.65][i]}"></i>`).join("")}</div><span class="date">📅 ${ethDate()}</span><button type="button" class="snd" id="snd" aria-pressed="true">🎹 Tap to play music</button></div>${adHTML()}${azLive()}${acct?"":`<div class="card"><b>Create your account</b><p class="mu">Confirm your location to upload, post or pay.</p><button class="btn" data-act="acct">Create account</button></div>`}
 <div class="grid"><button class="tile" data-go="academy"><b>🎓</b>${t("academy")}</button><button class="tile" data-go="store"><b>🛒</b>${t("store")}</button><button class="tile" data-go="jobs"><b>💼</b>${t("jobs")}</button><button class="tile" data-go="events"><b>🎫</b>${t("events")}</button><button class="tile" data-go="bands"><b>🥁</b>Bands</button><button class="tile" data-go="legends"><b>👑</b>Legends</button><button class="tile" data-go="tuner" style="grid-column:1/-1"><b>🎸</b>Tuner · Guitar and Bass</button></div>
 <div class="card" style="margin-top:12px">${vow()}</div><div class="card"><h3>New members</h3>${who("Selam Tadesse","Singer · Addis Ababa")}${who("Chala Gemechu","Kebero player · Adama")}${who("Amina Yusuf","Vocal student · Jigjiga")}</div>`},
 academy(){const r=S.reg;
@@ -500,8 +500,7 @@ const sample=[{n:"Music night",k:5,o:"Tigist Mulugeta"},{n:"Azmari evening",k:4,
 if(e.title)sample.push({n:e.title,k:e.tier,me:1});sample.sort((a,b)=>b.k-a.k);
 return `<h2>${t("events")}</h2><p class="mu">Choose a tier. Higher tiers show first on the home page and in search.</p>
 ${azFramePicker()}${azEvArea()}<div class="azpr azin">${TIERS.map(x=>`<button type="button" class="tier k${x.k} ${x.k===e.tier?"on":""}" data-act="tier" data-v="${x.k}"><div><b>${x.n}</b><div class="tt">${x.d} days · ${x.x}</div></div><span class="p">${fmt(x.p)}</span></button>`).join("")}
-</div><label for="et">Event name</label><input id="et" data-f="evtitle" value="${esc(e.title)}" placeholder="Music night">
-${azEvInfo("event")}<button class="btn" data-act="evpay">${t("paynow")} · ${fmt(cur.p)} birr</button>
+</div>${azEvInfo("event")}<button class="btn" data-act="evpay">${t("paynow")} · ${fmt(cur.p)} birr</button>
 ${azRenderPublicCards("event")}
 <h3 style="margin-top:18px">Preview order</h3>${sample.map(x=>`<div class="card row" style="${x.me?"border-color:var(--gr)":""}"><div><b>${esc(x.n)}</b><div class="mu">${x.me?"You":"by "+x.o}</div></div><span class="badge">${TIERS.find(y=>y.k===x.k).n}</span></div>`).join("")}`},
 tuner(){return `<h2>Tuner</h2>${setKrar()||""}${chips(Object.keys(TUN),T.inst,"tn_inst")}<div class="card"><div class="big" id="tn">–</div><div class="mu" style="text-align:center" id="th">Tap Listen, then play one string</div><div class="meterT"><i id="nd"></i></div><div class="row"><span class="mu">♭ flat</span><span class="mu" style="text-align:center" id="tc">0 cents</span><span class="mu" style="text-align:right">sharp ♯</span></div><button class="btn ${T.on?"is-listening":""}" data-act="tn_mic" aria-pressed="${T.on?"true":"false"}">${T.on?"🔴 "+t("stopListening"):"🎙️ "+t("listenMic")}</button><p class="mic-status ${T.on?"active":""}" role="status">${T.on?"● "+t("stopListening"):t("micHelp")}</p></div><h3>Reference tones</h3><div class="grid">${TUN[T.inst].map(s=>`<button class="tile" data-act="tn_play" data-v="${s[1]}" style="min-height:64px"><b style="font-size:20px">${s[0]}</b><span class="mu">${s[1]} Hz</span></button>`).join("")}</div><p class="tt">Strings go from lowest to highest. Tune until the needle is in the middle. Use a quiet room and hold the phone close to the instrument. Low-frequency instruments may produce overtones; the tuner estimates the fundamental note.</p>${T.inst==="Begena (10-string)"?`<p class="tt">Begena reference set: these ten low-to-high pitches are a starting reference only, not a claim of one universal Orthodox Begena tuning. Confirm the tuning with your teacher or instrument tradition.</p>`:T.inst.startsWith("Krar")?`<p class="tt">Krar: traditional tuning is done by ear and is not exactly equal-tempered. "Krar (Tizita)" is C D E, G A, then the octave C, starting from middle C (no F). "Krar (Tizita minor)" is C D D♯, G G♯, then the octave C.  "Krar (free)" simply shows any note you play. Bati, Ambassel and Anchihoye are written differently by different teachers, so confirm them with a krar teacher before they are added.</p>`:""}`},
@@ -518,11 +517,11 @@ let AZ_POSTS_LAST_FETCH = 0;
 
 /* AZ-EV-FRAMES */
 const AZ_FRAMES=[
-{k:"concert",n:"Concert / Music",f:[["artist","Artist"],["date","Date"],["time","Time"],["venue","Venue"],["price","Ticket price (birr)"],["vip","VIP price (birr)"]]},
-{k:"party",n:"Wedding / Party",f:[["host","Host"],["date","Date"],["venue","Venue"],["dress","Dress code"],["rsvp","RSVP phone"]]},
-{k:"sports",n:"Sports",f:[["teams","Teams"],["date","Date"],["stadium","Stadium"],["price","Ticket price (birr)"],["gate","Gate time"]]},
+{k:"concert",n:"Concert / Music",f:[["artist","Artist"],["date","Date"],["time","Time"],["price","Ticket price (birr)"],["vip","VIP price (birr)"]]},
+{k:"party",n:"Wedding / Party",f:[["host","Host"],["date","Date"],["dress","Dress code"]]},
+{k:"sports",n:"Sports",f:[["teams","Teams"],["date","Date"],["price","Ticket price (birr)"],["gate","Gate time"]]},
 {k:"workshop",n:"Workshop / Training",f:[["topic","Topic"],["speaker","Speaker"],["date","Date"],["seats","Seats"],["fee","Fee (birr)"],["incl","What is included"]]},
-{k:"cultural",n:"Religious / Cultural",f:[["occasion","Occasion"],["date","Date"],["place","Place"],["fee","Free or donation"],["contact","Contact"]]},
+{k:"cultural",n:"Religious / Cultural",f:[["occasion","Occasion"],["date","Date"],["fee","Free or donation"]]},
 {k:"expo",n:"Business / Expo",f:[["company","Company"],["date","Date"],["price","Ticket price (birr)"],["schedule","Schedule"]]}];
 function azPolicy(){
   const tiers=TIERS.map(x=>x.n+": "+fmt(x.p)+" birr for "+x.d+" days ("+x.x+")").join("; ");
@@ -614,7 +613,7 @@ function azLive(){
   try{
     if(typeof azLoadPublicPosts==="function")azLoadPublicPosts();
     var all=Array.isArray(AZ_PUBLIC_POSTS)?AZ_PUBLIC_POSTS:[];
-    var ev=all.filter(function(r){return r&&String(r.kind||r.post_kind||"")==="event"}).sort(function(a,b){return azTier(b)-azTier(a)}).slice(0,3);
+    var ev=all.filter(function(r){return r&&String(r.kind||r.post_kind||"")==="event"}).sort(function(a,b){return azTier(b)-azTier(a)});
     if(!ev.length)return "";
     var ids={};ev.forEach(function(r){ids[r.id]=1});
     var h=azRenderPublicCards("event",function(it,row){return !!ids[row.id]});
@@ -642,10 +641,10 @@ Object.assign(L.ar,{ev_photos:"الصور (8:9، حتى 3)",ev_add:"أضف صو�
 function azEvTop(){
   var all=Array.isArray(AZ_PUBLIC_POSTS)?AZ_PUBLIC_POSTS:[];
   var rows=all.filter(function(r){var d=r&&r.data&&typeof r.data==="object"?r.data:null;return d&&Array.isArray(d.photos)&&d.photos.filter(Boolean).length}).sort(function(a,b){return azTier(b)-azTier(a)}).slice(0,8);
-  if(!rows.length)return '<div class="azsl" data-n="1" style="align-items:center;justify-content:center;max-width:100%"><span class="mu" style="padding:12px;text-align:center">'+esc(t("ev_here"))+'</span></div>';
+  if(!rows.length)return '<div class="azsl" data-n="1" style="align-items:center;justify-content:center;max-width:100%"></div>';
   return '<div class="azsl" data-n="'+rows.length+'" style="max-width:100%">'+rows.map(function(r){
     var d=r.data,u=d.photos.filter(Boolean)[0],ti=d.title||d.desc||"";
-    return '<div class="azsl-i" style="position:relative"><img src="'+esc(u)+'" alt="'+esc(ti)+'" loading="lazy"><div style="position:absolute;left:0;right:0;bottom:0;padding:8px 10px;background:rgba(0,0,0,.55);color:#fff;font-size:14px;font-weight:600">'+esc(ti)+'</div></div>';
+    return '<div class="azsl-i" style="position:relative"><img src="'+esc(u)+'" alt="'+esc(ti)+'" loading="lazy"></div>';
   }).join("")+'</div>';
 }
 function azMediaEvent(k){
@@ -668,7 +667,7 @@ function azMediaEvent(k){
 /* AZ-EV169 */
 (function(){var st=document.createElement("style");st.textContent=".azsl.az16{aspect-ratio:16/7;max-width:100%}.azpr{display:flex;flex-wrap:nowrap;gap:6px;overflow-x:auto;margin:8px 0;scrollbar-width:none}.azpr::-webkit-scrollbar{display:none}.azpr .tier{flex:0 0 auto;width:auto!important;padding:4px 10px!important;gap:8px;font-size:12px}.azpr .tier b,.azpr .tier .p{font-size:12px}.azpr .tier .tt{display:none}";document.head.appendChild(st);
 document.addEventListener("click",function(e){var b=e.target.closest&&e.target.closest('[data-act="mp"]');if(b)window.AZ_CROP_R=b.getAttribute("data-v")==="event"?[16,7]:[8,9]},true);})();
-function azEvInfo(k){var d=D[k]||{};return infoUI(k)+'<div class="card"><label class="ck"><input type="checkbox" data-d="'+k+'|ok" '+(d.ok?"checked":"")+'> <span>'+esc(t("ev_rules"))+'</span></label></div>'}
+function azEvInfo(k){var d=D[k]||{};return '<div class="card"><label class="ck"><input type="checkbox" data-d="'+k+'|ok" '+(d.ok?"checked":"")+'> <span>'+esc(t("ev_rules"))+'</span></label></div>'}
 
 /* AZ-EVUI */
 (function(){var st=document.createElement("style");st.textContent=".azdd{margin:8px 0}.azdd summary{list-style:none;cursor:pointer;padding:10px 12px;border:1px solid var(--ln);border-radius:12px;background:var(--sf);color:var(--ink);font-weight:600}.azdd summary::-webkit-details-marker{display:none}.azdd[open] summary{border-color:var(--gr)}.azdd .chips{padding:8px 0}.azpr.azin{position:relative;z-index:2;margin:-42px 0 10px;padding:0 8px 6px}";document.head.appendChild(st)})();
@@ -677,6 +676,8 @@ function azFramePicker(){
   var chips=AZ_FRAMES.map(function(x){return '<button type="button" class="chip'+(cur&&cur.k===x.k?' on':'')+'" data-act="frame" data-v="'+x.k+'">'+esc(t("fr_"+x.k))+'</button>'}).join("");
   var fields="";
   if(cur){var v=D.evf||{};fields=cur.f.map(function(p){return '<label>'+esc(azFL(cur.k,p))+'</label><input class="fi" data-d="evf|'+p[0]+'" value="'+esc(v[p[0]]||"")+'" autocomplete="off">'}).join("")}
+  var ed=D.event||(D.event={});if(ed.con===undefined&&acct)ed.con=acct.phone;
+  fields+='<label>'+esc(t("fl_loc"))+'</label><input class="fi" data-d="event|loc" maxlength="80" value="'+esc(ed.loc||"")+'" autocomplete="off"><label>'+esc(t("fl_con"))+'</label><input class="fi" data-d="event|con" maxlength="80" value="'+esc(ed.con||"")+'" autocomplete="off">';
   return '<details class="azdd"><summary>\u2630 '+esc(t("tpl"))+(cur?': '+esc(t("fr_"+cur.k)):'')+' \u25BE</summary><div class="chips">'+chips+'</div></details>'+(fields?'<div class="card">'+fields+'</div>':'');
 }
 function azEvArea(){
@@ -684,7 +685,7 @@ function azEvArea(){
   if(n){sl='<div class="azsl az16" data-n="'+n+'">'+own.map(function(u,i){return '<div class="azsl-i"><img src="'+esc(u)+'" alt="Photo '+(i+1)+'"></div>'}).join("")+'</div>'}
   else{sl=azEvTop().replace('class="azsl"','class="azsl az16"')}
   var h='<div style="position:relative;margin:8px 0 0">'+sl;
-  if(n<3)h+='<button type="button" class="chip" data-act="mp" data-v="event" style="position:absolute;right:8px;top:8px;z-index:2;background:var(--sf);color:var(--ink)">\uFF0B '+esc(t("ev_add"))+' ('+n+'/3)</button>';
+  if(n<3)h+='<button type="button" class="chip" data-act="mp" data-v="event" aria-label="'+esc(t("ev_add"))+'" style="position:absolute;right:8px;top:8px;z-index:2;background:var(--sf);color:var(--ink);font-size:18px;font-weight:700;padding:6px 16px">+'+(3-n)+'</button>';
   if(n)h+='<div style="position:absolute;left:8px;top:8px;z-index:2;display:flex;gap:4px">'+own.map(function(u,i){return '<button type="button" class="chip" data-act="mdel" data-v="event|p|'+i+'" aria-label="'+esc(t("ev_rm"))+' '+(i+1)+'" style="background:var(--sf);color:var(--ink);padding:2px 8px">\u2715 '+(i+1)+'</button>'}).join("")+'</div>';
   return h+'</div>';
 }
@@ -721,6 +722,30 @@ Object.assign(L.so,{fr_movie:"Filim",fl_movie:"Magaca filimka",fl_cinema:"Shinee
 Object.assign(L.ti,{fr_movie:"ፊልሚ",fl_movie:"ስም ፊልሚ",fl_cinema:"ሲነማ",fl_lang:"ቋንቋ",fl_genre:"ዓይነት",fl_age:"ደረጃ ዕድመ"});
 Object.assign(L.ar,{fr_movie:"فيلم",fl_movie:"اسم الفيلم",fl_cinema:"السينما",fl_lang:"اللغة",fl_genre:"النوع",fl_age:"التصنيف العمري"});
 setTimeout(function(){try{if(Array.isArray(AZ_FRAMES)&&!AZ_FRAMES.some(function(x){return x.k==="movie"})){AZ_FRAMES.push({k:"movie",n:"Movie",f:[["movie","Movie title"],["cinema","Cinema"],["date","Date"],["time","Time"],["lang","Language"],["genre","Genre"],["age","Age rating"],["price","Ticket price (birr)"],["vip","VIP price (birr)"]]});render()}}catch(e){}},0);
+
+/* AZ-EVFORM */
+Object.assign(L.en,{fl_loc:"Location",fl_con:"Contact (phone or Telegram)",pay_submit:"Submit payment for verification"});
+Object.assign(L.am,{fl_loc:"ቦታ",fl_con:"አድራሻ"});
+Object.assign(L.om,{fl_loc:"Iddoo",fl_con:"Quunnamtii"});
+Object.assign(L.so,{fl_loc:"Goob",fl_con:"Xiriir"});
+Object.assign(L.ti,{fl_loc:"ቦታ",fl_con:"ርክብ"});
+Object.assign(L.ar,{fl_loc:"المكان",fl_con:"التواصل"});
+function azEvCheck(){
+  var m=M.event,d=D.event||{};
+  if(!m||!m.p.length){toast("Please add at least one photo.");return true}
+  if(!String(d.loc||"").trim()||!String(d.con||"").trim()){toast("Please enter the location and contact.");return true}
+  if(!d.ok){toast("Please confirm the community rules.");return true}
+  var f=D.evf||{},bad=modr(d.loc+" "+Object.keys(f).map(function(k){return f[k]}).join(" "))||modr(d.con,{links:false});
+  if(bad){toast("Blocked: "+bad+". Please change your text.");return true}
+  return false;
+}
+function azEvTitle(){var x=AZ_FRAMES.find(function(f){return f.k===S.ev.frame});return x?x.n:"Event"}
+function azPaidDone(){
+  var m=document.createElement("div");m.className="sheet";
+  m.innerHTML='<div role="dialog" aria-label="Payment submitted"><h3>Payment submitted</h3><p>Thank you. We have received your payment details.</p><p class="mu">Your post will be published after an administrator verifies the payment. Please do not pay again for this post.</p><button type="button" class="btn">Close</button></div>';
+  document.body.appendChild(m);
+  m.querySelector("button").onclick=function(){m.remove()};
+}
 
 function azEventCode(tierNum) {
   const map = {1:"event_basic",2:"event_bronze",3:"event_silver",4:"event_gold",5:"event_platinum"};
@@ -810,7 +835,7 @@ function openPostPay(opts) {
   const label = opts.label, amount = opts.amount, kind = opts.kind, productCode = opts.productCode, postData = opts.data, done = opts.done;
   const m = document.createElement("div");
   m.className = "sheet";
-  m.innerHTML = '<div role="dialog" aria-label="' + esc(label) + '"><h3>' + esc(label) + '</h3><p class="mu">' + t("total") + ': <b>' + fmt(amount) + ' birr</b></p><p class="tt">Send the total to Telebirr +251911898184 or CBE 1000037200534 (Nahom Zewge Tesfaye), then enter the transaction ID below.</p><div class="chips" id="pm"><button type="button" class="chip on" data-m="Telebirr">Telebirr</button><button type="button" class="chip" data-m="CBE">CBE</button></div><label for="prf">' + t("ref") + '</label><input id="prf" autocomplete="off" autocapitalize="characters"><label for="prt">Time on your receipt (optional)</label><input id="prt" type="time" step="1"><button class="btn" id="pgo" type="button">' + t("confirm") + '</button><button class="btn ln" id="pcx" type="button">✕</button></div>';
+  m.innerHTML = '<div role="dialog" aria-label="' + esc(label) + '"><h3>' + esc(label) + '</h3><p class="mu">' + t("total") + ': <b>' + fmt(amount) + ' birr</b></p><p class="tt">Kindly transfer the total amount by Telebirr to +251911898184, or to CBE account 1000037200534 (account holder: Nahom Zewge Tesfaye). Then enter your transaction ID below and submit it for verification.</p><div class="chips" id="pm"><button type="button" class="chip on" data-m="Telebirr">Telebirr</button><button type="button" class="chip" data-m="CBE">CBE</button></div><label for="prf">' + t("ref") + '</label><input id="prf" autocomplete="off" autocapitalize="characters"><label for="prt">Payment time shown on your receipt (optional)</label><input id="prt" type="time" step="1"><button class="btn" id="pgo" type="button">' + esc(t("pay_submit")) + '</button><button class="btn ln" id="pcx" type="button">✕</button></div>';
   document.body.appendChild(m);
   let meth = "Telebirr";
   m.querySelector("#pm").onclick = e => {
@@ -823,7 +848,7 @@ function openPostPay(opts) {
   m.querySelector("#pgo").onclick = async () => {
     const rv = m.querySelector("#prf").value.trim();
     if (!/^[A-Za-z0-9]{6,40}$/.test(rv)) {
-      toast("Enter the transaction ID (6-40 letters or numbers)");
+      toast("Please enter a valid transaction ID (6 to 40 letters or numbers).");
       return;
     }
     if (!window.azSubmitPaidPost) {
@@ -842,7 +867,7 @@ function openPostPay(opts) {
       return;
     }
     m.remove();
-    toast(t("waiting") + " · " + meth);
+    azPaidDone();
     done && done(res);
   };
 }
@@ -855,7 +880,7 @@ case"grade":r.grade=v;break;case"inst":r.inst=v;break;case"ses":r.ses=v;break;ca
 case"regpay":if(!r.name.trim()||!r.phone.trim()||!(r.desc||"").trim()||!(r.loc||"").trim()){toast("Write your name, phone, description and location first");return}{const b=modr(r.name+" "+r.desc+" "+r.loc);if(b){toast("Blocked: "+b+". Please change your text.");return}}openPay(t("academy")+" · "+t("paynow"),15000,()=>{window.azSaveCustomer&&window.azSaveCustomer(r.name,r.phone,(acct&&acct.email)||"",[r.desc,r.loc,r.inst,r.ses,r.grade,r.region].filter(Boolean).join(" | "));r.status="waiting";render()});return;
 case"chkstat":window.azCheckAcademy&&window.azCheckAcademy(r,acct,render,toast,t);return;case"tn_inst":stopMic();T.inst=v;break;case"tn_key":T.tn=[0,2,4,5,7,9][["C","D","E","F","G","A"].indexOf(v)];break;case"ph":PK=v;$("#pf").click();return;case"tn_play":playTone(+v);return;case"tn_mic":toggleMic();return;
 case"postitem":if(needMedia("store"))return;openPay(t("store"),100);return;case"seekpay":if(needMedia("seek"))return;openPay(t("jobs"),100);return;case"bandpay":if(needMedia("band"))return;openPay("Band profile",1599);return;case"acct":openAcct();return;case"rep":toast("Report sent to the admin");return;case"mp":GK=v;$("#pg").click();return;case"mv":GK=v;$("#pv").click();return;case"mdel":{const q=v.split("|");if(q[1]==="p")M[q[0]].p.splice(+q[2],1);else M[q[0]].v=null;break}case"legsend":if(needMedia("legend"))return;toast("Sent for admin review");return;
-case"evpay":if(window.azSubmitPaidPost){if(needMedia("event"))return;if(S.ev.title&&modr(S.ev.title)){toast("Blocked: "+modr(S.ev.title));return}{const curTier=TIERS.find(x=>x.k===S.ev.tier)||TIERS[2];openPostPay({label:t("events")+" · "+curTier.n,amount:curTier.p,kind:"event",productCode:azEventCode(curTier.k),data:azBuildPostData("event",{title:String(S.ev.title||"").trim(),date:S.ev.date||"",tier:curTier.k,tier_name:curTier.n,frame:S.ev.frame||"",fields:Object.assign({},D.evf||{})}),done:()=>{M.event={p:[],v:null};D.event={};D.evf={};S.ev.title="";S.ev.frame="";render();azLoadPublicPosts(true)}})}return;}else{if(needMedia("event"))return;if(S.ev.title&&modr(S.ev.title)){toast("Blocked: "+modr(S.ev.title));return}openPay(t("events")+" · "+TIERS.find(x=>x.k===S.ev.tier).n,TIERS.find(x=>x.k===S.ev.tier).p,render);return;}
+case"evpay":if(window.azSubmitPaidPost){if(azEvCheck())return;{const curTier=TIERS.find(x=>x.k===S.ev.tier)||TIERS[2];openPostPay({label:t("events")+" · "+curTier.n,amount:curTier.p,kind:"event",productCode:azEventCode(curTier.k),data:azBuildPostData("event",{title:azEvTitle(),desc:"",date:S.ev.date||"",tier:curTier.k,tier_name:curTier.n,frame:S.ev.frame||"",fields:Object.assign({},D.evf||{})}),done:()=>{M.event={p:[],v:null};D.event={};D.evf={};S.ev.title="";S.ev.frame="";render();azLoadPublicPosts(true)}})}return;}else{if(needMedia("event"))return;if(S.ev.title&&modr(S.ev.title)){toast("Blocked: "+modr(S.ev.title));return}openPay(t("events")+" · "+TIERS.find(x=>x.k===S.ev.tier).n,TIERS.find(x=>x.k===S.ev.tier).p,render);return;}
 case"call":toast("Contact is not available yet");return;case"offerok":if(needMedia("offer"))return;toast(t("waiting"));return;case"tribute":toast("Tributes are checked by the admin first");return;
 case"jobpost":{const d=D.job||{},ti=(d.title||"").trim(),lo=(d.loc||"").trim(),de=(d.desc||"").trim(),co=(d.con||"").trim();if(!ti||!lo||!co){toast("Write the job title, place and contact first");return}const bd=modr(ti+" "+lo+" "+de);if(bd){toast("Blocked: "+bd+". Please change your text.");return}JOBS.unshift({id:Date.now(),title:ti,loc:lo,desc:de,con:co,by:acct.name,t:Date.now(),mine:1});jobSave();D.job={};toast("Job posted ✓ It is live now");break}
 case"grade":r.grade=v;break;case"inst":r.inst=v;break;case"ses":r.ses=v;break;case"sf":S.store=v;break;case"jt":S.jobs=v==="Job seekers"?"seek":"offer";break;case"open":S.open=S.open==v?null:v;break;case"tier":S.ev.tier=+v;break;
