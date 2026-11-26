@@ -655,7 +655,7 @@ try{matchMedia("(prefers-color-scheme: dark)").addEventListener("change",apply)}
     var nm = inp("Teacher name"), ph = inp("Photo link (https://...)"), fi = el("input"); fi.type = "file"; fi.accept = "image/jpeg,image/png,image/webp";
     var save = btn("Save teacher profile", async function () {
       if (!tS.value) { say(m, "Choose a teacher above.", true); return; }
-      if (fi.files[0]) { var f = fi.files[0]; if (f.size > 2097152) { say(m, "Photo must be under 2 MB.", true); return; } var path = tS.value + "-" + Date.now() + "." + (f.type.split("/")[1] || "jpg"); var up = await sb.storage.from("teacher-photos").upload(path, f, { contentType: f.type, upsert: true }); if (up.error) { say(m, up.error.message, true); return; } ph.value = sb.storage.from("teacher-photos").getPublicUrl(path).data.publicUrl; }
+      if (fi.files[0]) { var f = fi.files[0]; say(m, "Preparing photo..."); f = await azCompress(f, 1900000); if (!f) { say(m, "Could not shrink this photo. Try a JPG or PNG.", true); return; } var path = tS.value + "-" + Date.now() + "." + (f.type.split("/")[1] || "jpg"); var up = await sb.storage.from("teacher-photos").upload(path, f, { contentType: f.type, upsert: true }); if (up.error) { say(m, up.error.message, true); return; } ph.value = sb.storage.from("teacher-photos").getPublicUrl(path).data.publicUrl; }
       var r = await sb.rpc("admin_set_teacher_profile", { p_teacher: tS.value, p_prefix: pre.value, p_name: nm.value.trim(), p_photo: ph.value.trim() });
       if (r.error) { say(m, r.error.message, true); return; }
       say(m, "Saved ✓");
@@ -953,5 +953,29 @@ try{matchMedia("(prefers-color-scheme: dark)").addEventListener("change",apply)}
   boot();
 })();
 </script>  <script src="../academy-progress.js"></script>
-<button type="button" id="azHomeBtn2" onclick="event.stopPropagation();var h=location.hostname.indexOf('github.io')>-1?'https://nahom1927.github.io/Azmari-Bet/':location.origin+'/';location.href=h" style="position:fixed;left:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:2147483647;padding:12px 20px;border:0;border-radius:99px;background:#04d9ff;color:#060B1A;font:700 15px system-ui,sans-serif;box-shadow:0 0 14px #04d9ff;cursor:pointer">← Home</button>
+<button type="button" id="azHomeBtn2" onclick="event.stopPropagation();var h=location.hostname.indexOf('github.io')>-1?'https://nahom1927.github.io/Azmari-Bet/':location.origin+'/';location.href=h" style="position:fixed;left:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:2147483647;padding:12px 20px;border:0;border-radius:99px;background:#04d9ff;color:#060B1A;font:700 15px system-ui,<script>
+window.azCompress = async function (file, maxBytes) {
+  maxBytes = maxBytes || 1900000;
+  if (!file || !/^image\//.test(file.type)) return null;
+  if (file.size <= maxBytes && /jpeg|png|webp/.test(file.type)) return file;
+  try {
+    var url = URL.createObjectURL(file), img = new Image();
+    await new Promise(function (ok, no) { img.onload = ok; img.onerror = no; img.src = url; });
+    var w = img.naturalWidth, h = img.naturalHeight, scale = Math.min(1, 2400 / Math.max(w, h));
+    for (var round = 0; round < 6; round++) {
+      var c = document.createElement("canvas"); c.width = Math.round(w * scale); c.height = Math.round(h * scale);
+      var x = c.getContext("2d"); x.fillStyle = "#fff"; x.fillRect(0, 0, c.width, c.height); x.drawImage(img, 0, 0, c.width, c.height);
+      var qs = [0.92, 0.86, 0.8, 0.74, 0.68];
+      for (var k = 0; k < qs.length; k++) {
+        var blob = await new Promise(function (r) { c.toBlob(r, "image/jpeg", qs[k]); });
+        if (blob && blob.size <= maxBytes) { URL.revokeObjectURL(url); return blob; }
+      }
+      scale *= 0.85;
+    }
+    URL.revokeObjectURL(url);
+  } catch (e) {}
+  return null;
+};
+</script>
+sans-serif;box-shadow:0 0 14px #04d9ff;cursor:pointer">← Home</button>
 </body></html>
