@@ -491,7 +491,12 @@ try{matchMedia("(prefers-color-scheme: dark)").addEventListener("change",apply)}
     var r = await sb.rpc("academy_my_course_progress");
     if (r.error || !r.data) { add(body, el("p", r.error ? r.error.message : "Academy progress is not available yet. Ask the academy administrator to apply the academy-progress.sql setup file.", { className: "msg err" })); return; }
     var d = r.data || {}, base = await sb.rpc("my_progress"), weeks = (d.completed_weeks || []).map(Number), att = base.data && base.data.attendance || {}, attended = Number(att.present || 0) + Number(att.late || 0), attendancePct = Number(att.total || 0) ? attended / Number(att.total) * 100 : 0;
-    academyProgressCard(body, weeks, d.major || "", true);
+    var mi = await sb.rpc("my_instructors"), mcs = mi.data || [], mj = mcs.length ? mcs.map(function (x) { return x.course; }).join(", ") : (d.major || "");
+    academyProgressCard(body, weeks, mj, true);
+    var cc = card(); add(cc, el("h3", "📚 My courses"));
+    if (!mcs.length) add(cc, el("p", "No course assigned yet.", { className: "mu" }));
+    mcs.forEach(function (x) { add(cc, el("p", x.course + " — " + ((x.prefix || "") + " " + (x.name || "")).trim())); });
+    body.appendChild(cc);
     /* gradeBarsCard */
     var gr = (base.data && base.data.grades || []).filter(function (x) { return x.score != null; });
     var gc = card(); add(gc, el("h3", "📊 Grades"));
@@ -525,7 +530,9 @@ try{matchMedia("(prefers-color-scheme: dark)").addEventListener("change",apply)}
       var q = await sb.rpc("academy_staff_get_course_progress", { p_student_no: who.value });
       if (q.error) { say(m, q.error.message + " · If this is the first setup, run supabase/academy-progress.sql in Supabase SQL Editor.", true); return; }
       completed = (q.data && q.data.completed_weeks || []).map(Number);
-      var major = (selected && selected.instrument) || (q.data && q.data.major) || "";
+      var asr = await sb.rpc("admin_list_assignments"), arr = (asr.data || []).filter(function (x) { return x.student_no === who.value; });
+      if (!arr.length) { var msr = await sb.rpc("my_students"); arr = (msr.data || []).filter(function (x) { return x.student_no === who.value; }); }
+      var major = arr.map(function (x) { return x.course; }).join(", ") || (selected && selected.instrument) || (q.data && q.data.major) || "";
       var c = card(); add(c, el("h3", (selected ? selected.name : who.value) + " · " + who.value), el("p", "Major course: " + (major || "Not selected"), { className: "mu" }));
       add(c, el("p", "Tick a week only after the instructor has assessed the student's work. This updates the student's read-only progress view.", { className: "mu" }));
       ACADEMY_LEVELS.forEach(function (lv) {
@@ -596,7 +603,7 @@ try{matchMedia("(prefers-color-scheme: dark)").addEventListener("change",apply)}
   function staffView(role) {
     clear(app); shell(role);
     var items = [["Students", studentsTab], ["Academy progress", academyStaffTab], ["Exam papers", examsTab], ["Exam results", examResultsTab], ["Attendance", attendanceTab], ["Grades", gradesTab], ["Codes", codesTab], ["Lessons", lessonsTab]];
-    if (role === "admin") { items.unshift(["Assign instructor", assignTab]); items.unshift(["Applications", applicationsTab]); items.push(["Payments", paymentsTab], ["Register", registerTab], ["Team", teamTab]); }
+    if (role === "admin") { items.push(["My students", myStudentsTab]); items.unshift(["Assign instructor", assignTab]); items.unshift(["Applications", applicationsTab]); items.push(["Payments", paymentsTab], ["Register", registerTab], ["Team", teamTab]); }
     tabbed(items);
   }
   async function overview() { var r = await sb.rpc("admin_overview"); return r.error ? { err: r.error.message } : { data: r.data }; }
@@ -660,6 +667,15 @@ try{matchMedia("(prefers-color-scheme: dark)").addEventListener("change",apply)}
       var t = el("div"); add(t, el("h3", ((x.prefix || "") + " " + (x.name || "")).trim()), el("p", x.course, { className: "mu" }));
       add(row, pic, t); add(c, row); add(body, c);
     });
+  }
+
+  async function myStudentsTab(body) {
+    var r = await sb.rpc("my_students");
+    if (r.error) { add(body, el("p", r.error.message, { className: "msg err" })); return; }
+    if (!(r.data || []).length) { add(body, el("p", "No students assigned to you yet.", { className: "mu" })); return; }
+    var c = card(); add(c, el("h3", "My students"));
+    r.data.forEach(function (x) { add(c, el("p", x.student_no + " · " + (x.student_name || "") + " — " + x.course)); });
+    add(body, c);
   }
 
   async function studentsTab(body) {
