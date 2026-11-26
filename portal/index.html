@@ -492,6 +492,21 @@ try{matchMedia("(prefers-color-scheme: dark)").addEventListener("change",apply)}
     if (r.error || !r.data) { add(body, el("p", r.error ? r.error.message : "Academy progress is not available yet. Ask the academy administrator to apply the academy-progress.sql setup file.", { className: "msg err" })); return; }
     var d = r.data || {}, base = await sb.rpc("my_progress"), weeks = (d.completed_weeks || []).map(Number), att = base.data && base.data.attendance || {}, attended = Number(att.present || 0) + Number(att.late || 0), attendancePct = Number(att.total || 0) ? attended / Number(att.total) * 100 : 0;
     academyProgressCard(body, weeks, d.major || "", true);
+    /* gradeBarsCard */
+    var gr = (base.data && base.data.grades || []).filter(function (x) { return x.score != null; });
+    var gc = card(); add(gc, el("h3", "📊 Grades"));
+    if (!gr.length) add(gc, el("p", "No grades yet.", { className: "mu" }));
+    else {
+      var gsum = 0;
+      gr.forEach(function (x) {
+        var sc = Math.max(0, Math.min(100, Number(x.score))); gsum += sc;
+        var tr = el("div"); tr.style.cssText = "height:8px;border-radius:6px;background:rgba(4,217,255,.18);overflow:hidden;margin:4px 0 12px";
+        var f = el("div"); f.style.cssText = "height:100%;border-radius:6px;background:#04d9ff;box-shadow:0 0 8px #04d9ff;width:" + sc + "%";
+        tr.appendChild(f); add(gc, el("p", x.subject + " · " + sc + "%"), tr);
+      });
+      add(gc, el("p", "Average: " + Math.round(gsum / gr.length) + "%", { className: "mu" }));
+    }
+    body.appendChild(gc);
     var cert = card(); cert.appendChild(el("h3", "🏅 Certificates"));
     function canFinish(end, score) { for (var i=1;i<=end;i++) if (weeks.indexOf(i)<0) return false; return Number(score)>=70; }
     function certificateButton(name, eligible, detail) { var row=el("div"); add(row,el("p",name+" — "+detail,{className:"mu"}), eligible ? btn("Print certificate",function(){printAcademyCertificate(d.name || (base.data && base.data.name) || "Student",name,d.major || "",new Date().toLocaleDateString());},"sm") : el("span","Not yet eligible",{className:"mu"})); cert.appendChild(row); }
@@ -620,14 +635,15 @@ try{matchMedia("(prefers-color-scheme: dark)").addEventListener("change",apply)}
     var b = el("div"), m = msg();
     var pre = el("select");
     ["Ustaz","Mr.","Mrs.","Ms.","Dr.","Teacher"].forEach(function (x) { var o = el("option", x); o.value = x; pre.appendChild(o); });
-    var nm = inp("Teacher name"), ph = inp("Photo link (https://...)");
+    var nm = inp("Teacher name"), ph = inp("Photo link (https://...)"), fi = el("input"); fi.type = "file"; fi.accept = "image/jpeg,image/png,image/webp";
     var save = btn("Save teacher profile", async function () {
       if (!tS.value) { say(m, "Choose a teacher above.", true); return; }
+      if (fi.files[0]) { var f = fi.files[0]; if (f.size > 2097152) { say(m, "Photo must be under 2 MB.", true); return; } var path = tS.value + "-" + Date.now() + "." + (f.type.split("/")[1] || "jpg"); var up = await sb.storage.from("teacher-photos").upload(path, f, { contentType: f.type, upsert: true }); if (up.error) { say(m, up.error.message, true); return; } ph.value = sb.storage.from("teacher-photos").getPublicUrl(path).data.publicUrl; }
       var r = await sb.rpc("admin_set_teacher_profile", { p_teacher: tS.value, p_prefix: pre.value, p_name: nm.value.trim(), p_photo: ph.value.trim() });
       if (r.error) { say(m, r.error.message, true); return; }
       say(m, "Saved ✓");
     }, "full");
-    add(b, el("h3", "Teacher profile (shown to students)"), el("p", "Applies to the teacher chosen above.", { className: "mu" }), lab("Prefix", pre), lab("Name", nm), lab("Photo link", ph), m, save);
+    add(b, el("h3", "Teacher profile (shown to students)"), el("p", "Applies to the teacher chosen above.", { className: "mu" }), lab("Prefix", pre), lab("Name", nm), lab("Upload photo (max 2 MB)", fi), lab("Or photo link", ph), m, save);
     return b;
   }
   async function instructorsTab(body) {
