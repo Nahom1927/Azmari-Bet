@@ -127,45 +127,95 @@ try{matchMedia("(prefers-color-scheme: dark)").addEventListener("change",apply)}
   }
 
   /* ---------- login / sign up ---------- */
+  /* AZ-STUDENT-STAFF-LOGIN: Student (ID + phone) and Staff (email + password) */
   function authView(note) {
     clear(app);
     var box = card(); box.className = "card auth";
     var m = msg(); if (note) say(m, note);
-    var mode = "in";
-    var email = inp("you@example.com", "email"), pass = inp("Password (6+ characters)", "password");
-    var go = btn("Log in", run, "full");
     var tabs = el("div"); tabs.className = "tabs";
-    var tIn = btn("Log in", function () { setMode("in"); }), tUp = btn("Create account", function () { setMode("up"); });
-    add(tabs, tIn, tUp);
-    function setMode(x) {
-      mode = x; tIn.className = x === "in" ? "on" : ""; tUp.className = x === "up" ? "on" : "";
-      go.textContent = x === "in" ? "Log in" : "Create account"; say(m, "");
+    var tSt = btn("Student", function () { setTab("st"); }), tSf = btn("Staff", function () { setTab("sf"); });
+    add(tabs, tSt, tSf);
+    var pane = el("div");
+
+    function setTab(x) {
+      tSt.className = x === "st" ? "on" : ""; tSf.className = x === "sf" ? "on" : "";
+      clear(pane); say(m, "");
+      if (x === "st") studentPane(); else staffPane();
     }
-    async function run() {
-      say(m, "");
-      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value.trim())) { say(m, "Enter a valid email.", true); return; }
-      if (pass.value.length < 6) { say(m, "Password needs 6+ characters.", true); return; }
-      go.disabled = true;
-      var r = mode === "in"
-        ? await sb.auth.signInWithPassword({ email: email.value.trim(), password: pass.value })
-        : await sb.auth.signUp({ email: email.value.trim(), password: pass.value });
-      go.disabled = false;
-      if (r.error) { say(m, r.error.message, true); return; }
-      if (!r.data.session) { say(m, "Account created. Check your email to confirm, then log in."); setMode("in"); return; }
-      boot();
+
+    function studentPane() {
+      var id = inp("AZ-26-0001"), ph = inp("Phone you registered with", "tel");
+      id.setAttribute("autocapitalize", "characters");
+      var go = btn("Log in", run, "full");
+      async function run() {
+        say(m, "");
+        if (!id.value.trim()) { say(m, "Write your Student ID.", true); return; }
+        if (!ph.value.trim()) { say(m, "Write your phone number.", true); return; }
+        go.disabled = true;
+        try {
+          var s = await sb.auth.getSession();
+          var u = s.data && s.data.session && s.data.session.user;
+          if (u && !u.is_anonymous) { say(m, "Log out of the other account first.", true); go.disabled = false; return; }
+          if (!u) {
+            var a = await sb.auth.signInAnonymously();
+            if (a.error) {
+              say(m, /nonymous/i.test(a.error.message) ? "Student login is not switched on yet. Ask the school." : a.error.message, true);
+              go.disabled = false; return;
+            }
+          }
+          var r = await sb.rpc("student_login", { p_student_no: id.value, p_phone: ph.value });
+          go.disabled = false;
+          if (r.error) { say(m, r.error.message, true); return; }
+          if (!r.data) { say(m, "Student ID or phone number is not correct.", true); return; }
+          boot();
+        } catch (e) {
+          go.disabled = false;
+          say(m, "Something went wrong. Check your internet and try again.", true);
+        }
+      }
+      ph.addEventListener("keydown", function (e) { if (e.key === "Enter") run(); });
+      add(pane, el("p", "Enter the Student ID and phone number the school registered.", { className: "mu" }), lab("Student ID", id), lab("Phone", ph), go);
     }
-    var forgot = btn("Forgot password?", async function () {
-      if (!email.value.trim()) { say(m, "Type your email first.", true); return; }
-      var r = await sb.auth.resetPasswordForEmail(email.value.trim(), { redirectTo: location.href.split("#")[0] });
-      say(m, r.error ? r.error.message : "Reset link sent. Check your email.", !!r.error);
-    }, "ln sm");
-    pass.addEventListener("keydown", function (e) { if (e.key === "Enter") run(); });
-    add(box, brand(), el("p", "Students, teachers and admins log in here.", { className: "mu" }), tabs, lab("Email", email), lab("Password", pass), go, forgot, m);
-    app.appendChild(box); setMode("in");
+
+    function staffPane() {
+      var mode = "in";
+      var email = inp("you@example.com", "email"), pass = inp("Password (6+ characters)", "password");
+      var go = btn("Log in", run, "full");
+      var sw = btn("New teacher? Create account", function () {
+        mode = mode === "in" ? "up" : "in";
+        go.textContent = mode === "in" ? "Log in" : "Create account";
+        sw.textContent = mode === "in" ? "New teacher? Create account" : "I already have an account";
+        say(m, "");
+      }, "ln sm");
+      async function run() {
+        say(m, "");
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value.trim())) { say(m, "Enter a valid email.", true); return; }
+        if (pass.value.length < 6) { say(m, "Password needs 6+ characters.", true); return; }
+        go.disabled = true;
+        var r = mode === "in"
+          ? await sb.auth.signInWithPassword({ email: email.value.trim(), password: pass.value })
+          : await sb.auth.signUp({ email: email.value.trim(), password: pass.value });
+        go.disabled = false;
+        if (r.error) { say(m, r.error.message, true); return; }
+        if (!r.data.session) { say(m, "Account created. Check your email to confirm, then log in."); return; }
+        boot();
+      }
+      var forgot = btn("Forgot password?", async function () {
+        if (!email.value.trim()) { say(m, "Type your email first.", true); return; }
+        var r = await sb.auth.resetPasswordForEmail(email.value.trim(), { redirectTo: location.href.split("#")[0] });
+        say(m, r.error ? r.error.message : "Reset link sent. Check your email.", !!r.error);
+      }, "ln sm");
+      pass.addEventListener("keydown", function (e) { if (e.key === "Enter") run(); });
+      add(pane, el("p", "Teachers and admins log in here.", { className: "mu" }), lab("Email", email), lab("Password", pass), go, forgot, sw);
+    }
+
+    add(box, brand(), tabs, pane, m);
+    app.appendChild(box); setTab("st");
   }
 
   /* ---------- link Student ID ---------- */
   function claimView() {
+    sb.auth.getSession().then(function (q) { var u = q.data && q.data.session && q.data.session.user; if (u && u.is_anonymous) authView(); });
     clear(app); shell("none");
     var c = card(), m = msg(), id = inp("AZ-26-0001"), ph = inp("Phone you registered with", "tel");
     add(c, el("h2", "Link your Student ID"),
@@ -479,7 +529,7 @@ try{matchMedia("(prefers-color-scheme: dark)").addEventListener("change",apply)}
       add(c, btn("Save instructor progress", async function () {
         function examValue(input) { if (input.value.trim() === "") return null; var n = Number(input.value); return Number.isFinite(n) && n >= 0 && n <= 100 ? n : NaN; }
         var v1=examValue(e1),v2=examValue(e2),vf=examValue(ef); if ([v1,v2,vf].some(function(x){return Number.isNaN(x);})) { say(m,"Exam scores must be between 0 and 100.",true); return; }
-        var save = await sb.rpc("academy_staff_set_course_progress", { p_student_no: who.value, p_major: major, p_completed_weeks: completed.sort(function (a,b) { return a-b; }), p_note: "Instructor-updated curriculum progress", p_level1_exam_score:v1, p_level2_exam_score:v2, p_final_exam_score:vf });
+        var save = await sb.rpc("academy_v2_staff_set_course_progress", { p_student_no: who.value, p_major: major, p_completed_weeks: completed.sort(function (a,b) { return a-b; }), p_note: "Instructor-updated curriculum progress", p_level1_exam_score:v1, p_level2_exam_score:v2, p_final_exam_score:vf });
         if (save.error) say(m, save.error.message, true); else say(m, "Progress saved. The student can now view the updated red progress bars.");
       }, "full"));
       editor.appendChild(c);
