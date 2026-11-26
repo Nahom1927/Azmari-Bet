@@ -676,8 +676,8 @@ function azFramePicker(){
   var chips=AZ_FRAMES.map(function(x){return '<button type="button" class="chip'+(cur&&cur.k===x.k?' on':'')+'" data-act="frame" data-v="'+x.k+'">'+esc(t("fr_"+x.k))+'</button>'}).join("");
   var fields="";
   if(cur){var v=D.evf||{};fields=cur.f.map(function(p){return '<label>'+esc(azFL(cur.k,p))+'</label><input class="fi" data-d="evf|'+p[0]+'" value="'+esc(v[p[0]]||"")+'" autocomplete="off">'}).join("")}
-  var ed=D.event||(D.event={});if(ed.con===undefined&&acct)ed.con=acct.phone;
-  fields+='<label>'+esc(t("fl_loc"))+'</label><input class="fi" data-d="event|loc" maxlength="80" value="'+esc(ed.loc||"")+'" autocomplete="off"><label>'+esc(t("fl_con"))+'</label><input class="fi" data-d="event|con" maxlength="80" value="'+esc(ed.con||"")+'" autocomplete="off">';
+  if(cur){var ed=D.event||(D.event={});if(ed.con===undefined&&acct)ed.con=acct.phone;
+  fields+='<label>'+esc(t("fl_loc"))+'</label><input class="fi" data-d="event|loc" maxlength="80" value="'+esc(ed.loc||"")+'" autocomplete="off"><label>'+esc(t("fl_con"))+'</label><input class="fi" data-d="event|con" maxlength="80" value="'+esc(ed.con||"")+'" autocomplete="off">';}
   return '<details class="azdd"><summary>\u2630 '+esc(t("tpl"))+(cur?': '+esc(t("fr_"+cur.k)):'')+' \u25BE</summary><div class="chips">'+chips+'</div></details>'+(fields?'<div class="card">'+fields+'</div>':'');
 }
 function azEvArea(){
@@ -732,6 +732,7 @@ Object.assign(L.ti,{fl_loc:"ቦታ",fl_con:"ርክብ"});
 Object.assign(L.ar,{fl_loc:"المكان",fl_con:"التواصل"});
 function azEvCheck(){
   var m=M.event,d=D.event||{};
+  if(!S.ev.frame){toast("Please choose an event template.");return true}
   if(!m||!m.p.length){toast("Please add at least one photo.");return true}
   if(!String(d.loc||"").trim()||!String(d.con||"").trim()){toast("Please enter the location and contact.");return true}
   if(!d.ok){toast("Please confirm the community rules.");return true}
