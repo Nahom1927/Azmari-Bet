@@ -4,8 +4,8 @@
     b.type = "button"; b.id = id; b.textContent = label;
     var st = b.style;
     st.position = "fixed"; st[side] = "16px"; st.bottom = "16px"; st.zIndex = "2147483647";
-    st.padding = "12px 20px"; st.border = "0"; st.borderRadius = "99px";
-    st.background = "#04d9ff"; st.color = "#060B1A"; st.fontWeight = "700"; st.fontSize = "15px";
+    st.padding = "6px 10px"; st.border = "0"; st.borderRadius = "99px";
+    st.background = "#04d9ff"; st.color = "#060B1A"; st.fontWeight = "700"; st.fontSize = "11px";
     st.fontFamily = "system-ui, sans-serif"; st.boxShadow = "0 0 14px #04d9ff"; st.cursor = "pointer";
     document.body.appendChild(b);
     return b;
