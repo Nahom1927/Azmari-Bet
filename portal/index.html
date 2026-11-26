@@ -497,6 +497,16 @@ try{matchMedia("(prefers-color-scheme: dark)").addEventListener("change",apply)}
     if (!mcs.length) add(cc, el("p", "No course assigned yet.", { className: "mu" }));
     mcs.forEach(function (x) { add(cc, el("p", x.course + " — " + ((x.prefix || "") + " " + (x.name || "")).trim())); });
     body.appendChild(cc);
+    var lc = card(); add(lc, el("h3", "📖 My course lessons" + (mj ? " · " + mj : "")));
+    ACADEMY_LEVELS.forEach(function (lv) {
+      var dt = el("details"); dt.appendChild(el("summary", lv.name));
+      ACADEMY_WEEKS.filter(function (w) { return w.week >= lv.from && w.week <= lv.to; }).forEach(function (w) {
+        var dn = weeks.indexOf(w.week) >= 0;
+        add(dt, el("p", (dn ? "✓ " : "○ ") + "Week " + w.week + " · " + w.title, { className: dn ? "ac-done" : "mu" }));
+      });
+      lc.appendChild(dt);
+    });
+    body.appendChild(lc);
     /* gradeBarsCard */
     var gr = (base.data && base.data.grades || []).filter(function (x) { return x.score != null; });
     var gc = card(); add(gc, el("h3", "📊 Grades"));
@@ -603,7 +613,7 @@ try{matchMedia("(prefers-color-scheme: dark)").addEventListener("change",apply)}
   function staffView(role) {
     clear(app); shell(role);
     var items = [["Students", studentsTab], ["Academy progress", academyStaffTab], ["Exam papers", examsTab], ["Exam results", examResultsTab], ["Attendance", attendanceTab], ["Grades", gradesTab], ["Codes", codesTab], ["Lessons", lessonsTab]];
-    if (role === "admin") { items.push(["My students", myStudentsTab]); items.unshift(["Assign instructor", assignTab]); items.unshift(["Applications", applicationsTab]); items.push(["Payments", paymentsTab], ["Register", registerTab], ["Team", teamTab]); }
+    if (role === "admin") { items.push(["My students", myStudentsTab]); items.push(["All lessons", allLessonsTab]); items.unshift(["Assign instructor", assignTab]); items.unshift(["Applications", applicationsTab]); items.push(["Payments", paymentsTab], ["Register", registerTab], ["Team", teamTab]); }
     tabbed(items);
   }
   async function overview() { var r = await sb.rpc("admin_overview"); return r.error ? { err: r.error.message } : { data: r.data }; }
@@ -676,6 +686,16 @@ try{matchMedia("(prefers-color-scheme: dark)").addEventListener("change",apply)}
     var c = card(); add(c, el("h3", "My students"));
     r.data.forEach(function (x) { add(c, el("p", x.student_no + " · " + (x.student_name || "") + " — " + x.course)); });
     add(body, c);
+  }
+
+  async function allLessonsTab(body) {
+    ACADEMY_LEVELS.forEach(function (lv) {
+      var c = card(); add(c, el("h3", lv.name));
+      ACADEMY_WEEKS.filter(function (w) { return w.week >= lv.from && w.week <= lv.to; }).forEach(function (w) {
+        add(c, el("p", "Week " + w.week + " · " + w.title), el("p", w.summary, { className: "mu" }));
+      });
+      add(body, c);
+    });
   }
 
   async function studentsTab(body) {
