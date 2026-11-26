@@ -22,7 +22,7 @@ button.ln{background:transparent;color:var(--ink);border:1px solid var(--ln)}
 button.gd{background:var(--gd);color:#241a00}
 button.sm{padding:6px 10px;font-size:13px;margin:2px}
 button.full{width:100%}
-.tabs{display:flex;gap:6px;overflow-x:auto;margin-bottom:12px;padding-bottom:4px}
+.tabs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;padding-bottom:4px}
 .tabs button{background:var(--sf);color:var(--mu);border:1px solid var(--ln);white-space:nowrap}
 .tabs button.on{background:var(--gr);color:#04210f;border-color:var(--gr)}
 .msg{min-height:20px;color:var(--gd)}.msg.err{color:var(--rd)}
@@ -581,11 +581,40 @@ try{matchMedia("(prefers-color-scheme: dark)").addEventListener("change",apply)}
   function staffView(role) {
     clear(app); shell(role);
     var items = [["Students", studentsTab], ["Academy progress", academyStaffTab], ["Exam papers", examsTab], ["Exam results", examResultsTab], ["Attendance", attendanceTab], ["Grades", gradesTab], ["Codes", codesTab], ["Lessons", lessonsTab]];
-    if (role === "admin") { items.unshift(["Applications", applicationsTab]); items.push(["Payments", paymentsTab], ["Register", registerTab], ["Team", teamTab]); }
+    if (role === "admin") { items.unshift(["Assign instructor", assignTab]); items.unshift(["Applications", applicationsTab]); items.push(["Payments", paymentsTab], ["Register", registerTab], ["Team", teamTab]); }
     tabbed(items);
   }
   async function overview() { var r = await sb.rpc("admin_overview"); return r.error ? { err: r.error.message } : { data: r.data }; }
   function studentSelect(list) { return sel(list.map(function (s) { return [s.student_no, s.student_no + " · " + s.name]; })); }
+
+  async function assignTab(body) {
+    var c = card(), m = msg(), tS = el("select"), cS = el("select"), sS = el("select"), cur = el("div");
+    var t = await sb.rpc("admin_list_teachers");
+    if (t.error) { say(m, t.error.message, true); add(body, add(c, m)); return; }
+    (t.data || []).forEach(function (x) { var o = el("option", x.email); o.value = x.user_id; tS.appendChild(o); });
+    var tr = await sb.from("academy_major_tracks").select("name").eq("active", true);
+    (tr.data || []).forEach(function (x) { var o = el("option", x.name); o.value = x.name; cS.appendChild(o); });
+    var ov = await overview();
+    (ov.data || []).forEach(function (x) { var o = el("option", x.name + " · " + x.student_no + " · " + (x.instrument || "no instrument") + " · " + (x.status || "")); o.value = x.student_no; sS.appendChild(o); });
+    async function load() {
+      clear(cur); var r = await sb.rpc("admin_list_assignments");
+      if (r.error) { add(cur, el("p", r.error.message, { className: "msg err" })); return; }
+      if (!(r.data || []).length) { add(cur, el("p", "None yet.", { className: "mu" })); return; }
+      r.data.forEach(function (x) {
+        var row = el("div", x.student_no + " " + (x.student_name || "") + " → " + x.teacher_email + " (" + x.course + ")");
+        var rm = btn("Remove", async function () { await sb.rpc("admin_unassign_instructor", { p_id: x.id }); load(); }, "ln sm");
+        add(cur, row, rm);
+      });
+    }
+    var go = btn("Assign", async function () {
+      if (!tS.value || !sS.value) { say(m, "Choose a teacher and a student.", true); return; }
+      var r = await sb.rpc("admin_assign_instructor", { p_teacher: tS.value, p_student_no: sS.value, p_course: cS.value });
+      if (r.error) { say(m, r.error.message, true); return; }
+      say(m, "Assigned ✓"); load();
+    }, "full");
+    add(c, el("h3", "Assign instructor"), lab("Teacher", tS), lab("Course", cS), lab("Student", sS), m, go, el("h3", "Current assignments"), cur);
+    add(body, c); load();
+  }
 
   async function studentsTab(body) {
     var o = await overview(); if (o.err) { add(body, el("p", o.err, { className: "msg err" })); return; }
