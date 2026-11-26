@@ -255,7 +255,7 @@ try{matchMedia("(prefers-color-scheme: dark)").addEventListener("change",apply)}
   /* ---------- student ---------- */
   function studentView() {
     clear(app); shell("student");
-    tabbed([["My progress", progressTab], ["Academy", academyStudentTab], ["Exams", examsTab], ["Sections", sectionsTab]]);
+    tabbed([["My progress", progressTab], ["Academy", academyStudentTab], ["Exams", examsTab], ["Sections", sectionsTab], ["My instructors", instructorsTab]]);
   }
   async function progressTab(body) {
     var r = await sb.rpc("my_progress");
@@ -612,8 +612,38 @@ try{matchMedia("(prefers-color-scheme: dark)").addEventListener("change",apply)}
       if (r.error) { say(m, r.error.message, true); return; }
       say(m, "Assigned ✓"); load();
     }, "full");
-    add(c, el("h3", "Assign instructor"), lab("Teacher", tS), lab("Course", cS), lab("Student", sS), m, go, el("h3", "Current assignments"), cur);
+    add(c, el("h3", "Assign instructor"), lab("Teacher", tS), lab("Course", cS), lab("Student", sS), m, go, el("h3", "Current assignments"), cur); add(c, profileBox(tS));
     add(body, c); load();
+  }
+
+  function profileBox(tS) {
+    var b = el("div"), m = msg();
+    var pre = el("select");
+    ["Ustaz","Mr.","Mrs.","Ms.","Dr.","Teacher"].forEach(function (x) { var o = el("option", x); o.value = x; pre.appendChild(o); });
+    var nm = inp("Teacher name"), ph = inp("Photo link (https://...)");
+    var save = btn("Save teacher profile", async function () {
+      if (!tS.value) { say(m, "Choose a teacher above.", true); return; }
+      var r = await sb.rpc("admin_set_teacher_profile", { p_teacher: tS.value, p_prefix: pre.value, p_name: nm.value.trim(), p_photo: ph.value.trim() });
+      if (r.error) { say(m, r.error.message, true); return; }
+      say(m, "Saved ✓");
+    }, "full");
+    add(b, el("h3", "Teacher profile (shown to students)"), el("p", "Applies to the teacher chosen above.", { className: "mu" }), lab("Prefix", pre), lab("Name", nm), lab("Photo link", ph), m, save);
+    return b;
+  }
+  async function instructorsTab(body) {
+    var r = await sb.rpc("my_instructors");
+    if (r.error) { add(body, el("p", r.error.message, { className: "msg err" })); return; }
+    if (!(r.data || []).length) { add(body, el("p", "No instructor assigned yet.", { className: "mu" })); return; }
+    r.data.forEach(function (x) {
+      var c = card(), row = el("div");
+      row.style.cssText = "display:flex;gap:14px;align-items:center";
+      var pic;
+      if (x.photo_url && /^https:\/\//i.test(x.photo_url)) { pic = document.createElement("img"); pic.src = x.photo_url; pic.alt = ""; }
+      else { pic = el("div", (x.name || "?").charAt(0).toUpperCase()); pic.style.cssText = "display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:700;background:#233"; }
+      pic.style.width = "72px"; pic.style.height = "72px"; pic.style.borderRadius = "50%"; pic.style.objectFit = "cover"; pic.style.flex = "none";
+      var t = el("div"); add(t, el("h3", ((x.prefix || "") + " " + (x.name || "")).trim()), el("p", x.course, { className: "mu" }));
+      add(row, pic, t); add(c, row); add(body, c);
+    });
   }
 
   async function studentsTab(body) {
