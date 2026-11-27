@@ -53,7 +53,99 @@
   document.head.appendChild(st2);
 
   function chip(k, t) { return '<button class="azb-chip' + (kind === k ? ' on' : '') + '" data-azk="' + k + '">' + t + '</button>'; }
-  function card(a) {
+  var AZB_FXS = ['zin', 'pl', 'sll', 'zout', 'fade', 'pr', 'rot', 'slr', 'pu', 'kb'], AZB_FXI = 0;
+  var st3 = document.createElement('style');
+  st3.textContent =
+    '.azb-neon{border:2px solid #27c4ff;box-shadow:0 0 0 3px #030712,0 0 0 4px #27c4ff,0 0 24px #27c4ff,inset 0 0 18px #27c4ff33;animation:azbGlow 3.2s ease-in-out infinite}' +
+    '@keyframes azbGlow{0%,100%{box-shadow:0 0 0 3px #030712,0 0 0 4px #27c4ff,0 0 14px #27c4ff99,inset 0 0 12px #27c4ff22}50%{box-shadow:0 0 0 3px #030712,0 0 0 4px #5fd8ff,0 0 30px #27c4ff,inset 0 0 22px #27c4ff44}}' +
+    '.azb-neon .azb-name{color:#fff;text-shadow:0 0 10px #27c4ff,0 0 22px #27c4ff88;display:flex;align-items:center;gap:8px}' +
+    '.azb-tick{flex:none;filter:drop-shadow(0 0 6px #27c4ff)}' +
+    '.azb-sub2{font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:#27c4ff;margin:-2px 0 6px}' +
+    '.azb-ss{position:relative;height:240px;overflow:hidden;background:#000;border-bottom:1px solid #27c4ff}' +
+    '.azb-sl{position:absolute;inset:0;opacity:0;transition:opacity .9s ease;overflow:hidden}.azb-sl.on{opacity:1}' +
+    '.azb-sl img{width:100%;height:100%;object-fit:cover;display:block;transform-origin:center}' +
+    '.fx-kb img{animation:azbKb 6s linear forwards}.fx-zin img{animation:azbZin 6s ease-out forwards}.fx-zout img{animation:azbZout 6s ease-out forwards}' +
+    '.fx-pl img{animation:azbPl 6s linear forwards}.fx-pr img{animation:azbPr 6s linear forwards}.fx-pu img{animation:azbPu 6s linear forwards}.fx-rot img{animation:azbRot 6s ease-out forwards}' +
+    '.azb-sl.on.fx-sll{transition:none;animation:azbSL .9s ease-out}.azb-sl.on.fx-slr{transition:none;animation:azbSR .9s ease-out}' +
+    '.azb-sl.fx-sll img,.azb-sl.fx-slr img{animation:azbZin 6s linear forwards}.azb-sl.on.fx-fade{transition:opacity 1.6s}' +
+    '@keyframes azbKb{from{transform:scale(1.05) translate(-2%,-1%)}to{transform:scale(1.2) translate(2%,1%)}}' +
+    '@keyframes azbZin{from{transform:scale(1)}to{transform:scale(1.2)}}@keyframes azbZout{from{transform:scale(1.22)}to{transform:scale(1)}}' +
+    '@keyframes azbPl{from{transform:scale(1.15) translateX(4%)}to{transform:scale(1.15) translateX(-4%)}}@keyframes azbPr{from{transform:scale(1.15) translateX(-4%)}to{transform:scale(1.15) translateX(4%)}}' +
+    '@keyframes azbPu{from{transform:scale(1.15) translateY(4%)}to{transform:scale(1.15) translateY(-4%)}}@keyframes azbRot{from{transform:scale(1.25) rotate(2deg)}to{transform:scale(1) rotate(0)}}' +
+    '@keyframes azbSL{from{transform:translateX(100%)}to{transform:none}}@keyframes azbSR{from{transform:translateX(-100%)}to{transform:none}}' +
+    '@media (prefers-reduced-motion:reduce){.azb-sl,.azb-sl img,.azb-neon{animation:none!important}}' +
+    '.azb-dots{position:absolute;left:0;right:0;bottom:8px;display:flex;justify-content:center;gap:6px;z-index:3}' +
+    '.azb-dots i{width:7px;height:7px;border-radius:50%;background:#ffffff66}.azb-dots i.on{background:#27c4ff;box-shadow:0 0 8px #27c4ff}' +
+    '.azb-info{display:grid;grid-template-columns:1fr 1fr;gap:6px 10px;margin:10px 0}' +
+    '.azb-it{background:#27c4ff14;border:1px solid #27c4ff44;border-radius:10px;padding:6px 10px;font-size:13px;word-break:break-word}' +
+    '.azb-it b{display:block;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:#27c4ff;margin-bottom:2px}' +
+    '.azb-h{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#27c4ff;margin:12px 0 4px}' +
+    '.azb-vid{width:100%;border-radius:12px;border:1px solid #27c4ff;margin:10px 0;max-height:320px;background:#000}' +
+    '.azb-acts{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}.azb-acts a.azb-btn{text-decoration:none;display:inline-block;color:inherit}';
+  document.head.appendChild(st3);
+  function azbTick() {
+    var now = Date.now();
+    document.querySelectorAll('.azb-ss').forEach(function (el) {
+      var sl = el.querySelectorAll('.azb-sl');
+      if (sl.length < 2 || (el._p && el._p > now)) return;
+      var r = el.getBoundingClientRect();
+      if (r.bottom < 0 || r.top > window.innerHeight) return;
+      var i = +el.getAttribute('data-i') || 0, n = (i + 1) % sl.length, nx = sl[n];
+      sl[i].classList.remove('on');
+      nx.className = 'azb-sl'; void nx.offsetWidth;
+      AZB_FXI = (AZB_FXI + 1) % AZB_FXS.length;
+      nx.className = 'azb-sl on fx-' + AZB_FXS[AZB_FXI];
+      el.setAttribute('data-i', n);
+      el.querySelectorAll('.azb-dots i').forEach(function (d, k) { d.className = k === n ? 'on' : ''; });
+    });
+  }
+  if (!window.__azbSS) {
+    window.__azbSS = 1;
+    setInterval(azbTick, 4500);
+    document.addEventListener('pointerdown', function (e) { var s = e.target && e.target.closest && e.target.closest('.azb-ss'); if (s) s._p = Date.now() + 9000; }, true);
+  }
+  var AZB_TICK = '<svg class="azb-tick" viewBox="0 0 24 24" width="22" height="22" role="img" aria-label="Verified by admin"><circle cx="12" cy="12" r="11" fill="#27c4ff"/><path d="M7 12.5l3.2 3.2L17 8.8" fill="none" stroke="#04101f" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  function cardNew(a) {
+    var ph = (Array.isArray(a.photos) ? a.photos : []).filter(Boolean), ss = '';
+    if (ph.length) ss = '<div class="azb-ss" data-i="0">' + ph.map(function (u, i) { return '<div class="azb-sl' + (i === 0 ? ' on fx-kb' : '') + '"><img src="' + esc(u) + '" alt="Photo ' + (i + 1) + '"' + (i ? ' loading="lazy"' : '') + '></div>'; }).join('') + (ph.length > 1 ? '<div class="azb-dots">' + ph.map(function (u, i) { return '<i' + (i === 0 ? ' class="on"' : '') + '></i>'; }).join('') + '</div>' : '') + '</div>';
+    var mem = (Array.isArray(a.members) ? a.members : []).map(function (m) { return '<span class="azb-mem"><i>' + esc(String(m.name || '?').charAt(0).toUpperCase()) + '</i>' + esc(m.name) + (m.role ? ' \u00B7 ' + esc(m.role) : '') + '</span>'; }).join('');
+    function it(l, v) { return v ? '<div class="azb-it"><b>' + l + '</b>' + esc(v) + '</div>' : ''; }
+    var info = it('\uD83D\uDCCD Location', a.city) + it('\uD83C\uDFB5 Genre', a.genre) + it('\uD83C\uDF89 Events', a.event_types) + it('\uD83D\uDCB0 Starting price', a.price_from ? a.price_from + ' birr' : '') + it('\uD83D\uDC64 Leader', a.leader_name);
+    var vid = /^https:\/\//i.test(a.video_url || '') ? '<video class="azb-vid" controls preload="metadata" playsinline src="' + esc(a.video_url) + '"></video>' : '';
+    var pf = /^https?:\/\//i.test(a.portfolio || '') ? '<a class="azb-btn azb-ghost" target="_blank" rel="noopener" href="' + esc(a.portfolio) + '">\uD83D\uDD17 Portfolio / social</a>' : '';
+    return '<div class="azb-card azb-neon"><div class="azb-strip"></div>' + ss + '<div class="azb-body">' +
+      '<span class="azb-tag">' + tagOf(a.kind) + '</span>' +
+      '<h3 class="azb-name">' + esc(a.name) + AZB_TICK + '</h3><div class="azb-sub2">Verified by admin</div>' +
+      (info ? '<div class="azb-info">' + info + '</div>' : '') +
+      (a.about ? '<div class="azb-h">About</div><p class="azb-meta" style="margin:4px 0">' + esc(a.about) + '</p>' : '') +
+      (mem ? '<div class="azb-h">Band members</div><div class="azb-mems">' + mem + '</div>' : '') + vid +
+      '<div class="azb-acts"><button class="azb-btn" data-azb="book" data-id="' + esc(a.id) + '" data-name="' + esc(a.name) + '">Book now</button>' + pf + '</div></div></div>';
+  }
+  var st4 = document.createElement('style');
+  st4.textContent = `
+.azb-card.azb-neon{border:1px solid #27c4ff;box-shadow:0 0 14px #27c4ff88;animation:azbGlow2 3.2s ease-in-out infinite}
+@keyframes azbGlow2{0%,100%{box-shadow:0 0 10px #27c4ff66}50%{box-shadow:0 0 26px #27c4ff}}
+.azb-card .azb-strip{display:none}
+.azb-ss{border-bottom:0}
+.azb-it{border:0;background:#27c4ff12}
+.azb-md{border:1px solid #27c4ff;box-shadow:0 0 18px #27c4ff66}
+.azb-md input,.azb-md textarea{border:1px solid #27c4ff44;border-radius:8px}
+.azb-md input:focus,.azb-md textarea:focus,.azb-md select:focus{outline:0;border-color:#27c4ff;box-shadow:0 0 8px #27c4ff88}
+.azb-md input[type=checkbox]{width:auto}
+.azb-md select{-webkit-appearance:none;appearance:none;width:auto;min-width:150px;max-width:100%;height:34px;padding:0 30px 0 10px;font-size:13px;font-weight:600;border:1px solid #27c4ff66;border-radius:8px;cursor:pointer;background:#030712 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%2327c4ff' stroke-width='1.6'/%3E%3C/svg%3E") no-repeat right 10px center}
+.azb-md option{background:#030712;color:#e8f6ff}
+.azb-chip{border-color:#27c4ff66;padding:5px 12px;font-size:13px}
+`;
+  document.head.appendChild(st4);
+  var st5 = document.createElement('style');
+  st5.textContent = `
+select.azu-sel{-webkit-appearance:none!important;appearance:none!important;height:32px!important;min-height:0!important;width:auto!important;min-width:130px;max-width:100%;padding:0 28px 0 12px!important;font-size:13px!important;font-weight:600!important;line-height:32px;color:#e8f6ff!important;border:1px solid #27c4ff66!important;border-radius:999px!important;cursor:pointer;background:#030712 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%2327c4ff' stroke-width='1.6'/%3E%3C/svg%3E") no-repeat right 10px center!important;box-shadow:0 0 8px #27c4ff33!important}
+select.azu-sel:focus{outline:0;border-color:#27c4ff!important;box-shadow:0 0 10px #27c4ff99!important}
+select.azu-sel option{background:#030712;color:#e8f6ff}
+`;
+  document.head.appendChild(st5);
+  function card(a) { return cardNew(a); }
+  function cardOld(a) {
     var ph = Array.isArray(a.photos) ? a.photos : [];
     var sl = ph.length ? '<div class="azsl az16" data-n="' + ph.length + '">' + ph.map(function (u, i) { return '<div class="azsl-i"><img src="' + esc(u) + '" alt="Photo ' + (i + 1) + '" loading="lazy"></div>'; }).join('') + '</div>' : '';
     var mem = (Array.isArray(a.members) ? a.members : []).map(function (m) { return '<span class="azb-mem"><i>' + esc(String(m.name || '?').charAt(0).toUpperCase()) + '</i>' + esc(m.name) + (m.role ? ' \u00B7 ' + esc(m.role) : '') + '</span>'; }).join('');
@@ -123,6 +215,127 @@
       im.src = u;
     });
   }
+  var AZB_W = 1600, AZB_H = 700;
+  var AZB_FX = {
+    orig: { n: 'Original' },
+    vivid: { n: 'Vivid', br: 1.03, ct: 1.12, sat: 1.35 },
+    warm: { n: 'Warm', br: 1.04, ct: 1.05, sat: 1.1, tint: [14, 4, -12] },
+    cool: { n: 'Cool', br: 1.02, ct: 1.06, sat: 1.05, tint: [-10, 2, 16] },
+    bw: { n: 'B&W', gray: 1, ct: 1.15 },
+    fade: { n: 'Fade', br: 1.08, ct: 0.82, sat: 0.85, tint: [8, 8, 10] },
+    sepia: { n: 'Sepia', sep: 0.85, ct: 1.05 },
+    neon: { n: 'Neon', br: 0.97, ct: 1.2, sat: 1.4, tint: [-12, 6, 30] }
+  };
+  function azbFx(ctx, w, h, key) {
+    var f = AZB_FX[key]; if (!f || key === 'orig') return;
+    var im = ctx.getImageData(0, 0, w, h), d = im.data, i, r, g, b, l;
+    var br = f.br || 1, ct = f.ct || 1, sat = f.sat == null ? 1 : f.sat, gr = f.gray || 0, sp = f.sep || 0, tn = f.tint || [0, 0, 0];
+    for (i = 0; i < d.length; i += 4) {
+      r = d[i]; g = d[i + 1]; b = d[i + 2];
+      if (gr) { l = .299 * r + .587 * g + .114 * b; r += (l - r) * gr; g += (l - g) * gr; b += (l - b) * gr; }
+      if (sat !== 1) { l = .299 * r + .587 * g + .114 * b; r = l + (r - l) * sat; g = l + (g - l) * sat; b = l + (b - l) * sat; }
+      if (sp) { var sr = .393 * r + .769 * g + .189 * b, sg = .349 * r + .686 * g + .168 * b, sb = .272 * r + .534 * g + .131 * b; r += (sr - r) * sp; g += (sg - g) * sp; b += (sb - b) * sp; }
+      d[i] = ((r - 128) * ct + 128) * br + tn[0];
+      d[i + 1] = ((g - 128) * ct + 128) * br + tn[1];
+      d[i + 2] = ((b - 128) * ct + 128) * br + tn[2];
+    }
+    ctx.putImageData(im, 0, 0);
+  }
+  function azbImg(file) {
+    return new Promise(function (res, rej) {
+      var im = new Image(), u = URL.createObjectURL(file);
+      im.onload = function () { URL.revokeObjectURL(u); res(im); };
+      im.onerror = function () { URL.revokeObjectURL(u); rej(new Error('One file is not a valid image (iPhone HEIC is not supported, use Most Compatible)')); };
+      im.src = u;
+    });
+  }
+  function azbLoad(file) {
+    if (window.createImageBitmap) return createImageBitmap(file, { imageOrientation: 'from-image' }).catch(function () { return azbImg(file); });
+    return azbImg(file);
+  }
+  function azbDraw(c, src, st, W, H) {
+    var ctx = c.getContext('2d'); c.width = W; c.height = H;
+    ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
+    var k = Math.max(W / src.width, H / src.height) * (st.z || 1), w = src.width * k, h = src.height * k;
+    ctx.drawImage(src, (W - w) * st.px, (H - h) * st.py, w, h);
+    azbFx(ctx, W, H, st.fx);
+  }
+  function azbBlob(c) {
+    return new Promise(function (res, rej) {
+      var q = 0.92;
+      (function t() {
+        c.toBlob(function (b) {
+          if (!b) { rej(new Error('Photo could not be processed')); return; }
+          if (b.size > 2600000 && q > 0.6) { q -= 0.06; t(); } else res(b);
+        }, 'image/jpeg', q);
+      })();
+    });
+  }
+  function azbCropUp(file, uid, i, st) {
+    st = st || { px: .5, py: .5, z: 1, fx: 'orig' };
+    return azbLoad(file).then(function (bmp) {
+      var c = document.createElement('canvas'); azbDraw(c, bmp, st, AZB_W, AZB_H);
+      if (bmp.close) bmp.close();
+      return azbBlob(c);
+    }).then(function (b) {
+      var path = uid + '/act-' + Date.now() + '-' + i + '.jpg';
+      return db().storage.from('azs-photos').upload(path, b, { contentType: 'image/jpeg', cacheControl: '31536000' }).then(function (r) {
+        if (r.error) throw r.error;
+        return db().storage.from('azs-photos').getPublicUrl(path).data.publicUrl;
+      });
+    });
+  }
+  function azbEditor(o) {
+    var inp = o.querySelector('#azb-f'), box = o.querySelector('#azb-ed'), srcs = [];
+    o._ph = [];
+    function show(n) {
+      var st = o._ph[n], src = srcs[n], chips = '', key;
+      for (key in AZB_FX) chips += '<button type="button" data-fx="' + key + '" class="azb-btn azb-ghost" style="padding:4px 10px;font-size:12px;white-space:nowrap">' + AZB_FX[key].n + '</button>';
+      box.innerHTML = '<div class="azb-sub">Photo ' + (n + 1) + ' of ' + srcs.length + ' · drag to move, slider to zoom</div>' +
+        '<canvas id="azb-cv" style="width:100%;border-radius:10px;border:1px solid #27c4ff;box-shadow:0 0 12px #27c4ff88;touch-action:none;cursor:grab"></canvas>' +
+        '<input id="azb-z" type="range" min="1" max="3" step="0.01" value="' + st.z + '" style="width:100%">' +
+        '<div style="display:flex;gap:6px;overflow-x:auto;padding:4px 0">' + chips + '</div>' +
+        '<div style="display:flex;gap:8px"><button type="button" class="azb-btn azb-ghost" id="azb-pv">‹ Prev</button><button type="button" class="azb-btn azb-ghost" id="azb-nx">Next ›</button></div>';
+      var cv = box.querySelector('#azb-cv'), drag = null;
+      function draw() {
+        azbDraw(cv, src, st, 640, 280);
+        box.querySelectorAll('[data-fx]').forEach(function (b) { b.style.borderColor = b.getAttribute('data-fx') === st.fx ? '#27c4ff' : ''; b.style.boxShadow = b.getAttribute('data-fx') === st.fx ? '0 0 8px #27c4ff' : ''; });
+      }
+      cv.onpointerdown = function (e) { drag = { x: e.clientX, y: e.clientY }; cv.setPointerCapture(e.pointerId); };
+      cv.onpointerup = cv.onpointercancel = function () { drag = null; };
+      cv.onpointermove = function (e) {
+        if (!drag) return;
+        var r = cv.getBoundingClientRect(), sc = 640 / r.width, k = Math.max(640 / src.width, 280 / src.height) * st.z;
+        var rx = src.width * k - 640, ry = src.height * k - 280, dx = (e.clientX - drag.x) * sc, dy = (e.clientY - drag.y) * sc;
+        drag = { x: e.clientX, y: e.clientY };
+        if (rx > 0.5) st.px = Math.min(1, Math.max(0, st.px - dx / rx));
+        if (ry > 0.5) st.py = Math.min(1, Math.max(0, st.py - dy / ry));
+        draw();
+      };
+      box.querySelector('#azb-z').oninput = function () { st.z = +this.value; draw(); };
+      box.querySelectorAll('[data-fx]').forEach(function (b) { b.onclick = function () { st.fx = b.getAttribute('data-fx'); draw(); }; });
+      box.querySelector('#azb-pv').onclick = function () { show((n + srcs.length - 1) % srcs.length); };
+      box.querySelector('#azb-nx').onclick = function () { show((n + 1) % srcs.length); };
+      draw();
+    }
+    inp.addEventListener('change', async function () {
+      var files = Array.prototype.slice.call(inp.files).slice(0, 4);
+      o._ph = []; srcs = []; box.innerHTML = '';
+      if (!files.length) return;
+      box.innerHTML = '<div class="azb-sub">Loading photos...</div>';
+      try {
+        for (var i = 0; i < files.length; i++) {
+          var b = await azbLoad(files[i]);
+          var k = Math.min(1, 1800 / Math.max(b.width, b.height)), s = document.createElement('canvas');
+          s.width = Math.max(1, Math.round(b.width * k)); s.height = Math.max(1, Math.round(b.height * k));
+          var sx = s.getContext('2d'); sx.imageSmoothingQuality = 'high'; sx.drawImage(b, 0, 0, s.width, s.height);
+          if (b.close) b.close();
+          srcs.push(s); o._ph.push({ px: .5, py: .5, z: 1, fx: 'orig' });
+        }
+      } catch (e) { box.innerHTML = '<div class="azb-sub" style="color:#ff8a8a">' + esc((e && e.message) || 'Photo error') + '</div>'; return; }
+      show(0);
+    });
+  }
   function reg() {
     var o = modal('<h3 class="azb-name">Register</h3><div class="azb-orn">\u25C6 \u2756 \u25C6</div>' +
       '<label for="azb-k">Type</label><select id="azb-k">' + OPTS + '</select>' +
@@ -131,12 +344,27 @@
       '<label for="azb-m">Members (one per line: name - role). DJs: crew, optional</label><textarea id="azb-m" rows="4" maxlength="800" placeholder="Meron Bekele - Lead vocal\nYonas Haile - Masinko"></textarea>' +
       fld('azb-pr', 'Starting price (birr)', 'e.g. 5000', 'number') + fld('azb-e', 'Event types', 'Wedding, club, church, corporate') +
       '' + fld('azb-w', 'Portfolio or social link (optional)', 'https://...') + '<label for="azb-a">About</label><textarea id="azb-a" rows="3" maxlength="600"></textarea>' +
-      '<label for="azb-f">Photos for the slideshow (4 is best, 1 minimum)</label><input id="azb-f" type="file" accept="image/*" multiple>' +
-      '<p class="azb-sub">Fee: 1,599 birr. Transfer by Telebirr to +251911898184, or to CBE account 1000037200534 (Nahom Zewge Tesfaye), then enter the transaction ID.</p>' + fld('azb-tx', 'Transaction ID', '6 to 40 letters or numbers') + '<div class="azb-msg" id="azb-msg"></div><div class="azb-bar"><button class="azb-btn" id="azb-go" style="flex:1;background:#27c4ff;color:#04101f">Create band profile · 1,599 birr</button><button class="azb-btn azb-ghost" data-azb="x">Cancel</button></div>');
+      '<label for="azb-f">Photos for the slideshow (4 is best, 1 minimum)</label><input id="azb-f" type="file" accept="image/*" multiple><div id="azb-ed"></div>' +
+      '<p class="azb-sub">Fee: 1,599 birr. Transfer by Telebirr to +251911898184, or to CBE account 1000037200534 (Nahom Zewge Tesfaye), then enter the transaction ID.</p>' + fld('azb-tx', 'Transaction ID', '6 to 40 letters or numbers') + '<label for="azb-pm">Paid with</label><select id="azb-pm"><option value="Telebirr">Telebirr</option><option value="CBE">CBE</option></select>' + '<div id="azb-rowvb" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:8px 0"><button type="button" class="azb-btn azb-ghost" id="azb-vb" style="margin:0">🎬 Add video · max 60 s</button><label style="display:flex;gap:5px;align-items:center;margin:0;font-size:11px;line-height:1.2"><input type="checkbox" id="azb-ok" style="width:14px;height:14px;margin:0;flex:none"> <span>I follow the community rules</span></label></div><input id="azb-vfile" type="file" accept="video/mp4,video/webm" style="display:none"><div class="azb-sub" id="azb-vname"></div><p class="azb-sub">Up to 4 photos and 1 video · Upload → Pay → Admin approval</p>' + '<div class="azb-msg" id="azb-msg"></div><div class="azb-bar"><button class="azb-btn" id="azb-go" style="flex:1;background:#27c4ff;color:#04101f">Create band profile · 1,599 birr</button><button class="azb-btn azb-ghost" data-azb="x">Cancel</button></div>');
+    azbEditor(o);
+    var vb = o.querySelector('#azb-vb'), vi = o.querySelector('#azb-vfile'), vn = o.querySelector('#azb-vname');
+    vb.onclick = function () { vi.click(); };
+    vi.onchange = function () {
+      var f = vi.files[0]; o._vid = null; vn.textContent = '';
+      if (!f) return;
+      if (!/^video\/(mp4|webm)$/.test(f.type)) { vn.textContent = 'Video must be mp4 or webm'; vi.value = ''; return; }
+      if (f.size > 31457280) { vn.textContent = 'Video is over 30 MB'; vi.value = ''; return; }
+      var v = document.createElement('video'), vu = URL.createObjectURL(f);
+      v.preload = 'metadata';
+      v.onloadedmetadata = function () { URL.revokeObjectURL(vu); if (v.duration > 61) { vn.textContent = 'Video is longer than 60 seconds'; vi.value = ''; } else { o._vid = f; vn.textContent = '✓ ' + f.name; } };
+      v.onerror = function () { URL.revokeObjectURL(vu); vn.textContent = 'Could not read this video'; vi.value = ''; };
+      v.src = vu;
+    };
     o.querySelector('#azb-go').onclick = async function () {
       var btn = this, msg = o.querySelector('#azb-msg'), g = function (i) { return o.querySelector('#' + i).value.trim(); };
       msg.textContent = '';
-      if (typeof needMedia === 'function' && needMedia('band')) { msg.textContent = 'Tick the community rules box on the Bands page and check your text, then try again'; return; }
+      if (!o.querySelector('#azb-ok').checked) { msg.textContent = 'Please confirm the community rules'; return; }
+      if (typeof modr === 'function') { var bad = modr(g('azb-n') + ' ' + g('azb-g') + ' ' + g('azb-a') + ' ' + g('azb-e')); if (bad) { msg.textContent = 'Blocked: ' + bad + '. Please change your text.'; return; } }
       if (g('azb-n').length < 2) { msg.textContent = 'Write the name'; return; }
       if (!okPhone(g('azb-p'))) { msg.textContent = 'Write a correct leader phone, for example 0911234567'; return; }
       if (!/^[A-Za-z0-9]{6,40}$/.test(g('azb-tx'))) { msg.textContent = 'Enter the payment transaction ID (6 to 40 letters or numbers)'; return; }
@@ -147,9 +375,21 @@
       try {
         var ur = await db().auth.getUser(), u = ur && ur.data && ur.data.user;
         if (!u) throw new Error('Please log in first, then try again');
-        var urls = await Promise.all(files.map(function (f, i) { return cropUp(f, u.id, i); }));
+        var urls = await Promise.all(files.map(function (f, i) { return azbCropUp(f, u.id, i, o._ph && o._ph[i]); }));
+        var vurl = null, vf = o._vid;
+        if (vf) {
+          msg.textContent = 'Uploading video...';
+          var vp = u.id + '/band-' + Date.now() + (vf.type === 'video/webm' ? '.webm' : '.mp4');
+          var vr = await db().storage.from('azmari-post-media').upload(vp, vf, { contentType: vf.type, cacheControl: '31536000' });
+          if (vr.error) throw new Error('Video upload failed: ' + vr.error.message);
+          vurl = db().storage.from('azmari-post-media').getPublicUrl(vp).data.publicUrl;
+        }
         var mem = g('azb-m').split('\n').map(function (l) { var p = l.split(/\s[-\u2013]\s/); return { name: (p[0] || '').trim().slice(0, 60), role: (p[1] || '').trim().slice(0, 60) }; }).filter(function (m) { return m.name; }).slice(0, 12);
-        var r = await db().from('azb_acts').insert({ kind: g('azb-k'), name: g('azb-n'), genre: g('azb-g') || null, city: g('azb-c') || null, leader_name: g('azb-l') || null, leader_phone: g('azb-p'), members: mem, price_from: g('azb-pr') ? Number(g('azb-pr')) : null, event_types: g('azb-e') || null, about: g('azb-a') || null, portfolio: g('azb-w') ? (/^https?:\/\//i.test(g('azb-w')) ? g('azb-w') : 'https://' + g('azb-w')) : null, photos: urls, payment_ref: g('azb-tx') });
+        if (!window.azSubmitPaidPost) throw new Error('Payment helper not loaded. Reload the app.');
+        msg.textContent = 'Recording payment...';
+        var pp = await window.azSubmitPaidPost({ acct: { name: g('azb-l') || g('azb-n'), phone: g('azb-p') }, kind: 'band', productCode: 'band_profile', ref: g('azb-tx'), method: o.querySelector('#azb-pm').value, ptime: null, data: { band_name: g('azb-n'), band_kind: g('azb-k'), genre: g('azb-g'), city: g('azb-c'), leader_name: g('azb-l'), photos: urls, video_url: vurl } });
+        if (!pp || !pp.ok) throw new Error((pp && pp.msg) || 'Could not record payment');
+        var r = await db().from('azb_acts').insert({ video_url: vurl, kind: g('azb-k'), name: g('azb-n'), genre: g('azb-g') || null, city: g('azb-c') || null, leader_name: g('azb-l') || null, leader_phone: g('azb-p'), members: mem, price_from: g('azb-pr') ? Number(g('azb-pr')) : null, event_types: g('azb-e') || null, about: g('azb-a') || null, portfolio: g('azb-w') ? (/^https?:\/\//i.test(g('azb-w')) ? g('azb-w') : 'https://' + g('azb-w')) : null, photos: urls, payment_ref: g('azb-tx') });
         if (r.error) throw r.error;
         o.querySelector('.azb-md').innerHTML = '<h3 class="azb-name">Submitted successfully</h3><p class="azb-ok">The admin will check your page and approve it.</p><button class="azb-btn" data-azb="x">Close</button>';
       } catch (e) { msg.textContent = (e && e.message) || 'Could not send'; btn.disabled = false; }
