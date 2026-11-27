@@ -439,6 +439,34 @@ function azMuteBtn() {
   set(); return b;
 }
 /* AZ-LIKE-END */
+/* azsold: sold-out ribbon and seller button on cards */
+async function azSoldMarks() {
+  try {
+    const r = await S.sb.rpc('azs_sold_info'); if (r.error || !r.data) return;
+    const sold = (r.data.sold || []).map(String), mine = (r.data.mine || []).map(String);
+    document.querySelectorAll('.azs-livespace').forEach((el) => {
+      const m = /azl-(\S+)/.exec(el.className), c = el.closest('.azs-card');
+      if (!m || !c || c.dataset.azsold) return; c.dataset.azsold = '1';
+      const id = m[1]; let isSold = sold.indexOf(id) >= 0;
+      const rib = document.createElement('div');
+      rib.textContent = 'SOLD OUT';
+      rib.style.cssText = 'position:absolute;top:10px;left:10px;z-index:6;background:#dc2626;color:#fff;font-weight:800;font-size:12px;letter-spacing:1px;padding:4px 10px;border-radius:6px;pointer-events:none';
+      c.style.position = 'relative'; c.append(rib);
+      const btn = document.createElement('button');
+      btn.style.cssText = 'margin-top:6px;padding:5px 10px;font-size:12px;border-radius:8px;border:1px solid currentColor;background:transparent;color:inherit;cursor:pointer';
+      function show() { rib.style.display = isSold ? '' : 'none'; c.style.opacity = isSold ? '0.6' : ''; btn.textContent = isSold ? 'Mark as available' : 'Mark as sold'; }
+      btn.onclick = async (e) => {
+        e.stopPropagation(); btn.disabled = true;
+        const u = await S.sb.rpc('azs_set_sold', { p_listing: id, p_sold: !isSold });
+        btn.disabled = false;
+        if (u.error) { toast(u.error.message, 'bad'); return; }
+        isSold = !isSold; show(); toast(isSold ? 'Marked as sold' : 'Marked as available');
+      };
+      show();
+      if (mine.indexOf(id) >= 0) el.parentNode.append(btn);
+    });
+  } catch (e) {}
+}
 /* azlivemark: live dropdown in the open space of each card */
 async function azLiveMarks() {
   try {
@@ -481,7 +509,7 @@ async function load() {
   if (error) { ui.grid.append(h('p', { class: 'azs-empty' }, 'Could not load ads: ' + error.message)); return; }
   if (!data.length) ui.grid.append(h('p', { class: 'azs-empty' }, 'No ads found yet.'));
   data.forEach((l) => ui.grid.append(card(l)));
-  azLiveMarks();
+  azLiveMarks(); azSoldMarks();
 }
 /* azlive: seller live position on the ad window */
 const AZLV = {};
