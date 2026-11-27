@@ -564,7 +564,7 @@ function post() {
   if (!S.me) return login(post);
   const body = h('div'); const m = modal('Post ad', body);
   const unl = S.prof && S.prof.seller_status === 'approved';
-  body.append(h('p', { class: 'azs-note' }, unl ? 'Your seller account is approved: unlimited ads.' : 'Free account: ' + S.used + ' of 2 ads used. The admin can approve your seller account for unlimited ads.'),
+  body.append(h('p', { class: 'azs-note' }, 'Ads used: ' + S.used + '. The first 10 are free, then 100 birr for 10 more.'),
     h('p', { class: 'azs-sub' }, 'Choose a category'),
     h('div', { class: 'azs-tiles' }, CATS.map((c) => h('button', { class: 'azs-tile', onclick: () => form(c) }, h('b', {}, c[1]), c[0]))));
   function form(cat) {
@@ -572,22 +572,24 @@ function post() {
     const f = { title: h('input', { class: 'azs-input', maxlength: 80 }), price: h('input', { class: 'azs-input', type: 'number', min: 0, step: 'any', inputmode: 'decimal' }),
       cond: h('select', { class: 'azs-input' }, ['used', 'new', 'refurbished'].map((v) => h('option', { value: v }, v))),
       city: h('input', { class: 'azs-input', maxlength: 60, placeholder: 'e.g. Bole, Addis Ababa' }), desc: h('textarea', { class: 'azs-input', maxlength: 2000 }), phone: h('input', { class: 'azs-input', type: 'tel', inputmode: 'tel', maxlength: 20, placeholder: '09\u2026' }), files: h('input', { class: 'azs-input', type: 'file', accept: 'image/*', multiple: true }) };
+    /* azrefpost */ const refIn = h('input', { class: 'azs-input', maxlength: 40, placeholder: 'Telebirr / CBE transaction number' }), refBox = h('label', { class: 'azs-field', style: 'display:none' }, 'Payment transaction number (100 birr for 10 more ads)', refIn);
     const send = h('button', { class: 'azs-btn', onclick: submit }, 'Submit ad'); body.textContent = '';
     body.append(h('p', { class: 'azs-note' }, cat[1] + ' ' + cat[0]), h('label', { class: 'azs-field' }, 'Title', f.title), h('label', { class: 'azs-field' }, 'Price (ETB)', f.price),
       h('label', { class: 'azs-field' }, 'Condition', f.cond), h('label', { class: 'azs-field' }, 'City / area', f.city), h('label', { class: 'azs-field' }, 'Description', f.desc), h('label', { class: 'azs-field' }, 'Your phone number', f.phone), h('label', { class: 'azs-field' }, 'Photos (up to 5)', f.files),
       h('button', { class: 'azs-btn azs-ghost', onclick: () => navigator.geolocation.getCurrentPosition((p) => { pos = p.coords; where.textContent = ' Location added'; }, () => toast('Location permission denied', 'bad'), { enableHighAccuracy: true, timeout: 15000 }) }, '\u{1F4CD} Add my location'),
-      where, err, h('div', { class: 'azs-row' }, send));
+      where, refBox, err, h('div', { class: 'azs-row' }, send));
     async function submit() {
       err.textContent = ''; if (!f.title.value.trim() || f.price.value === '') { err.textContent = 'Title and price are required'; return; }
       send.disabled = true;
       if (f.phone.value.replace(/\D/g, '').length < 9) { err.textContent = 'Write your phone number'; send.disabled = false; return; }
       err.textContent = f.files.files.length ? 'Compressing and uploading photos\u2026' : '';
+      if (f.files.files.length > 5) { err.textContent = 'You can upload 5 photos at most'; send.disabled = false; return; }
       const imgs = await azUploadAll(f.files.files); if (imgs === null) { err.textContent = ''; send.disabled = false; return; }
       err.textContent = '';
       const { error } = await S.sb.from('azs_listings').insert({ category: cat[0], icon: cat[1], title: f.title.value.trim(), price: Number(f.price.value), condition: f.cond.value, images: imgs, seller_phone: f.phone.value.trim(),
-        city: f.city.value.trim(), description: f.desc.value.trim(), lat: pos ? pos.latitude : null, lng: pos ? pos.longitude : null });
-      if (error) { if (String(error.message).indexOf('AD_LIMIT') >= 0) azPayBox(err, body); else err.textContent = error.message; send.disabled = false; return; }
-      S.used++; m.close(); toast('Your ad is live!'); load();
+        city: f.city.value.trim(), description: f.desc.value.trim(), lat: pos ? pos.latitude : null, lng: pos ? pos.longitude : null, pay_ref: refIn.value.trim() || null });
+      if (error) { if (String(error.message).indexOf('AD_LIMIT') >= 0) { refBox.style.display = ''; err.textContent = 'You have used all your ads. Pay 100 birr by Telebirr (0911898184) or CBE (1000037200534) for 10 more ads, type the transaction number above, then press Submit ad again.'; } else err.textContent = error.message; send.disabled = false; return; }
+      S.used++; m.close(); toast(refBox.style.display === '' && refIn.value.trim() ? 'Submitted successfully. The admin will check your payment and approve your ad.' : 'Your ad is live!'); load();
     }
   }
 }
