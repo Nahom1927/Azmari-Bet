@@ -497,7 +497,7 @@ store(){return `<div id="shop-root"></div>`},
 jobs(){const seek=S.jobs==="seek";return `<h2>${t("jobs")}</h2>${chips(["Job seekers","Job offers"],seek?"Job seekers":"Job offers","jt")}
 ${seek?`<div class="card">${who("Selam Tadesse","Singer, 5 years · Weddings · Addis Ababa")}<button class="chip" data-act="call">${t("contact")}</button></div><div class="card">${who("Abel Girma","Krar player, 3 years · Church and events · Bahir Dar")}<button class="chip" data-act="call">${t("contact")}</button></div><div class="card">${who("Chala Gemechu","Keyboard, 7 years · Adama")}<button class="chip" data-act="call">${t("contact")}</button></div><div class="card">${who("Amina Yusuf","Vocal, 4 years · Jigjiga")}<button class="chip" data-act="call">${t("contact")}</button></div>${azRenderPublicCards("seek")}${mediaUI("seek")}<button class="btn" data-act="seekpay">Create profile · 100 birr (${t("free")} 1st month)</button>`
 :jobsOffer()}`},
-bands(){return `<h2>Bands</h2><div class="card legend"><div class="pic g">🥁</div><h3>Azmari band name</h3><span class="badge">★ Golden Badge · Azmari</span><p class="mu">Krar · Masinko · Vocal · Addis Ababa</p>${who("Meron Bekele","Lead vocal","Leader")}${who("Yonas Haile","Masinko")}${who("Dawit Alemu","Krar")}<button class="btn gd" data-act="call">Book this band</button></div><div class="card"><h3>Wedding band</h3><p class="mu">Bahir Dar</p>${who("Eyob Tesfaye","Keyboard · band leader")}${who("Hana Getachew","Vocal")}</div>${azRenderPublicCards("band")}${mediaUI("band")}<button class="btn" data-act="bandpay">Create band profile · 1,599 birr</button>`},
+bands(){return `<h2>Bands</h2>${azBandTop()}<div class="card legend"><div class="pic g">🥁</div><h3>Azmari band name</h3><span class="badge">★ Golden Badge · Azmari</span><p class="mu">Krar · Masinko · Vocal · Addis Ababa</p>${who("Meron Bekele","Lead vocal","Leader")}${who("Yonas Haile","Masinko")}${who("Dawit Alemu","Krar")}<button class="btn gd" data-act="call">Book this band</button></div><div class="card"><h3>Wedding band</h3><p class="mu">Bahir Dar</p>${who("Eyob Tesfaye","Keyboard · band leader")}${who("Hana Getachew","Vocal")}</div>${azRenderPublicCards("band")}${mediaUI("band")}<button class="btn" data-act="bandpay">Create band profile · 1,599 birr</button>`},
 events(){const e=S.ev,cur=TIERS.find(x=>x.k===e.tier);
 const sample=[{n:"Music night",k:5,o:"Tigist Mulugeta"},{n:"Azmari evening",k:4,o:"Meron Bekele"},{n:"Student concert",k:2,o:"Abel Girma"},{n:"Open mic",k:1,o:"Dawit Alemu"}];
 if(e.title)sample.push({n:e.title,k:e.tier,me:1});sample.sort((a,b)=>b.k-a.k);
@@ -555,7 +555,7 @@ Object.assign(L.ti,{fr_concert:"ኮንሰርት / ሙዚቃ",fr_party:"መርዓ
 Object.assign(L.ar,{fr_concert:"حفلة موسيقية",fr_party:"زفاف / حفل",fr_sports:"رياضة",fr_workshop:"ورشة / تدريب",fr_cultural:"ديني / ثقافي",fr_expo:"أعمال / معرض",tpl:"قالب الفعالية",pol:"سياسة الدفع",close:"إغلاق",crop:"اقتصاص الصورة (8:9)",cropUse:"استخدام الصورة",cropCancel:"إلغاء",cropHint:"اسحب للتحريك وحرّك الشريط للتكبير",call:"اتصل",share:"مشاركة",map:"خريطة"});
 (function(){var st=document.createElement("style");st.textContent=".azsl{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;aspect-ratio:8/9;max-width:420px;border-radius:12px;margin:8px 0;scrollbar-width:none;border:1px solid var(--ln)}.azsl::-webkit-scrollbar{display:none}.azsl-i{flex:0 0 100%;scroll-snap-align:center}.azsl-i img{width:100%;height:100%;object-fit:cover;display:block}";document.head.appendChild(st);
 setInterval(function(){document.querySelectorAll(".azsl").forEach(function(el){var n=+el.dataset.n;if(n<2)return;var w=el.clientWidth,i=Math.round(Math.abs(el.scrollLeft)/w),nx=(i+1)%n,rtl=document.documentElement.dir==="rtl";el.scrollTo({left:(rtl?-1:1)*nx*w,behavior:"smooth"})})},4500);})();
-function azSlider(p,w){if(!p.length)return "";return '<div class="azsl'+(w?' az16':'')+'" data-n="'+p.length+'">'+p.map(function(u,i){return '<div class="azsl-i"><img src="'+esc(u)+'" alt="Photo '+(i+1)+'" loading="lazy"></div>'}).join("")+'</div>'}
+/* azbandtop */ function azBandTop(){var p=[];(Array.isArray(AZ_PUBLIC_POSTS)?AZ_PUBLIC_POSTS:[]).forEach(function(r){if(r&&String(r.kind||r.post_kind||"").trim()==="band"){var d=r.data&&typeof r.data==="object"?r.data:{};(d.photos||[]).slice(0,2).forEach(function(u){if(p.length<8)p.push(u)})}});return p.length?azSlider(p,true):'<div class="azsl az16" data-n="1" style="align-items:center;justify-content:center;background:linear-gradient(135deg,#b8860b,#f5d76e);color:#3b2a00;font-weight:800;font-size:22px;text-align:center">\u{1F941} Azmari Bands</div>'} function azSlider(p,w){if(!p.length)return "";return '<div class="azsl'+(w?' az16':'')+'" data-n="'+p.length+'">'+p.map(function(u,i){return '<div class="azsl-i"><img src="'+esc(u)+'" alt="Photo '+(i+1)+'" loading="lazy"></div>'}).join("")+'</div>'}
 function azTier(row){var d=row&&row.data&&typeof row.data==="object"?row.data:{};return Number(d.tier)||0}
 function azShare(b){var s=b.getAttribute("data-s")||"Azmari Bet",u=location.href.split("#")[0];if(navigator.share){navigator.share({title:s,url:u}).catch(function(){})}else if(navigator.clipboard){navigator.clipboard.writeText(u).then(function(){toast("\u2713")})}}
 function azEvExtra(kind,row,d){
@@ -803,7 +803,7 @@ function azRenderMediaCard(item, kind) {
   const vid = item.video || "";
   let html = "";
   if (photos.length) {
-    html += (kind === "event" || kind === "band") ? azSlider(photos, !!(item.tier || item.tier_name)) : '<div class="mgrid" style="margin:8px 0">' + photos.map((u, i) => '<div class="mth"><img src="' + esc(u) + '" alt="Photo ' + (i+1) + '"></div>').join("") + '</div>';
+    html += (kind === "event" || kind === "band") ? azSlider(photos, kind === "band" || !!(item.tier || item.tier_name)) : '<div class="mgrid" style="margin:8px 0">' + photos.map((u, i) => '<div class="mth"><img src="' + esc(u) + '" alt="Photo ' + (i+1) + '"></div>').join("") + '</div>';
   }
   if (vid) {
     html += '<div class="mth vid" style="margin:8px 0"><video src="' + esc(vid) + '" controls playsinline preload="metadata"></video></div>';
@@ -842,7 +842,7 @@ function azRenderPublicCards(kind, filterFn) {
       (loc ? '<div class="mu">' + esc(loc) + (dt ? " · " + new Date(dt).toLocaleDateString() : "") + '</div>' : "") +
       (desc && desc !== title ? '<p class="mu">' + esc(desc) + '</p>' : "") +
       azRenderMediaCard(rawData, kind) + azEvExtra(kind, row, rawData) +
-      who(row.author_name || "Member", "Approved post") +
+      who(row.author_name || "Member", "Approved post", kind === "band" ? "★ Golden Badge" : "") +
       (con ? jobLink(con) : "") + '</div>';
   }).join("");
 }
@@ -1037,7 +1037,10 @@ if("serviceWorker" in navigator && location.protocol.indexOf("http")===0){window
 <script src="azalerts.js"></script>
 <script src="section-slideshow.js"></script>
   <script src="azmari-photos.js?v=2611286"></script>
-  <script src="azmari-store.js?v=2611286"></script>
+  <script src="azmari-bands.js?v=2"></script>
+  <script src="azmari-chat.js?v=3"></script>
+  <script src="azmari-bandsui.js?v=2"></script>
+  <script src="azmari-store.js?v=2611287"></script>
   <script src="azmari-sections-backend.js"></script>
 </body>
 </body>
