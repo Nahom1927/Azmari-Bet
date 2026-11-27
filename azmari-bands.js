@@ -132,10 +132,11 @@
       fld('azb-pr', 'Starting price (birr)', 'e.g. 5000', 'number') + fld('azb-e', 'Event types', 'Wedding, club, church, corporate') +
       '' + fld('azb-w', 'Portfolio or social link (optional)', 'https://...') + '<label for="azb-a">About</label><textarea id="azb-a" rows="3" maxlength="600"></textarea>' +
       '<label for="azb-f">Photos for the slideshow (4 is best, 1 minimum)</label><input id="azb-f" type="file" accept="image/*" multiple>' +
-      '<p class="azb-sub">Fee: 1,599 birr. Transfer by Telebirr to +251911898184, or to CBE account 1000037200534 (Nahom Zewge Tesfaye), then enter the transaction ID.</p>' + fld('azb-tx', 'Transaction ID', '6 to 40 letters or numbers') + '<div class="azb-msg" id="azb-msg"></div><div class="azb-bar"><button class="azb-btn" id="azb-go">Submit</button><button class="azb-btn azb-ghost" data-azb="x">Cancel</button></div>');
+      '<p class="azb-sub">Fee: 1,599 birr. Transfer by Telebirr to +251911898184, or to CBE account 1000037200534 (Nahom Zewge Tesfaye), then enter the transaction ID.</p>' + fld('azb-tx', 'Transaction ID', '6 to 40 letters or numbers') + '<div class="azb-msg" id="azb-msg"></div><div class="azb-bar"><button class="azb-btn" id="azb-go" style="flex:1;background:#27c4ff;color:#04101f">Create band profile · 1,599 birr</button><button class="azb-btn azb-ghost" data-azb="x">Cancel</button></div>');
     o.querySelector('#azb-go').onclick = async function () {
       var btn = this, msg = o.querySelector('#azb-msg'), g = function (i) { return o.querySelector('#' + i).value.trim(); };
       msg.textContent = '';
+      if (typeof needMedia === 'function' && needMedia('band')) { msg.textContent = 'Tick the community rules box on the Bands page and check your text, then try again'; return; }
       if (g('azb-n').length < 2) { msg.textContent = 'Write the name'; return; }
       if (!okPhone(g('azb-p'))) { msg.textContent = 'Write a correct leader phone, for example 0911234567'; return; }
       if (!/^[A-Za-z0-9]{6,40}$/.test(g('azb-tx'))) { msg.textContent = 'Enter the payment transaction ID (6 to 40 letters or numbers)'; return; }
@@ -180,7 +181,7 @@
     var o = modal('<h3 class="azb-name">Pending pages</h3><div id="azr">Loading...</div><div class="azb-bar"><button class="azb-btn azb-ghost" data-azb="x">Close</button></div>');
     var r = await db().rpc('azb_admin_pending'), box = o.querySelector('#azr');
     if (r.error) { box.innerHTML = '<div class="azb-msg">' + esc(r.error.message) + '</div>'; return; }
-    box.innerHTML = (r.data || []).length ? r.data.map(function (a) { return '<div class="azb-row" data-rid="' + esc(a.id) + '"><b>' + esc(a.name) + '</b> (' + esc(a.kind) + ')<br>' + esc([a.genre, a.city].filter(Boolean).join(' \u00B7 ')) + '<br>Leader: ' + esc(a.leader_name) + ' \u00B7 ' + esc(a.leader_phone) + '<br>' + (a.photos || []).length + ' photos \u00B7 ' + (a.members || []).length + ' members<div class="azb-bar"><button class="azb-btn" data-azb="ok" data-id="' + esc(a.id) + '">Approve</button><button class="azb-btn azb-ghost" data-azb="no" data-id="' + esc(a.id) + '">Remove</button></div></div>'; }).join('') : 'Nothing waiting.';
+    box.innerHTML = (r.data || []).length ? r.data.map(function (a) { return '<div class="azb-row" data-rid="' + esc(a.id) + '"><b>' + esc(a.name) + '</b> (' + esc(a.kind) + ')<br>' + esc([a.genre, a.city].filter(Boolean).join(' \u00B7 ')) + '<br>Leader: ' + esc(a.leader_name) + ' \u00B7 ' + esc(a.leader_phone) + '<br>' + (a.photos || []).length + ' photos \u00B7 ' + (a.members || []).length + ' members<br><b>Payment ID: ' + esc(a.payment_ref || 'NONE - do not approve') + '</b><div class="azb-bar"><button class="azb-btn" data-azb="ok" data-id="' + esc(a.id) + '">Approve</button><button class="azb-btn azb-ghost" data-azb="no" data-id="' + esc(a.id) + '">Remove</button></div></div>'; }).join('') : 'Nothing waiting.';
   }
   document.addEventListener('click', async function (e) {
     var k = e.target.closest && e.target.closest('[data-azk]');
