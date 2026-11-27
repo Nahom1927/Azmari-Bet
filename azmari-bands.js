@@ -132,12 +132,13 @@
       fld('azb-pr', 'Starting price (birr)', 'e.g. 5000', 'number') + fld('azb-e', 'Event types', 'Wedding, club, church, corporate') +
       '' + fld('azb-w', 'Portfolio or social link (optional)', 'https://...') + '<label for="azb-a">About</label><textarea id="azb-a" rows="3" maxlength="600"></textarea>' +
       '<label for="azb-f">Photos for the slideshow (4 is best, 1 minimum)</label><input id="azb-f" type="file" accept="image/*" multiple>' +
-      '<div class="azb-msg" id="azb-msg"></div><div class="azb-bar"><button class="azb-btn" id="azb-go">Submit</button><button class="azb-btn azb-ghost" data-azb="x">Cancel</button></div>');
+      '<p class="azb-sub">Fee: 1,599 birr. Transfer by Telebirr to +251911898184, or to CBE account 1000037200534 (Nahom Zewge Tesfaye), then enter the transaction ID.</p>' + fld('azb-tx', 'Transaction ID', '6 to 40 letters or numbers') + '<div class="azb-msg" id="azb-msg"></div><div class="azb-bar"><button class="azb-btn" id="azb-go">Submit</button><button class="azb-btn azb-ghost" data-azb="x">Cancel</button></div>');
     o.querySelector('#azb-go').onclick = async function () {
       var btn = this, msg = o.querySelector('#azb-msg'), g = function (i) { return o.querySelector('#' + i).value.trim(); };
       msg.textContent = '';
       if (g('azb-n').length < 2) { msg.textContent = 'Write the name'; return; }
       if (!okPhone(g('azb-p'))) { msg.textContent = 'Write a correct leader phone, for example 0911234567'; return; }
+      if (!/^[A-Za-z0-9]{6,40}$/.test(g('azb-tx'))) { msg.textContent = 'Enter the payment transaction ID (6 to 40 letters or numbers)'; return; }
       var files = Array.prototype.slice.call(o.querySelector('#azb-f').files);
       if (!files.length) { msg.textContent = 'Add at least 1 photo (4 is best)'; return; }
       if (files.length > 4) { msg.textContent = 'You can upload 4 photos at most'; return; }
@@ -147,7 +148,7 @@
         if (!u) throw new Error('Please log in first, then try again');
         var urls = await Promise.all(files.map(function (f, i) { return cropUp(f, u.id, i); }));
         var mem = g('azb-m').split('\n').map(function (l) { var p = l.split(/\s[-\u2013]\s/); return { name: (p[0] || '').trim().slice(0, 60), role: (p[1] || '').trim().slice(0, 60) }; }).filter(function (m) { return m.name; }).slice(0, 12);
-        var r = await db().from('azb_acts').insert({ kind: g('azb-k'), name: g('azb-n'), genre: g('azb-g') || null, city: g('azb-c') || null, leader_name: g('azb-l') || null, leader_phone: g('azb-p'), members: mem, price_from: g('azb-pr') ? Number(g('azb-pr')) : null, event_types: g('azb-e') || null, about: g('azb-a') || null, portfolio: g('azb-w') ? (/^https?:\/\//i.test(g('azb-w')) ? g('azb-w') : 'https://' + g('azb-w')) : null, photos: urls });
+        var r = await db().from('azb_acts').insert({ kind: g('azb-k'), name: g('azb-n'), genre: g('azb-g') || null, city: g('azb-c') || null, leader_name: g('azb-l') || null, leader_phone: g('azb-p'), members: mem, price_from: g('azb-pr') ? Number(g('azb-pr')) : null, event_types: g('azb-e') || null, about: g('azb-a') || null, portfolio: g('azb-w') ? (/^https?:\/\//i.test(g('azb-w')) ? g('azb-w') : 'https://' + g('azb-w')) : null, photos: urls, payment_ref: g('azb-tx') });
         if (r.error) throw r.error;
         o.querySelector('.azb-md').innerHTML = '<h3 class="azb-name">Submitted successfully</h3><p class="azb-ok">The admin will check your page and approve it.</p><button class="azb-btn" data-azb="x">Close</button>';
       } catch (e) { msg.textContent = (e && e.message) || 'Could not send'; btn.disabled = false; }
