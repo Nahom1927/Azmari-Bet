@@ -439,17 +439,41 @@ function azMuteBtn() {
   set(); return b;
 }
 /* AZ-LIKE-END */
+/* azlivemark: live dropdown in the open space of each card */
+async function azLiveMarks() {
+  try {
+    const r = await S.sb.rpc('azs_live_ids'); if (r.error || !Array.isArray(r.data)) return;
+    r.data.forEach((id) => document.querySelectorAll('.azl-' + id).forEach((el) => {
+      if (el.firstChild) return;
+      const mc = el.closest('.azs-card'), pm = mc && Array.from(mc.querySelectorAll('.azs-meta')).find((x) => x.textContent.indexOf('\u{1F4CD}') === 0), place = pm ? pm.textContent.replace('\u{1F4CD}', '').trim() : '';
+      const d = document.createElement('details'), s = document.createElement('summary'), body = document.createElement('div');
+      const lab = '\u{1F7E2} Live location' + (place ? ' \u00b7 ' + place : ''); s.textContent = lab + ' \u25BE'; s.style.cssText = 'cursor:pointer;list-style:none';
+      body.style.cssText = 'font-weight:400;padding:4px 0'; body.textContent = 'Loading\u2026';
+      d.onclick = (e) => e.stopPropagation();
+      d.ontoggle = async () => {
+        s.textContent = lab + ' ' + (d.open ? '\u25B4' : '\u25BE');
+        if (!d.open || d.dataset.done) return; d.dataset.done = '1';
+        const g = await S.sb.rpc('azs_live_get', { p_listing: id });
+        body.textContent = '';
+        if (g.error || !g.data) { body.textContent = 'Not sharing now'; d.dataset.done = ''; return; }
+        const a = document.createElement('a'); a.href = mapsUrl(g.data.lat, g.data.lng); a.target = '_blank'; a.rel = 'noopener'; a.textContent = 'Open map'; a.style.color = 'inherit'; a.onclick = (e) => e.stopPropagation();
+        body.append(a, ' \u2022 ' + Math.max(0, Math.round(g.data.age / 60)) + ' min ago (approx.)');
+      };
+      d.append(s, body); el.append(d);
+    }));
+  } catch (e) {}
+}
 function card(l) {
   return h('article', { class: 'azs-card', onclick: () => detail(l) },
     h('div', { class: 'azs-media' }, azThumb(l), l.verified ? h('span', { class: 'azs-badge' }, '\u2714 Verified') : null),
-    h('div', { class: 'azs-body', style: 'padding-top:18px' }, h('div', { class: 'azs-prow' }, h('div', { class: 'azs-price' }, money(l.price)), azLike(l)), h('div', { class: 'azs-title' }, l.title),
+    h('div', { class: 'azs-body', style: 'padding-top:4px' }, h('div', { class: 'azs-livespace azl-' + l.id, style: 'min-height:14px;margin-bottom:0;font-size:11px;font-weight:700;line-height:14px;color:#22c55e' }), h('div', { class: 'azs-prow' }, h('div', { class: 'azs-price' }, money(l.price)), azLike(l)), h('div', { class: 'azs-title' }, l.title),
       h('div', { class: 'azs-meta' }, '\u{1F4CD} ' + (l.city || '')), h('div', { class: 'azs-meta' }, '\u{1F552} ' + ago(l.created_at)), h('div', { class: 'azs-meta' }, '\u{1F464} ' + l.seller_name), l.seller_phone ? h('a', { class: 'azs-meta azphone', href: 'tel:' + String(l.seller_phone).replace(/[^\d+]/g, ''), onclick: (e) => e.stopPropagation(), style: 'display:block;text-decoration:none;color:inherit' }, '\u{1F4DE} ' + l.seller_phone) : null,
       h('div', { class: 'azs-row' }, h('button', { class: 'azs-btn azs-contact', onclick: (e) => { e.stopPropagation(); contact(l); } }, 'Contact'),
         h('button', { class: 'azs-flag', 'aria-label': 'Report this ad', onclick: (e) => { e.stopPropagation(); report(l); } }, '\u2691'))));
 }
 async function load() {
   const ui = S.ui; if (!ui) return;
-  let q = S.sb.from('azs_listings').select('*').eq('status', 'approved').order('created_at', { ascending: false }).limit(60);
+  let q = S.sb.from('azs_listings').select('*').eq('status', 'approved').or('expires_at.is.null,expires_at.gt.' + new Date().toISOString()).order('created_at', { ascending: false }).limit(60);
   if (S.cat) q = q.eq('category', S.cat);
   if (S.q) q = q.ilike('title', '%' + S.q.replace(/[%,]/g, '') + '%');
   const { data, error } = await q; if (ui !== S.ui) return;
@@ -457,6 +481,36 @@ async function load() {
   if (error) { ui.grid.append(h('p', { class: 'azs-empty' }, 'Could not load ads: ' + error.message)); return; }
   if (!data.length) ui.grid.append(h('p', { class: 'azs-empty' }, 'No ads found yet.'));
   data.forEach((l) => ui.grid.append(card(l)));
+  azLiveMarks();
+}
+/* azlive: seller live position on the ad window */
+const AZLV = {};
+async function azLiveDetail(l, acts) {
+  if (!l.seller_id) return;
+  const line = h('p', { class: 'azs-meta' }, '');
+  if (S.me && S.me.id === l.seller_id) {
+    const btn = h('button', { class: 'azs-btn azs-ghost' }, AZLV[l.id] != null ? 'Stop sharing live location' : '\u{1F7E2} Share my live location on this ad');
+    btn.onclick = () => {
+      if (AZLV[l.id] != null) {
+        navigator.geolocation.clearWatch(AZLV[l.id]); AZLV[l.id] = null;
+        S.sb.rpc('azs_live_stop', { p_listing: l.id }); btn.textContent = '\u{1F7E2} Share my live location on this ad'; line.textContent = 'Live location stopped'; return;
+      }
+      if (!navigator.geolocation) { toast('Location is not supported on this device', 'bad'); return; }
+      let last = 0;
+      AZLV[l.id] = navigator.geolocation.watchPosition(async (p) => {
+        const n = Date.now(); if (n - last < 20000) return; last = n;
+        const r = await S.sb.rpc('azs_live_set', { p_listing: l.id, p_lat: p.coords.latitude, p_lng: p.coords.longitude });
+        line.textContent = r.error ? r.error.message : 'Sharing live. Keep the Store page open.';
+      }, () => toast('Location permission denied', 'bad'), { enableHighAccuracy: true, maximumAge: 10000 });
+      btn.textContent = 'Stop sharing live location';
+    };
+    acts.append(btn); acts.after(line);
+  } else {
+    const r = await S.sb.rpc('azs_live_get', { p_listing: l.id });
+    if (r.error || !r.data) return;
+    acts.append(h('a', { class: 'azs-btn azs-ghost', style: 'text-decoration:none', href: mapsUrl(r.data.lat, r.data.lng), target: '_blank', rel: 'noopener' }, '\u{1F7E2} Live location'));
+    line.textContent = (l.city ? l.city + ' \u2022 ' : '') + 'Seller position updated ' + Math.max(0, Math.round(r.data.age / 60)) + ' min ago (approximate)'; acts.after(line);
+  }
 }
 function detail(l) {
   const acts = h('div', { class: 'azs-row' });
@@ -467,6 +521,7 @@ function detail(l) {
   if (l.seller_phone) acts.append(h('a', { class: 'azs-btn azs-ghost', style: 'text-decoration:none', href: 'tel:' + String(l.seller_phone).replace(/[^\d+]/g, '') }, '\u{1F4DE} Call'));
   acts.append(h('button', { class: 'azs-btn azs-contact', onclick: () => { m.close(); contact(l); } }, 'Chat with seller'));
   if (l.lat != null) acts.append(h('a', { class: 'azs-btn azs-ghost', style: 'text-decoration:none', href: mapsUrl(l.lat, l.lng), target: '_blank', rel: 'noopener' }, '\u{1F4CD} Map'));
+  azLiveDetail(l, acts);
 }
 async function report(l) {
   if (!S.me) return login(() => report(l));
@@ -503,7 +558,7 @@ function post() {
       err.textContent = '';
       const { error } = await S.sb.from('azs_listings').insert({ category: cat[0], icon: cat[1], title: f.title.value.trim(), price: Number(f.price.value), condition: f.cond.value, images: imgs, seller_phone: f.phone.value.trim(),
         city: f.city.value.trim(), description: f.desc.value.trim(), lat: pos ? pos.latitude : null, lng: pos ? pos.longitude : null });
-      if (error) { err.textContent = error.message; send.disabled = false; return; }
+      if (error) { if (String(error.message).indexOf('AD_LIMIT') >= 0) azPayBox(err, body); else err.textContent = error.message; send.disabled = false; return; }
       S.used++; m.close(); toast('Your ad is live!'); load();
     }
   }
@@ -517,11 +572,33 @@ async function mine() {
       const u = await S.sb.from('azs_listings').update({ status: 'removed' }).eq('id', r.id);
       if (u.error) { toast(u.error.message, 'bad'); return; } S.used = Math.max(0, S.used - 1); m.close(); mine(); load(); toast('Ad removed'); } }, 'Remove'))) : h('p', { class: 'azs-empty' }, 'You have no ads yet.'));
 }
+/* azpay: pay 200 birr for 10 more ads, admin approves */
+function azPayBox(err, body) {
+  const old = document.querySelector('input[placeholder*="transaction number"]'), ref = old || h('input', { class: 'azs-input', maxlength: 40, placeholder: 'Telebirr / CBE reference' }), msg = h('div', { class: 'azs-note' });
+  const go = h('button', { class: 'azs-btn', onclick: async () => {
+    go.disabled = true; const r = await S.sb.rpc('azs_submit_pack', { p_ref: ref.value });
+    go.disabled = false; msg.textContent = r.error ? r.error.message : 'Sent. The admin will check it, then you can post 10 more ads.';
+  } }, 'Send payment reference');
+  err.textContent = 'You have used all your ads. Pay 100 birr by Telebirr or CBE for 10 more ads, then send the payment reference here.';
+  body.append(...(old ? [] : [h('label', { class: 'azs-field' }, 'Payment reference', ref)]), go, msg);
+}
+async function azPayAdmin(box) {
+  const r = await S.sb.rpc('azs_admin_packs'); if (r.error || !Array.isArray(r.data)) return;
+  const wrap = h('div'); wrap.append(h('p', { class: 'azs-sub' }, 'Ad payments to check (100 birr = 10 ads)'));
+  if (!r.data.length) wrap.append(h('p', { class: 'azs-empty' }, 'No payments waiting.'));
+  async function decide(id, st) {
+    const d = await S.sb.rpc('azs_pack_decide', { p_id: id, p_status: st });
+    if (d.error) { toast(d.error.message, 'bad'); return; } toast(st === 'approved' ? 'Approved: +10 ads' : 'Rejected'); wrap.remove(); azPayAdmin(box);
+  }
+  r.data.forEach((x) => wrap.append(h('div', { class: 'azs-item' }, h('div', {}, x.name || 'Seller', h('small', {}, x.pay_ref)),
+    h('div', {}, h('button', { class: 'azs-btn', onclick: () => decide(x.id, 'approved') }, 'Approve'), ' ', h('button', { class: 'azs-btn azs-danger', onclick: () => decide(x.id, 'rejected') }, 'Reject')))));
+  box.append(wrap);
+}
 async function admin() {
   const [s, r] = await Promise.all([S.sb.from('azs_profiles').select('*').neq('role', 'admin').order('created_at', { ascending: false }).limit(100),
     S.sb.from('azs_reports').select('id,reason,listing_id,azs_listings(title)').order('id', { ascending: false }).limit(30)]);
   if (s.error || r.error) { toast((s.error || r.error).message, 'bad'); return; }
-  const box = h('div'); const m = modal('Admin', box);
+  const box = h('div'); const m = modal('Admin', box); azPayAdmin(box);
   const act = (fn, w) => async () => { if (w && !(await ask({ title: w[0], text: w[1], ok: w[2], danger: true }))) return; const x = await fn(); if (x.error) { toast(x.error.message, 'bad'); return; } m.close(); admin(); load(); };
   const setS = (id, v) => () => S.sb.from('azs_profiles').update({ seller_status: v }).eq('id', id);
   box.append(h('p', { class: 'azs-sub' }, 'Sellers (approve = unlimited ads)'),
