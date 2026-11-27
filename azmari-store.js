@@ -247,6 +247,31 @@ function drawCats() {
   const chip = (v, i, l) => h('button', { class: 'azs-chip' + (S.cat === v ? ' on' : ''), onclick: () => { S.cat = v; drawCats(); load(); } }, h('b', {}, i), l);
   S.ui.cats.append(chip('', '\u2728', 'All'), ...CATS.map((c) => chip(c[0], c[1], c[0])));
 }
+/* azphotos: compress and upload ad photos */
+async function azCompress(file) {
+  let bmp;
+  try { bmp = await createImageBitmap(file, { imageOrientation: 'from-image' }); }
+  catch (e) { bmp = await new Promise((ok, no) => { const im = new Image(), u = URL.createObjectURL(file); im.onload = () => { URL.revokeObjectURL(u); ok(im); }; im.onerror = no; im.src = u; }); }
+  const k = Math.min(1, 1600 / Math.max(bmp.width, bmp.height));
+  const c = document.createElement('canvas'); c.width = Math.round(bmp.width * k); c.height = Math.round(bmp.height * k);
+  const x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height); x.imageSmoothingQuality = 'high'; x.drawImage(bmp, 0, 0, c.width, c.height);
+  const blob = await new Promise((ok) => c.toBlob(ok, 'image/jpeg', 0.9));
+  if (!blob) throw new Error('Could not read this photo');
+  if (k === 1 && file.type === 'image/jpeg' && file.size <= blob.size) return file;
+  return blob;
+}
+async function azUploadAll(files) {
+  const list = Array.from(files || []).slice(0, 5), out = [];
+  for (let i = 0; i < list.length; i++) {
+    try {
+      const b = await azCompress(list[i]), path = S.me.id + '/' + Date.now() + '-' + i + '.jpg';
+      const up = await S.sb.storage.from('azs-photos').upload(path, b, { contentType: 'image/jpeg', cacheControl: '31536000' });
+      if (up.error) throw up.error;
+      out.push(S.sb.storage.from('azs-photos').getPublicUrl(path).data.publicUrl);
+    } catch (e) { toast('Photo ' + (i + 1) + ' failed: ' + (e.message || 'error'), 'bad'); return null; }
+  }
+  return out;
+}
 /* AZ-PICS-START */
 function azPics(l) {
   return (Array.isArray(l.images) ? l.images : []).filter((u) => typeof u === 'string' && /^https:\/\//.test(u));
@@ -417,8 +442,8 @@ function azMuteBtn() {
 function card(l) {
   return h('article', { class: 'azs-card', onclick: () => detail(l) },
     h('div', { class: 'azs-media' }, azThumb(l), l.verified ? h('span', { class: 'azs-badge' }, '\u2714 Verified') : null),
-    h('div', { class: 'azs-body' }, h('div', { class: 'azs-prow' }, h('div', { class: 'azs-price' }, money(l.price)), azLike(l)), h('div', { class: 'azs-title' }, l.title),
-      h('div', { class: 'azs-meta' }, '\u{1F4CD} ' + (l.city || '')), h('div', { class: 'azs-meta' }, '\u{1F552} ' + ago(l.created_at)), h('div', { class: 'azs-meta' }, '\u{1F464} ' + l.seller_name),
+    h('div', { class: 'azs-body', style: 'padding-top:18px' }, h('div', { class: 'azs-prow' }, h('div', { class: 'azs-price' }, money(l.price)), azLike(l)), h('div', { class: 'azs-title' }, l.title),
+      h('div', { class: 'azs-meta' }, '\u{1F4CD} ' + (l.city || '')), h('div', { class: 'azs-meta' }, '\u{1F552} ' + ago(l.created_at)), h('div', { class: 'azs-meta' }, '\u{1F464} ' + l.seller_name), l.seller_phone ? h('a', { class: 'azs-meta azphone', href: 'tel:' + String(l.seller_phone).replace(/[^\d+]/g, ''), onclick: (e) => e.stopPropagation(), style: 'display:block;text-decoration:none;color:inherit' }, '\u{1F4DE} ' + l.seller_phone) : null,
       h('div', { class: 'azs-row' }, h('button', { class: 'azs-btn azs-contact', onclick: (e) => { e.stopPropagation(); contact(l); } }, 'Contact'),
         h('button', { class: 'azs-flag', 'aria-label': 'Report this ad', onclick: (e) => { e.stopPropagation(); report(l); } }, '\u2691'))));
 }
@@ -437,7 +462,9 @@ function detail(l) {
   const acts = h('div', { class: 'azs-row' });
   const m = modal(l.title, azBig(l), h('div', { class: 'azs-prow' }, h('div', { class: 'azs-price' }, money(l.price)), azLike(l)),
     h('p', { class: 'azs-meta' }, [l.category, l.condition, l.city, ago(l.created_at), l.seller_name].filter(Boolean).join(' \u2022 ')),
+    l.seller_phone ? h('p', { class: 'azs-meta azphone' }, '\u{1F464} ' + (l.seller_name || '') + ' \u2022 \u{1F4DE} ' + l.seller_phone) : null,
     h('p', { style: 'white-space:pre-wrap;word-break:break-word' }, l.description || 'No description.'), acts);
+  if (l.seller_phone) acts.append(h('a', { class: 'azs-btn azs-ghost', style: 'text-decoration:none', href: 'tel:' + String(l.seller_phone).replace(/[^\d+]/g, '') }, '\u{1F4DE} Call'));
   acts.append(h('button', { class: 'azs-btn azs-contact', onclick: () => { m.close(); contact(l); } }, 'Chat with seller'));
   if (l.lat != null) acts.append(h('a', { class: 'azs-btn azs-ghost', style: 'text-decoration:none', href: mapsUrl(l.lat, l.lng), target: '_blank', rel: 'noopener' }, '\u{1F4CD} Map'));
 }
@@ -461,16 +488,20 @@ function post() {
     const err = h('div', { class: 'azs-err' }), where = h('small', {}, ''); let pos = null;
     const f = { title: h('input', { class: 'azs-input', maxlength: 80 }), price: h('input', { class: 'azs-input', type: 'number', min: 0, step: 'any', inputmode: 'decimal' }),
       cond: h('select', { class: 'azs-input' }, ['used', 'new', 'refurbished'].map((v) => h('option', { value: v }, v))),
-      city: h('input', { class: 'azs-input', maxlength: 60, placeholder: 'e.g. Bole, Addis Ababa' }), desc: h('textarea', { class: 'azs-input', maxlength: 2000 }) };
+      city: h('input', { class: 'azs-input', maxlength: 60, placeholder: 'e.g. Bole, Addis Ababa' }), desc: h('textarea', { class: 'azs-input', maxlength: 2000 }), phone: h('input', { class: 'azs-input', type: 'tel', inputmode: 'tel', maxlength: 20, placeholder: '09\u2026' }), files: h('input', { class: 'azs-input', type: 'file', accept: 'image/*', multiple: true }) };
     const send = h('button', { class: 'azs-btn', onclick: submit }, 'Submit ad'); body.textContent = '';
     body.append(h('p', { class: 'azs-note' }, cat[1] + ' ' + cat[0]), h('label', { class: 'azs-field' }, 'Title', f.title), h('label', { class: 'azs-field' }, 'Price (ETB)', f.price),
-      h('label', { class: 'azs-field' }, 'Condition', f.cond), h('label', { class: 'azs-field' }, 'City / area', f.city), h('label', { class: 'azs-field' }, 'Description', f.desc),
+      h('label', { class: 'azs-field' }, 'Condition', f.cond), h('label', { class: 'azs-field' }, 'City / area', f.city), h('label', { class: 'azs-field' }, 'Description', f.desc), h('label', { class: 'azs-field' }, 'Your phone number', f.phone), h('label', { class: 'azs-field' }, 'Photos (up to 5)', f.files),
       h('button', { class: 'azs-btn azs-ghost', onclick: () => navigator.geolocation.getCurrentPosition((p) => { pos = p.coords; where.textContent = ' Location added'; }, () => toast('Location permission denied', 'bad'), { enableHighAccuracy: true, timeout: 15000 }) }, '\u{1F4CD} Add my location'),
       where, err, h('div', { class: 'azs-row' }, send));
     async function submit() {
       err.textContent = ''; if (!f.title.value.trim() || f.price.value === '') { err.textContent = 'Title and price are required'; return; }
       send.disabled = true;
-      const { error } = await S.sb.from('azs_listings').insert({ category: cat[0], icon: cat[1], title: f.title.value.trim(), price: Number(f.price.value), condition: f.cond.value,
+      if (f.phone.value.replace(/\D/g, '').length < 9) { err.textContent = 'Write your phone number'; send.disabled = false; return; }
+      err.textContent = f.files.files.length ? 'Compressing and uploading photos\u2026' : '';
+      const imgs = await azUploadAll(f.files.files); if (imgs === null) { err.textContent = ''; send.disabled = false; return; }
+      err.textContent = '';
+      const { error } = await S.sb.from('azs_listings').insert({ category: cat[0], icon: cat[1], title: f.title.value.trim(), price: Number(f.price.value), condition: f.cond.value, images: imgs, seller_phone: f.phone.value.trim(),
         city: f.city.value.trim(), description: f.desc.value.trim(), lat: pos ? pos.latitude : null, lng: pos ? pos.longitude : null });
       if (error) { err.textContent = error.message; send.disabled = false; return; }
       S.used++; m.close(); toast('Your ad is live!'); load();
