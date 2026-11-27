@@ -1,6 +1,6 @@
 (function () {
   'use strict';
-  var MAX = 10;
+  var MAX = 5;
   var PAY = '<b>Telebirr / CBE Birr:</b> 0911898184<br><b>CBE account:</b> 1000037200534';
   var items = [];
   var realFetch = window.fetch.bind(window);
@@ -94,7 +94,7 @@
       '<div style="margin-bottom:6px">Photos (up to ' + MAX + ') <span class="azp-count" style="opacity:.7"></span></div>' +
       '<input class="azp-file" type="file" accept="image/*" multiple>' +
       '<div class="azp-prev" style="display:flex;flex-wrap:wrap;gap:10px;margin-top:10px"></div>' +
-      '<div style="margin-top:12px">Payment reference <span style="opacity:.7">(only needed after your 10 free ads, 100 birr per ad)</span></div>' +
+      '<div style="margin-top:12px">Payment reference <span style="opacity:.7">(only needed after your 10 free ads: 100 birr for 10 more ads)</span></div>' +
       '<div class="azp-pay">' + PAY + '</div>' +
       '<input id="azp-ref" class="azs-input" maxlength="80" placeholder="Telebirr / CBE transaction number">';
     p.querySelector('.azp-file').onchange = function (e) {
