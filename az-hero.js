@@ -31,3 +31,30 @@
   window.addEventListener("resize", run);
   window.addEventListener("load", function () { run(); setTimeout(run, 500); setTimeout(run, 1500); });
 })();
+
+/* azimg: logo as plain <img> (works in Safari and all browsers) */
+(function () {
+  var WEBP = "images/in-2003c1ba59.png", PNG = "images/in-2003c1ba59.png";
+  function swap() {
+    var list = document.querySelectorAll(".lg, .wlg");
+    for (var i = 0; i < list.length; i++) {
+      var el = list[i];
+      if (el.tagName === "IMG") continue;
+      if (el.tagName.toLowerCase() !== "svg" && !el.querySelector("use")) continue;
+      var img = document.createElement("img");
+      img.className = el.getAttribute("class") || "";
+      img.alt = "";
+      img.decoding = "async";
+      img.style.objectFit = "contain";
+      img.style.display = "block";
+      img.onerror = function () {
+        if (this.src.indexOf(".webp") > -1) this.src = PNG;
+      };
+      img.src = WEBP;
+      el.parentNode.replaceChild(img, el);
+    }
+  }
+  new MutationObserver(function () { swap(); }).observe(document.documentElement, { childList: true, subtree: true });
+  window.addEventListener("load", swap);
+  swap();
+})();
