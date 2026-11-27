@@ -113,7 +113,7 @@ try{matchMedia("(prefers-color-scheme: dark)").addEventListener("change",apply)}
         if (!r.error && r.data) {
           var m = await raw("az_me_major");
           if (!m.error && m.data) {
-            SECT.forEach(function (x) { if (x[0] === "major") x[1] = "Major course" + (m.data.course ? " · " + m.data.course : ""); });
+            SECT.forEach(function (x) { if (x[0] === "major") { var mc = String(m.data.course || "").trim(); x[1] = "Major course" + (mc && !SUBJ.some(function (y) { return y[1].toLowerCase() === mc.toLowerCase(); }) ? " · " + mc : ""); } });
             if (m.data.open) r.data.access = (r.data.access || []).concat("major");
           }
         }
