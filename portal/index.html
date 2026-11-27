@@ -95,6 +95,38 @@ try{matchMedia("(prefers-color-scheme: dark)").addEventListener("change",apply)}
 <script>
 (function () {
   var sb = supabase.createClient("https://rnqizccrzbolsynfsxbu.supabase.co", "sb_publishable_1pbzO1FOGTjIjjE-yF7d1A__OFPESB2"); window.azSb = sb;
+  /* azcards: students see exactly what the admin typed */
+  (function () {
+    var raw = sb.rpc.bind(sb);
+    async function sync(r) {
+      var list = r || await raw("admin_list_assignments");
+      if (list.error) return list;
+      return raw("az_admin_sync_links", { p_rows: list.data || [] });
+    }
+    sb.rpc = function (name, args, opts) {
+      if (name === "my_instructors") return (async function () {
+        var mine = await raw("az_my_instructor_cards");
+        if (!mine.error && mine.data && mine.data.length) return mine;
+        return raw(name, args, opts);
+      })();
+      if (name === "admin_list_assignments") return (async function () {
+        var r = await raw(name, args, opts);
+        if (!r.error) { var s = await sync(r); if (s.error) console.warn("azcards: " + s.error.message); }
+        return r;
+      })();
+      if (name === "admin_set_teacher_profile") return (async function () {
+        var opt = Array.prototype.filter.call(document.querySelectorAll("#app select option"), function (o) { return o.value === args.p_teacher; })[0];
+        var saved = await raw("az_admin_save_card", { p_email: opt ? opt.textContent : "", p_prefix: args.p_prefix, p_name: args.p_name, p_photo: args.p_photo });
+        var old = await raw(name, args, opts);
+        if (saved.error) return { error: { message: "Student card not saved: " + saved.error.message } };
+        var s = await sync();
+        if (s.error) return { error: { message: "Student link not saved: " + s.error.message } };
+        if (old.error) console.warn("azcards: " + old.error.message);
+        return { data: true, error: null };
+      })();
+      return raw(name, args, opts);
+    };
+  })();
   var app = document.getElementById("app");
   var SUBJ = [["ear","Ear training"],["theory","Music theory"],["scales","Scales"],["ensemble","Ensemble"],["history","Music history"]];
   var LESSON_SECT = [["videos","Uploaded videos"],["live","Live section"]].concat(SUBJ);
