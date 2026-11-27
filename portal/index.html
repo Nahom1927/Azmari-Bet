@@ -244,7 +244,7 @@ try{matchMedia("(prefers-color-scheme: dark)").addEventListener("change",apply)}
     items.forEach(function (it, i) {
       var b = btn(it[0], function () {
         buttons.forEach(function (x) { x.className = ""; }); b.className = "on";
-        clear(body); it[1](body);
+        clear(body); var pane = el("div"); body.appendChild(pane); it[1](pane);
       });
       buttons.push(b); bar.appendChild(b);
     });
@@ -264,6 +264,18 @@ try{matchMedia("(prefers-color-scheme: dark)").addEventListener("change",apply)}
     add(c, el("h2", d.name), el("p", "Student ID: " + d.student_no + " · " + (d.instrument || "") + " · " + (d.session || ""), { className: "mu" }));
     var g = card(), t = el("table"); g.appendChild(el("h3", "Grades"));
     d.grades.forEach(function (x) { var tr = el("tr"); add(tr, el("td", x.subject), el("td", x.score == null ? "Not graded" : String(x.score)), el("td", x.note || "", { className: "mu" })); t.appendChild(tr); });
+    /* azmajor: major course in the grades list */
+    var mi = await sb.rpc("my_instructors"), cp = await sb.rpc("academy_my_course_progress"), pr = cp.data || {};
+    var majors = (mi.data || []).map(function (x) { return x.course; });
+    if (!majors.length) majors = [pr.major || d.instrument];
+    majors = majors.filter(function (n, i) { return n && majors.indexOf(n) === i && !d.grades.some(function (x) { return String(x.subject).toLowerCase() === String(n).toLowerCase(); }); });
+    var main = majors.indexOf(pr.major) >= 0 ? pr.major : majors[0];
+    majors.slice().reverse().forEach(function (n) {
+      var score = "Not graded";
+      if (n === main && pr.final_exam_score != null) score = String(pr.final_exam_score);
+      else if (n === main && (pr.completed_weeks || []).length) score = pr.completed_weeks.length + " of 48 weeks";
+      var tr = el("tr"); tr.style.fontWeight = "700"; add(tr, el("td", "★ " + n), el("td", score), el("td", "Major course", { className: "mu" })); t.insertBefore(tr, t.firstChild);
+    });
     g.appendChild(el("div", null, { className: "scroll" })).appendChild(t);
     var a = d.attendance, ac = card();
     add(ac, el("h3", "Attendance"), el("p", "Present " + a.present + " · Late " + a.late + " · Absent " + a.absent + " · Total " + a.total));
@@ -507,21 +519,6 @@ try{matchMedia("(prefers-color-scheme: dark)").addEventListener("change",apply)}
       lc.appendChild(dt);
     });
     body.appendChild(lc);
-    /* gradeBarsCard */
-    var gr = (base.data && base.data.grades || []).filter(function (x) { return x.score != null; });
-    var gc = card(); add(gc, el("h3", "📊 Grades"));
-    if (!gr.length) add(gc, el("p", "No grades yet.", { className: "mu" }));
-    else {
-      var gsum = 0;
-      gr.forEach(function (x) {
-        var sc = Math.max(0, Math.min(100, Number(x.score))); gsum += sc;
-        var tr = el("div"); tr.style.cssText = "height:8px;border-radius:6px;background:rgba(4,217,255,.18);overflow:hidden;margin:4px 0 12px";
-        var f = el("div"); f.style.cssText = "height:100%;border-radius:6px;background:#04d9ff;box-shadow:0 0 8px #04d9ff;width:" + sc + "%";
-        tr.appendChild(f); add(gc, el("p", x.subject + " · " + sc + "%"), tr);
-      });
-      add(gc, el("p", "Average: " + Math.round(gsum / gr.length) + "%", { className: "mu" }));
-    }
-    body.appendChild(gc);
     var cert = card(); cert.appendChild(el("h3", "🏅 Certificates"));
     function canFinish(end, score) { for (var i=1;i<=end;i++) if (weeks.indexOf(i)<0) return false; return Number(score)>=70; }
     function certificateButton(name, eligible, detail) { var row=el("div"); add(row,el("p",name+" — "+detail,{className:"mu"}), eligible ? btn("Print certificate",function(){printAcademyCertificate(d.name || (base.data && base.data.name) || "Student",name,d.major || "",new Date().toLocaleDateString());},"sm") : el("span","Not yet eligible",{className:"mu"})); cert.appendChild(row); }
@@ -954,6 +951,6 @@ try{matchMedia("(prefers-color-scheme: dark)").addEventListener("change",apply)}
 })();
 </script>  <script src="../academy-progress.js"></script>
 <script src="az-buttons.js?v=2"></script>
-<script src="az-keep.js?v=1"></script>
+<script src="az-keep.js?v=2"></script>
 <script src="az-student.js?v=2"></script>
 </body></html>
