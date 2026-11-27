@@ -811,6 +811,29 @@ function azRenderMediaCard(item, kind) {
   return html;
 }
 
+function azNeonPost(row, d, kind, title, desc, loc, con, dt) {
+  var TAGS = { band: '\uD83E\uDD41 Band', event: '\uD83C\uDF89 Event', store: '\uD83D\uDECD Store', seek: '\uD83D\uDC64 Job seeker', job: '\uD83D\uDCBC Job', job_offer: '\uD83D\uDCBC Job offer', offer: '\uD83D\uDCBC Job offer' };
+  var ph = (Array.isArray(d.photos) ? d.photos : []).filter(Boolean), ss = '';
+  var vurl = d.video || d.video_url || '';
+  if (ph.length) ss = '<div class="azb-ss" data-i="0">' + ph.map(function (u, i) { return '<div class="azb-sl' + (i === 0 ? ' on fx-kb' : '') + '"><img src="' + esc(u) + '" alt="Photo ' + (i + 1) + '"' + (i ? ' loading="lazy"' : '') + '></div>'; }).join('') + (ph.length > 1 ? '<div class="azb-dots">' + ph.map(function (u, i) { return '<i' + (i === 0 ? ' class="on"' : '') + '></i>'; }).join('') + '</div>' : '') + '</div>';
+  function it(l, v) { return v ? '<div class="azb-it"><b>' + l + '</b>' + esc(v) + '</div>' : ''; }
+  var name = String((kind === 'band' && d.band_name) || title || '').slice(0, 80);
+  var when = dt ? new Date(dt).toLocaleDateString() : '';
+  var price = d.price_from || d.price || '';
+  var info = it('\uD83D\uDCCD Location', loc || d.city) + it('\uD83C\uDFB5 Genre', d.genre) + it('\uD83D\uDC64 Leader', d.leader_name) + it('\uD83D\uDCB0 Price', price ? price + ' birr' : '') + it('\uD83D\uDCC5 Posted', when);
+  var tick = '<svg class="azb-tick" viewBox="0 0 24 24" width="22" height="22" role="img" aria-label="Approved"><circle cx="12" cy="12" r="11" fill="#27c4ff"/><path d="M7 12.5l3.2 3.2L17 8.8" fill="none" stroke="#04101f" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  var vid = /^https:\/\//i.test(vurl) ? '<video class="azb-vid" controls preload="metadata" playsinline src="' + esc(vurl) + '"></video>' : '';
+  var ex = ''; try { ex = azEvExtra(kind, row, d) || ''; } catch (e) {}
+  return '<div class="azb-card azb-neon">' + ss + '<div class="azb-body">' +
+    '<span class="azb-tag">' + (TAGS[kind] || 'Post') + '</span>' +
+    '<h3 class="azb-name">' + esc(name) + tick + '</h3><div class="azb-sub2">Approved by admin</div>' +
+    (info ? '<div class="azb-info">' + info + '</div>' : '') +
+    (desc && desc !== title ? '<div class="azb-h">About</div><p class="azb-meta" style="margin:4px 0">' + esc(desc) + '</p>' : '') +
+    ex + vid +
+    '<div class="azb-acts">' + (con ? jobLink(con) : '') + '</div>' +
+    '<div style="margin-top:10px;font-size:12px;opacity:.85">' + who(row.author_name || 'Member', 'Approved post', kind === 'band' ? '\u2605 Golden Badge' : '') + '</div>' +
+    '</div></div>';
+}
 function azRenderPublicCards(kind, filterFn) {
   if (!Array.isArray(AZ_PUBLIC_POSTS) || !AZ_PUBLIC_POSTS.length) return "";
   return AZ_PUBLIC_POSTS.filter(row => {
@@ -838,6 +861,7 @@ function azRenderPublicCards(kind, filterFn) {
     const loc = rawData.loc || "";
     const con = rawData.con || row.author_phone || "";
     const dt = row.visible_from || row.created_at;
+    return azNeonPost(row, rawData, kind, title, desc, loc, con, dt);
     return '<div class="card"><b>' + esc(title) + '</b>' +
       (loc ? '<div class="mu">' + esc(loc) + (dt ? " · " + new Date(dt).toLocaleDateString() : "") + '</div>' : "") +
       (desc && desc !== title ? '<p class="mu">' + esc(desc) + '</p>' : "") +
@@ -1037,7 +1061,7 @@ if("serviceWorker" in navigator && location.protocol.indexOf("http")===0){window
 <script src="azalerts.js"></script>
 <script src="section-slideshow.js"></script>
   <script src="azmari-photos.js?v=2611286"></script>
-  <script src="azmari-bands.js?v=13"></script>
+  <script src="azmari-bands.js?v=14"></script>
   <script src="azmari-chat.js?v=3"></script>
   <script src="azmari-bandsui.js?v=2"></script>
   <script src="azmari-store.js?v=2611288"></script>
