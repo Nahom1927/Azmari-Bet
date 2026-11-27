@@ -95,6 +95,38 @@ try{matchMedia("(prefers-color-scheme: dark)").addEventListener("change",apply)}
 <script>
 (function () {
   var sb = supabase.createClient("https://rnqizccrzbolsynfsxbu.supabase.co", "sb_publishable_1pbzO1FOGTjIjjE-yF7d1A__OFPESB2"); window.azSb = sb;
+  /* azmajorbox: locked "Major course" box in Sections */
+  (function () {
+    var raw = sb.rpc.bind(sb), listed = false;
+    function box() { if (SECT && !SECT.some(function (x) { return x[0] === "major"; })) SECT.push(["major", "Major course"]); }
+    async function courses() {
+      if (listed) return;
+      var t = await sb.from("academy_major_tracks").select("name").eq("active", true);
+      if (t.error || !t.data || listed) return;
+      listed = true; t.data.forEach(function (x) { LESSON_SECT.push(["major:" + x.name, "Major course · " + x.name]); });
+    }
+    sb.rpc = function (name, args, opts) {
+      var s = String((args && args.p_section) || ""), major = s === "major" || s.indexOf("major:") === 0, course = s.slice(6);
+      if (name === "my_role") return (async function () { var r = await raw(name, args, opts); try { box(); await courses(); } catch (e) { console.warn(e); } return r; })();
+      if (name === "my_progress") return (async function () {
+        var r = await raw(name, args, opts); box();
+        if (!r.error && r.data) {
+          var m = await raw("az_me_major");
+          if (!m.error && m.data) {
+            SECT.forEach(function (x) { if (x[0] === "major") x[1] = "Major course" + (m.data.course ? " · " + m.data.course : ""); });
+            if (m.data.open) r.data.access = (r.data.access || []).concat("major");
+          }
+        }
+        return r;
+      })();
+      if (major && name === "admin_issue_code") return raw("az_major_issue_code", { p_student_no: args.p_student_no, p_minutes: args.p_valid_minutes });
+      if (major && name === "my_redeem") return raw("az_major_redeem", { p_code: args.p_code });
+      if (major && name === "my_lessons") return raw("az_major_list", { p_course: course || null });
+      if (major && name === "staff_add_lesson") return course ? raw("az_major_add", { p_course: course, p_title: args.p_title, p_url: args.p_url, p_description: args.p_description }) : Promise.resolve({ error: { message: "Choose a course" } });
+      if (name === "staff_delete_lesson" && /^m\d+$/.test(String(args.p_id))) return raw("az_major_delete", { p_id: Number(String(args.p_id).slice(1)) });
+      return raw(name, args, opts);
+    };
+  })();
   /* azcards: students see exactly what the admin typed */
   (function () {
     var raw = sb.rpc.bind(sb);
