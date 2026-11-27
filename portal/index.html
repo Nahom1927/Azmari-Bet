@@ -279,7 +279,22 @@ try{matchMedia("(prefers-color-scheme: dark)").addEventListener("change",apply)}
     g.appendChild(el("div", null, { className: "scroll" })).appendChild(t);
     var a = d.attendance, ac = card();
     add(ac, el("h3", "Attendance"), el("p", "Present " + a.present + " · Late " + a.late + " · Absent " + a.absent + " · Total " + a.total));
-    add(body, c, g, ac);
+    /* azinline: instructor photo and name on the first screen */
+    c.dataset.azins = "1";
+    var ir = typeof mi !== "undefined" ? mi : await sb.rpc("my_instructors"), ic = card(); ic.appendChild(el("h3", "Your instructor"));
+    if (ir.error) ic.appendChild(el("p", "Could not load instructor: " + ir.error.message, { className: "msg err" }));
+    else if (!(ir.data || []).length) ic.appendChild(el("p", "No instructor assigned to " + d.student_no + " yet.", { className: "mu" }));
+    else ir.data.forEach(function (x) {
+      var row = el("div"), name = ((x.prefix || "") + " " + (x.name || "")).trim(), pic, info = el("div");
+      row.style.cssText = "display:flex;gap:14px;align-items:center;margin:8px 0";
+      function letter() { var q = el("div", (x.name || "?").charAt(0).toUpperCase()); q.style.cssText = "width:72px;height:72px;flex:none;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:700;background:#233;color:#fff;border:2px solid #04d9ff"; return q; }
+      if (x.photo_url && /^https:\/\//i.test(x.photo_url)) { pic = document.createElement("img"); pic.alt = name; pic.style.cssText = "width:72px;height:72px;flex:none;border-radius:50%;object-fit:cover;border:2px solid #04d9ff"; pic.onerror = function () { this.replaceWith(letter()); }; pic.src = x.photo_url; }
+      else pic = letter();
+      add(info, el("h3", name || "Name not saved yet"), el("p", x.course || "", { className: "mu" }));
+      if (!x.photo_url) info.appendChild(el("p", "Photo not saved yet", { className: "mu" }));
+      add(row, pic, info); ic.appendChild(row);
+    });
+    add(body, c, ic, g, ac);
   }
   function printAcademyCertificate(student, course, major, date) {
     var w = window.open("", "_blank"); if (!w) { alert("Allow pop-ups to print the certificate."); return; }
