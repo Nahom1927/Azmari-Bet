@@ -840,6 +840,7 @@ function azRenderPublicCards(kind, filterFn) {
     if (!row) return false;
     const k = String(row.kind || row.post_kind || "").trim();
     if (k !== kind) return false;
+    if (kind === "band") { const dd = row.data && typeof row.data === "object" ? row.data : {}; if (!(Array.isArray(dd.photos) && dd.photos.filter(Boolean).length) || !String(dd.band_name || "").trim() || !(String(dd.city || "").trim() || String(dd.genre || "").trim())) return false; }
     const rawData = row.data && typeof row.data === "object" ? row.data : {};
     const item = Object.assign({
       id: row.id,
@@ -1061,7 +1062,7 @@ if("serviceWorker" in navigator && location.protocol.indexOf("http")===0){window
 <script src="azalerts.js"></script>
 <script src="section-slideshow.js"></script>
   <script src="azmari-photos.js?v=2611286"></script>
-  <script src="azmari-bands.js?v=14"></script>
+  <script src="azmari-bands.js?v=16"></script>
   <script src="azmari-chat.js?v=3"></script>
   <script src="azmari-bandsui.js?v=2"></script>
   <script src="azmari-store.js?v=2611288"></script>

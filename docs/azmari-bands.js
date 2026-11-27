@@ -160,7 +160,7 @@ select.azu-sel option{background:#030712;color:#e8f6ff}
       '<button class="azb-btn" data-azb="book" data-id="' + esc(a.id) + '" data-name="' + esc(a.name) + '">Book now</button></div></div>';
   }
   function html() {
-    var list = acts.filter(function (a) { return kind === 'all' || a.kind === kind; });
+    var list = acts.filter(function (a) { return (kind === 'all' || a.kind === kind) && azbOk(a); });
     var h = '<div class="azb-bar">' + KINDS.map(function (k) { return chip(k[0], k[1]); }).join('') + '</div>' +
       '<div class="azb-bar"><button class="azb-btn" data-azb="reg">+ Register your page</button><button class="azb-btn azb-ghost" data-azb="req">My booking requests</button>' +
       (isAdmin ? '<button class="azb-btn azb-ghost" data-azb="adm">Admin: approve</button>' : '') + '</div>';
@@ -260,6 +260,43 @@ select.azu-sel option{background:#030712;color:#e8f6ff}
     ctx.drawImage(src, (W - w) * st.px, (H - h) * st.py, w, h);
     azbFx(ctx, W, H, st.fx);
   }
+  function azbAuto(c) {
+    var w = c.width, h = c.height, x = c.getContext('2d'), im = x.getImageData(0, 0, w, h), d = im.data, hist = new Uint32Array(256), i, l, r, g, b;
+    for (i = 0; i < d.length; i += 4) hist[(.299 * d[i] + .587 * d[i + 1] + .114 * d[i + 2]) | 0]++;
+    var lo = 0, hi = 255, acc = 0, t = w * h * .005;
+    for (i = 0; i < 256; i++) { acc += hist[i]; if (acc > t) { lo = i; break; } }
+    acc = 0;
+    for (i = 255; i >= 0; i--) { acc += hist[i]; if (acc > t) { hi = i; break; } }
+    lo = Math.min(lo, 40); hi = Math.max(hi, 215);
+    var lut = new Uint8ClampedArray(256), k = 255 / (hi - lo);
+    for (i = 0; i < 256; i++) lut[i] = (i - lo) * k;
+    for (i = 0; i < d.length; i += 4) {
+      r = lut[d[i]]; g = lut[d[i + 1]]; b = lut[d[i + 2]]; l = .299 * r + .587 * g + .114 * b;
+      d[i] = l + (r - l) * 1.08; d[i + 1] = l + (g - l) * 1.08; d[i + 2] = l + (b - l) * 1.08;
+    }
+    var src = new Uint8ClampedArray(d), row = w * 4, y, xx, j, ch, v;
+    for (y = 1; y < h - 1; y++) for (xx = 1; xx < w - 1; xx++) {
+      j = (y * w + xx) * 4;
+      for (ch = 0; ch < 3; ch++) { v = src[j + ch]; d[j + ch] = v + .35 * (4 * v - src[j - 4 + ch] - src[j + 4 + ch] - src[j - row + ch] - src[j + row + ch]); }
+    }
+    x.putImageData(im, 0, 0);
+  }
+  function azbBlob2(c, orig) {
+    var cap = Math.min(orig || 2600000, 2600000);
+    return new Promise(function (res, rej) {
+      var q = 0.9;
+      (function t() {
+        c.toBlob(function (b) {
+          if (!b) { rej(new Error('Photo could not be processed')); return; }
+          if (b.size > cap && q > 0.45) { q -= 0.05; t(); } else res(b);
+        }, 'image/jpeg', q);
+      })();
+    });
+  }
+  function azbOk(a) {
+    var ph = Array.isArray(a.photos) ? a.photos.filter(Boolean) : [];
+    return !!(String(a.name || '').trim() && ph.length && (String(a.city || '').trim() || String(a.genre || '').trim()));
+  }
   function azbBlob(c) {
     return new Promise(function (res, rej) {
       var q = 0.92;
@@ -276,7 +313,8 @@ select.azu-sel option{background:#030712;color:#e8f6ff}
     return azbLoad(file).then(function (bmp) {
       var c = document.createElement('canvas'); azbDraw(c, bmp, st, AZB_W, AZB_H);
       if (bmp.close) bmp.close();
-      return azbBlob(c);
+      if (!st || st.fx === 'orig') azbAuto(c);
+      return azbBlob2(c, file.size);
     }).then(function (b) {
       var path = uid + '/act-' + Date.now() + '-' + i + '.jpg';
       return db().storage.from('azs-photos').upload(path, b, { contentType: 'image/jpeg', cacheControl: '31536000' }).then(function (r) {
@@ -438,3 +476,4 @@ select.azu-sel option{background:#030712;color:#e8f6ff}
     }
   });
 })();
+;(function(){var s=document.createElement('style');s.id='azb-nohero';s.textContent='#azu-hero,.azb-bar .azu-hero{display:none!important}';document.head.appendChild(s);})();

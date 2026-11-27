@@ -583,6 +583,7 @@ function azRenderPublicCards(kind, filterFn) {
     if (!row) return false;
     const k = String(row.kind || row.post_kind || "").trim();
     if (k !== kind) return false;
+    if (kind === "band") { const dd = row.data && typeof row.data === "object" ? row.data : {}; if (!(Array.isArray(dd.photos) && dd.photos.filter(Boolean).length) || !String(dd.band_name || "").trim() || !(String(dd.city || "").trim() || String(dd.genre || "").trim())) return false; }
     const rawData = row.data && typeof row.data === "object" ? row.data : {};
     const item = Object.assign({
       id: row.id,
