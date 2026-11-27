@@ -94,7 +94,7 @@ try{matchMedia("(prefers-color-scheme: dark)").addEventListener("change",apply)}
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script>
 (function () {
-  var sb = supabase.createClient("https://rnqizccrzbolsynfsxbu.supabase.co", "sb_publishable_1pbzO1FOGTjIjjE-yF7d1A__OFPESB2");
+  var sb = supabase.createClient("https://rnqizccrzbolsynfsxbu.supabase.co", "sb_publishable_1pbzO1FOGTjIjjE-yF7d1A__OFPESB2"); window.azSb = sb;
   var app = document.getElementById("app");
   var SUBJ = [["ear","Ear training"],["theory","Music theory"],["scales","Scales"],["ensemble","Ensemble"],["history","Music history"]];
   var LESSON_SECT = [["videos","Uploaded videos"],["live","Live section"]].concat(SUBJ);
@@ -792,4 +792,5 @@ try{matchMedia("(prefers-color-scheme: dark)").addEventListener("change",apply)}
   boot();
 })();
 </script>  <script src="../academy-progress.js"></script>
+<script src="az-student.js?v=1"></script>
 </body></html>
