@@ -467,6 +467,28 @@ async function azSoldMarks() {
     });
   } catch (e) {}
 }
+/* azcount: automatic free ads countdown */
+async function azFreeCount(say) {
+  try {
+    if (!S.me) { const b0 = document.getElementById('azfree-badge'); if (b0) b0.style.display = 'none'; return; }
+    const r = await S.sb.rpc('azs_my_quota'); if (r.error || !r.data) return;
+    const d = r.data;
+    document.querySelectorAll('.azfree-left').forEach((el) => azFreeLeft(el));
+    let b = document.getElementById('azfree-badge');
+    if (!b) {
+      b = document.createElement('div'); b.id = 'azfree-badge';
+      b.style.cssText = 'position:fixed;left:10px;bottom:10px;z-index:50;background:#16a34a;color:#fff;font-size:12px;font-weight:700;padding:6px 12px;border-radius:999px;box-shadow:0 2px 8px rgba(0,0,0,.3);pointer-events:none';
+      document.body.append(b);
+    }
+    if (d.admin) { b.style.display = 'none'; return; }
+    b.style.display = '';
+    const msg = d.free_left > 0 ? 'Free ads left: ' + d.free_left + ' of ' + d.free_total
+      : (d.left > 0 ? 'Paid ads left: ' + d.left : 'Free ads used up. Pay 100 birr');
+    b.textContent = msg; b.style.background = (d.free_left > 0 || d.left > 0) ? '#16a34a' : '#dc2626';
+    if (say) toast(msg);
+  } catch (e) {}
+}
+try { setInterval(() => azFreeCount(false), 30000); window.addEventListener('focus', () => azFreeCount(false)); setTimeout(() => azFreeCount(false), 2500); } catch (e) {}
 /* azfreeleft: show free ads left */
 async function azFreeLeft(el) {
   try {
@@ -577,7 +599,7 @@ function post() {
   if (!S.me) return login(post);
   const body = h('div'); const m = modal('Post ad', body);
   const unl = S.prof && S.prof.seller_status === 'approved';
-  body.append(h('p', { class: 'azs-note' }, (() => { const sp = h('span', {}, 'Checking your free ads...'); azFreeLeft(sp); return sp; })()),
+  body.append(h('p', { class: 'azs-note' }, (() => { const sp = h('span', { class: 'azfree-left' }, 'Checking your free ads...'); azFreeLeft(sp); return sp; })()),
     h('p', { class: 'azs-sub' }, 'Choose a category'),
     h('div', { class: 'azs-tiles' }, CATS.map((c) => h('button', { class: 'azs-tile', onclick: () => form(c) }, h('b', {}, c[1]), c[0]))));
   function form(cat) {
@@ -602,7 +624,7 @@ function post() {
       const { error } = await S.sb.from('azs_listings').insert({ category: cat[0], icon: cat[1], title: f.title.value.trim(), price: Number(f.price.value), condition: f.cond.value, images: imgs, seller_phone: f.phone.value.trim(),
         city: f.city.value.trim(), description: f.desc.value.trim(), lat: pos ? pos.latitude : null, lng: pos ? pos.longitude : null, pay_ref: refIn.value.trim() || null });
       if (error) { if (String(error.message).indexOf('AD_LIMIT') >= 0) {  err.textContent = 'You have used all your ads. Pay 100 birr by Telebirr (0911898184) or CBE (1000037200534) for 10 more ads, type the transaction number in the payment box above the Submit button, then press Submit ad again.'; } else err.textContent = error.message; send.disabled = false; return; }
-      S.used++; m.close(); toast(paid ? 'Submitted successfully. The admin will check your payment and approve your ad.' : 'Your ad is live!'); load();
+      S.used++; m.close(); setTimeout(() => azFreeCount(true), 600); toast(paid ? 'Submitted successfully. The admin will check your payment and approve your ad.' : 'Your ad is live!'); load();
     }
   }
 }
