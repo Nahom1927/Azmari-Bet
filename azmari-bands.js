@@ -477,3 +477,4 @@ select.azu-sel option{background:#030712;color:#e8f6ff}
   });
 })();
 ;(function(){var s=document.createElement('style');s.id='azb-nohero';s.textContent='#azu-hero,.azb-bar .azu-hero{display:none!important}';document.head.appendChild(s);})();
+;(function(){var s=document.createElement('style');s.id='azb-s16';s.textContent='.azsl,.azsl.az16,.azb-ss{aspect-ratio:16/7!important;height:auto!important;max-height:none!important;width:100%!important;overflow:hidden}.azsl .azsl-i,.azb-ss .azb-sl{height:100%!important}.azsl img,.azsl-i img,.azb-sl img{width:100%!important;height:100%!important;object-fit:cover!important;object-position:center}';document.head.appendChild(s);})();

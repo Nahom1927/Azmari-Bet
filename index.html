@@ -553,7 +553,7 @@ Object.assign(L.om,{fr_concert:"Sagantaa / Muuziqaa",fr_party:"Cidha / Ayyaana",
 Object.assign(L.so,{fr_concert:"Riwaayad / Muusik",fr_party:"Aroos / Xaflad",fr_sports:"Isboorti",fr_workshop:"Aqoon-isweydaarsi / Tababar",fr_cultural:"Diini / Dhaqan",fr_expo:"Ganacsi / Bandhig",tpl:"Qaabka dhacdada",pol:"Siyaasadda lacag-bixinta",close:"Xidh",crop:"Gooy sawirka (8:9)",cropUse:"Isticmaal sawirka",cropCancel:"Jooji",cropHint:"Jiid si aad u dhaqaajiso, sliide si aad u weyso",call:"Wac",share:"La wadaag",map:"Khariidad"});
 Object.assign(L.ti,{fr_concert:"ኮንሰርት / ሙዚቃ",fr_party:"መርዓ / ፓርቲ",fr_sports:"ስፖርት",fr_workshop:"ወርክሾፕ / ስልጠና",fr_cultural:"ሃይማኖታዊ / ባህላዊ",fr_expo:"ንግዲ / ኤክስፖ",tpl:"ቅጥዒ ፍጻሜ",pol:"ፖሊሲ ክፍሊት",close:"ዕጸው",crop:"ስእሊ ቖርጽ (8:9)",cropUse:"ስእሊ ተጠቐም",cropCancel:"ስረዝ",cropHint:"ንምንቅስቓስ ስሓብ፣ ንምዕባይ ስላይድ ግበር",call:"ደውል",share:"ኣካፍል",map:"ካርታ"});
 Object.assign(L.ar,{fr_concert:"حفلة موسيقية",fr_party:"زفاف / حفل",fr_sports:"رياضة",fr_workshop:"ورشة / تدريب",fr_cultural:"ديني / ثقافي",fr_expo:"أعمال / معرض",tpl:"قالب الفعالية",pol:"سياسة الدفع",close:"إغلاق",crop:"اقتصاص الصورة (8:9)",cropUse:"استخدام الصورة",cropCancel:"إلغاء",cropHint:"اسحب للتحريك وحرّك الشريط للتكبير",call:"اتصل",share:"مشاركة",map:"خريطة"});
-(function(){var st=document.createElement("style");st.textContent=".azsl{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;aspect-ratio:8/9;max-width:420px;border-radius:12px;margin:8px 0;scrollbar-width:none;border:1px solid var(--ln)}.azsl::-webkit-scrollbar{display:none}.azsl-i{flex:0 0 100%;scroll-snap-align:center}.azsl-i img{width:100%;height:100%;object-fit:cover;display:block}";document.head.appendChild(st);
+(function(){var st=document.createElement("style");st.textContent=".azsl{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;aspect-ratio:16/7;max-width:100%;border-radius:12px;margin:8px 0;scrollbar-width:none;border:1px solid var(--ln)}.azsl::-webkit-scrollbar{display:none}.azsl-i{flex:0 0 100%;scroll-snap-align:center}.azsl-i img{width:100%;height:100%;object-fit:cover;display:block}";document.head.appendChild(st);
 setInterval(function(){document.querySelectorAll(".azsl").forEach(function(el){var n=+el.dataset.n;if(n<2)return;var w=el.clientWidth,i=Math.round(Math.abs(el.scrollLeft)/w),nx=(i+1)%n,rtl=document.documentElement.dir==="rtl";el.scrollTo({left:(rtl?-1:1)*nx*w,behavior:"smooth"})})},4500);})();
 /* azbandtop */ function azBandTop(){var p=[];(Array.isArray(AZ_PUBLIC_POSTS)?AZ_PUBLIC_POSTS:[]).forEach(function(r){if(r&&String(r.kind||r.post_kind||"").trim()==="band"){var d=r.data&&typeof r.data==="object"?r.data:{};(d.photos||[]).slice(0,2).forEach(function(u){if(p.length<8)p.push(u)})}});return p.length?azSlider(p,true):'<div class="azsl az16" data-n="1" style="align-items:center;justify-content:center;background:linear-gradient(135deg,#b8860b,#f5d76e);color:#3b2a00;font-weight:800;font-size:22px;text-align:center">\u{1F941} Azmari Bands</div>'} function azSlider(p,w){if(!p.length)return "";return '<div class="azsl'+(w?' az16':'')+'" data-n="'+p.length+'">'+p.map(function(u,i){return '<div class="azsl-i"><img src="'+esc(u)+'" alt="Photo '+(i+1)+'" loading="lazy"></div>'}).join("")+'</div>'}
 function azTier(row){var d=row&&row.data&&typeof row.data==="object"?row.data:{};return Number(d.tier)||0}
@@ -635,12 +635,12 @@ Object.assign(L.ar,{fl_artist:"الفنان",fl_date:"التاريخ",fl_time:"�
 function azFL(fk,p){var k=(fk==="cultural"&&p[0]==="fee")?"fl_free":"fl_"+p[0];var v=t(k);return v===k?p[1]:v}
 
 /* AZ-EVTOP */
-Object.assign(L.en,{ev_photos:"Photos (8:9, up to 3)",ev_add:"Add photo",ev_rm:"Remove",ev_here:"Public events appear here",ev_rules:"I confirm my content follows the community rules."});
-Object.assign(L.am,{ev_photos:"ፎቶዎች (8:9፣ እስከ 3)",ev_add:"ፎቶ ጨምር",ev_rm:"አስወግድ",ev_here:"ይፋዊ ዝግጅቶች እዚህ ይታያሉ",ev_rules:"ይዘቴ የማኅበረሰብ ደንቦችን እንደሚከተል አረጋግጣለሁ።"});
-Object.assign(L.om,{ev_photos:"Suuraawwan (8:9, hanga 3)",ev_add:"Suuraa dabali",ev_rm:"Haqi",ev_here:"Taateewwan ifaa as mul'atu",ev_rules:"Qabiyyeen koo seera hawaasaa akka hordofu nan mirkaneessa."});
-Object.assign(L.so,{ev_photos:"Sawirro (8:9, ilaa 3)",ev_add:"Ku dar sawir",ev_rm:"Ka saar",ev_here:"Dhacdooyinka dadweynaha halkan ayay ka muuqdaan",ev_rules:"Waxaan xaqiijinayaa in nuxurkaygu raacayo xeerarka bulshada."});
-Object.assign(L.ti,{ev_photos:"ስእልታት (8:9፣ ክሳብ 3)",ev_add:"ስእሊ ወስኽ",ev_rm:"ኣውጽእ",ev_here:"ህዝባዊ ፍጻሜታት ኣብዚ ይርከቡ",ev_rules:"ትሕዝቶይ ሕጊ ሕብረተሰብ ከም ዝኽተል የረጋግጽ።"});
-Object.assign(L.ar,{ev_photos:"الصور (8:9، حتى 3)",ev_add:"أضف صورة",ev_rm:"إزالة",ev_here:"تظهر الفعاليات العامة هنا",ev_rules:"أؤكد أن محتواي يتبع قواعد المجتمع."});
+Object.assign(L.en,{ev_photos:"Photos (16:7, up to 3)",ev_add:"Add photo",ev_rm:"Remove",ev_here:"Public events appear here",ev_rules:"I confirm my content follows the community rules."});
+Object.assign(L.am,{ev_photos:"ፎቶዎች (16:7፣ እስከ 3)",ev_add:"ፎቶ ጨምር",ev_rm:"አስወግድ",ev_here:"ይፋዊ ዝግጅቶች እዚህ ይታያሉ",ev_rules:"ይዘቴ የማኅበረሰብ ደንቦችን እንደሚከተል አረጋግጣለሁ።"});
+Object.assign(L.om,{ev_photos:"Suuraawwan (16:7, hanga 3)",ev_add:"Suuraa dabali",ev_rm:"Haqi",ev_here:"Taateewwan ifaa as mul'atu",ev_rules:"Qabiyyeen koo seera hawaasaa akka hordofu nan mirkaneessa."});
+Object.assign(L.so,{ev_photos:"Sawirro (16:7, ilaa 3)",ev_add:"Ku dar sawir",ev_rm:"Ka saar",ev_here:"Dhacdooyinka dadweynaha halkan ayay ka muuqdaan",ev_rules:"Waxaan xaqiijinayaa in nuxurkaygu raacayo xeerarka bulshada."});
+Object.assign(L.ti,{ev_photos:"ስእልታት (16:7፣ ክሳብ 3)",ev_add:"ስእሊ ወስኽ",ev_rm:"ኣውጽእ",ev_here:"ህዝባዊ ፍጻሜታት ኣብዚ ይርከቡ",ev_rules:"ትሕዝቶይ ሕጊ ሕብረተሰብ ከም ዝኽተል የረጋግጽ።"});
+Object.assign(L.ar,{ev_photos:"الصور (16:7، حتى 3)",ev_add:"أضف صورة",ev_rm:"إزالة",ev_here:"تظهر الفعاليات العامة هنا",ev_rules:"أؤكد أن محتواي يتبع قواعد المجتمع."});
 function azEvTop(){
   var all=Array.isArray(AZ_PUBLIC_POSTS)?AZ_PUBLIC_POSTS:[];
   var rows=all.filter(function(r){var d=r&&r.data&&typeof r.data==="object"?r.data:null;return d&&Array.isArray(d.photos)&&d.photos.filter(Boolean).length}).sort(function(a,b){return azTier(b)-azTier(a)}).slice(0,8);
@@ -1062,7 +1062,7 @@ if("serviceWorker" in navigator && location.protocol.indexOf("http")===0){window
 <script src="azalerts.js"></script>
 <script src="section-slideshow.js"></script>
   <script src="azmari-photos.js?v=2611286"></script>
-  <script src="azmari-bands.js?v=16"></script>
+  <script src="azmari-bands.js?v=17"></script>
   <script src="azmari-chat.js?v=3"></script>
   <script src="azmari-bandsui.js?v=2"></script>
   <script src="azmari-store.js?v=2611288"></script>
