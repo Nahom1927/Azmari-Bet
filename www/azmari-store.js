@@ -659,11 +659,32 @@ async function azPayAdmin(box) {
     h('div', {}, h('button', { class: 'azs-btn', onclick: () => decide(x.id, 'approved') }, 'Approve'), ' ', h('button', { class: 'azs-btn azs-danger', onclick: () => decide(x.id, 'rejected') }, 'Reject')))));
   box.append(wrap);
 }
+/* azbandadmin: band pages in the admin portal */
+async function azBandAdmin(box) {
+  const w = h('div'); box.append(w);
+  const r = await S.sb.rpc('azb_admin_pending');
+  if (r.error || !Array.isArray(r.data)) return;
+  w.append(h('h3', {}, 'Band pages to approve (' + r.data.length + ')'));
+  if (!r.data.length) { w.append(h('p', {}, 'None waiting')); return; }
+  r.data.forEach(a => {
+    const row = h('div'); row.style.cssText = 'border:1px solid #00e5ff;border-radius:12px;padding:10px;margin:8px 0';
+    row.append(h('p', {}, a.name + ' (' + a.kind + ')' + (a.city ? ' \u00B7 ' + a.city : '')));
+    row.append(h('p', {}, 'Leader: ' + (a.leader_name || '') + ' \u00B7 ' + (a.leader_phone || '')));
+    const pr = h('p', {}, 'Payment ID: ' + (a.payment_ref || 'NONE - do not approve')); pr.style.fontWeight = '800'; row.append(pr);
+    const set = (st, label) => h('button', { class: 'azs-btn', onclick: async () => {
+      const x = await S.sb.rpc('azb_set_status', { p_id: a.id, p_status: st });
+      if (x.error) { toast(x.error.message, 'bad'); return; }
+      toast(label); row.remove();
+    } }, label);
+    row.append(set('approved', 'Approved'), set('removed', 'Rejected'));
+    w.append(row);
+  });
+}
 async function admin() {
   const [s, r] = await Promise.all([S.sb.from('azs_profiles').select('*').neq('role', 'admin').order('created_at', { ascending: false }).limit(100),
     S.sb.from('azs_reports').select('id,reason,listing_id,azs_listings(title)').order('id', { ascending: false }).limit(30)]);
   if (s.error || r.error) { toast((s.error || r.error).message, 'bad'); return; }
-  const box = h('div'); const m = modal('Admin', box); azPayAdmin(box);
+  const box = h('div'); const m = modal('Admin', box); azPayAdmin(box); azBandAdmin(box);
   const act = (fn, w) => async () => { if (w && !(await ask({ title: w[0], text: w[1], ok: w[2], danger: true }))) return; const x = await fn(); if (x.error) { toast(x.error.message, 'bad'); return; } m.close(); admin(); load(); };
   const setS = (id, v) => () => S.sb.from('azs_profiles').update({ seller_status: v }).eq('id', id);
   box.append(h('p', { class: 'azs-sub' }, 'Sellers (approve = unlimited ads)'),
